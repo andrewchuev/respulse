@@ -33,6 +33,18 @@ pub async fn check_http(client: &Client, monitor: &Monitor) -> ProbeResult {
         request_builder = request_builder.headers(header_map);
     }
 
+    // Configure HTTP Basic Authentication
+    if let Some(ref username) = monitor.auth_username {
+        if !username.is_empty() {
+            request_builder = request_builder.basic_auth(username, monitor.auth_password.as_deref());
+        }
+    } else if let Ok(parsed_url) = reqwest::Url::parse(&monitor.url) {
+        let u = parsed_url.username();
+        if !u.is_empty() {
+            request_builder = request_builder.basic_auth(u, parsed_url.password());
+        }
+    }
+
     // Add body if specified
     if let Some(ref body_text) = monitor.body {
         if !body_text.is_empty() {

@@ -22,6 +22,8 @@ export interface Monitor {
   last_status_code: number | null;
   last_error: string | null;
   heartbeat_token: string | null;
+  auth_username?: string | null;
+  auth_password?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -89,4 +91,6 @@ export interface CreateMonitorPayload {
   expected_status_code?: number;
   keyword?: string;
   port?: number;
+  auth_username?: string;
+  auth_password?: string;
 }

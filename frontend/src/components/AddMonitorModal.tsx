@@ -3,7 +3,7 @@ import { CreateMonitorPayload, MonitorType } from '../types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Activity, ShieldCheck, Server, Heart, Code2 } from 'lucide-react';
+import { Activity, ShieldCheck, Server, Heart, Code2, Lock, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface AddMonitorModalProps {
   isOpen: boolean;
@@ -25,6 +25,9 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
   const [expectedStatus, setExpectedStatus] = useState<string>('200');
   const [keyword, setKeyword] = useState<string>('');
   const [port, setPort] = useState<string>('80');
+  const [authUsername, setAuthUsername] = useState<string>('');
+  const [authPassword, setAuthPassword] = useState<string>('');
+  const [showAuth, setShowAuth] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,11 +56,16 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
         expected_status_code: expectedStatus ? parseInt(expectedStatus, 10) : undefined,
         keyword: keyword.trim() || undefined,
         port: port ? parseInt(port, 10) : undefined,
+        auth_username: authUsername.trim() || undefined,
+        auth_password: authPassword || undefined,
       });
 
       // Reset form
       setName('');
       setUrl('');
+      setAuthUsername('');
+      setAuthPassword('');
+      setShowAuth(false);
       setMonitorType('HTTP');
       setInterval(60);
       onClose();
@@ -161,43 +169,87 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
 
           {/* Conditional Options */}
           {(monitorType === 'HTTP' || monitorType === 'KEYWORD') && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-secondary/20 p-3 rounded-lg border border-border/50">
-              <div>
-                <label className="text-[11px] font-medium text-muted-foreground mb-1 block">HTTP Method</label>
-                <select
-                  value={method}
-                  onChange={(e) => setMethod(e.target.value)}
-                  className="w-full bg-background border border-border rounded-md px-2.5 py-1 text-xs text-foreground h-8 focus:ring-1 focus:ring-emerald-500"
-                >
-                  <option value="GET">GET</option>
-                  <option value="POST">POST</option>
-                  <option value="HEAD">HEAD</option>
-                  <option value="PUT">PUT</option>
-                </select>
-              </div>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-secondary/20 p-3 rounded-lg border border-border/50">
+                <div>
+                  <label className="text-[11px] font-medium text-muted-foreground mb-1 block">HTTP Method</label>
+                  <select
+                    value={method}
+                    onChange={(e) => setMethod(e.target.value)}
+                    className="w-full bg-background border border-border rounded-md px-2.5 py-1 text-xs text-foreground h-8 focus:ring-1 focus:ring-emerald-500"
+                  >
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                    <option value="HEAD">HEAD</option>
+                    <option value="PUT">PUT</option>
+                  </select>
+                </div>
 
-              <div>
-                <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Expected Status</label>
-                <Input
-                  placeholder="200"
-                  value={expectedStatus}
-                  onChange={(e) => setExpectedStatus(e.target.value)}
-                  className="h-8 text-xs font-mono"
-                />
-              </div>
-
-              {monitorType === 'KEYWORD' && (
-                <div className="col-span-2 sm:col-span-1">
-                  <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Keyword to find</label>
+                <div>
+                  <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Expected Status</label>
                   <Input
-                    placeholder="e.g. success"
-                    value={keyword}
-                    onChange={(e) => setKeyword(e.target.value)}
-                    required
-                    className="h-8 text-xs"
+                    placeholder="200"
+                    value={expectedStatus}
+                    onChange={(e) => setExpectedStatus(e.target.value)}
+                    className="h-8 text-xs font-mono"
                   />
                 </div>
-              )}
+
+                {monitorType === 'KEYWORD' && (
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Keyword to find</label>
+                    <Input
+                      placeholder="e.g. success"
+                      value={keyword}
+                      onChange={(e) => setKeyword(e.target.value)}
+                      required
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Basic Auth Section Toggle */}
+              <div className="border border-border/60 rounded-lg p-3 bg-secondary/10">
+                <button
+                  type="button"
+                  onClick={() => setShowAuth(!showAuth)}
+                  className="flex items-center justify-between w-full text-xs font-medium text-muted-foreground hover:text-white transition-colors"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Lock className="h-3.5 w-3.5 text-emerald-400" />
+                    HTTP Basic Authentication {authUsername ? '(Configured)' : '(Optional)'}
+                  </span>
+                  {showAuth ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                </button>
+
+                {showAuth && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 pt-3 border-t border-border/40">
+                    <div>
+                      <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Username</label>
+                      <Input
+                        placeholder="admin"
+                        value={authUsername}
+                        onChange={(e) => setAuthUsername(e.target.value)}
+                        className="h-8 text-xs font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Password</label>
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        value={authPassword}
+                        onChange={(e) => setAuthPassword(e.target.value)}
+                        className="h-8 text-xs font-mono"
+                      />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground col-span-1 sm:col-span-2">
+                      Credentials are automatically passed via the standard Authorization header. You can also specify credentials directly in the URL: <code className="text-emerald-400">https://user:pass@example.com</code>
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

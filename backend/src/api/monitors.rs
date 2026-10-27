@@ -282,8 +282,9 @@ pub async fn create_monitor(
         r#"
         INSERT INTO monitors (
             name, url, monitor_type, interval_seconds, timeout_seconds,
-            method, headers, body, expected_status_code, keyword, port, heartbeat_token
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            method, headers, body, expected_status_code, keyword, port, heartbeat_token,
+            auth_username, auth_password
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
         RETURNING *
         "#
     )
@@ -299,6 +300,8 @@ pub async fn create_monitor(
     .bind(payload.keyword)
     .bind(payload.port)
     .bind(heartbeat_token)
+    .bind(payload.auth_username)
+    .bind(payload.auth_password)
     .fetch_one(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -338,14 +341,16 @@ pub async fn update_monitor(
     let expected_code = payload.expected_status_code.or(existing.expected_status_code);
     let keyword = payload.keyword.or(existing.keyword);
     let port = payload.port.or(existing.port);
+    let auth_username = payload.auth_username.or(existing.auth_username);
+    let auth_password = payload.auth_password.or(existing.auth_password);
 
     let updated = sqlx::query_as::<_, Monitor>(
         r#"
         UPDATE monitors
         SET name = $1, url = $2, interval_seconds = $3, timeout_seconds = $4,
             method = $5, headers = $6, body = $7, expected_status_code = $8,
-            keyword = $9, port = $10, updated_at = NOW()
-        WHERE id = $11
+            keyword = $9, port = $10, auth_username = $11, auth_password = $12, updated_at = NOW()
+        WHERE id = $13
         RETURNING *
         "#
     )
@@ -359,6 +364,8 @@ pub async fn update_monitor(
     .bind(expected_code)
     .bind(keyword)
     .bind(port)
+    .bind(auth_username)
+    .bind(auth_password)
     .bind(id)
     .fetch_one(&state.pool)
     .await

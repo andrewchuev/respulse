@@ -25,6 +25,8 @@ pub struct Monitor {
     pub last_status_code: Option<i32>,
     pub last_error: Option<String>,
     pub heartbeat_token: Option<String>,
+    pub auth_username: Option<String>,
+    pub auth_password: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -46,6 +48,8 @@ pub struct CreateMonitorRequest {
     pub expected_status_code: Option<i32>,
     pub keyword: Option<String>,
     pub port: Option<i32>,
+    pub auth_username: Option<String>,
+    pub auth_password: Option<String>,
 }
 
 fn default_monitor_type() -> String { "HTTP".to_string() }
@@ -65,6 +69,8 @@ pub struct UpdateMonitorRequest {
     pub expected_status_code: Option<i32>,
     pub keyword: Option<String>,
     pub port: Option<i32>,
+    pub auth_username: Option<String>,
+    pub auth_password: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
