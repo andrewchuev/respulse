@@ -20,15 +20,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "alivemon_api=debug,tower_http=info".into()),
+                .unwrap_or_else(|_| "respulse_api=debug,tower_http=info".into()),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    info!("Starting ALiveMon Backend...");
+    info!("Starting ResPulse Backend...");
 
     let database_url = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "postgres://alivemon:alivemon@localhost:5435/alivemon".to_string());
+        .unwrap_or_else(|_| "postgres://respulse:respulse@localhost:5435/respulse".to_string());
 
     let pool = db::init_db(&database_url).await?;
 
@@ -36,7 +36,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let http_client = Arc::new(
         Client::builder()
-            .user_agent("ALiveMon/1.0 (+https://alivemon.wsl.local)")
+            .user_agent("ResPulse/1.0 (+https://respulse.wsl.local)")
             .danger_accept_invalid_certs(true)
             .build()
             .expect("Failed to build HTTP client"),
@@ -61,7 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = axum::Router::new()
         .nest("/api", api_router)
         .route("/ws", axum::routing::get(api::ws::ws_handler))
-        .route("/health", axum::routing::get(|| async { "ALiveMon Backend OK" }))
+        .route("/health", axum::routing::get(|| async { "ResPulse Backend OK" }))
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state);
@@ -72,7 +72,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or(8080);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
-    info!("ALiveMon API Server listening on http://{}", addr);
+    info!("ResPulse API Server listening on http://{}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;

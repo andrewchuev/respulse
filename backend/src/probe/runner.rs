@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 pub async fn run_probe_scheduler(pool: DbPool, tx: Sender<WsMessage>) {
     let client = Client::builder()
-        .user_agent("ALiveMon/1.0 (+https://alivemon.wsl.local)")
+        .user_agent("ResPulse/1.0 (+https://respulse.wsl.local)")
         .danger_accept_invalid_certs(true)
         .build()
         .expect("Failed to build reqwest client");

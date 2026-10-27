@@ -184,7 +184,7 @@ export function App() {
       />
 
       <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground">
-        <p className="font-mono">ALiveMon v1.0 — High-performance Synthetic Monitoring Engine in Rust</p>
+        <p className="font-mono">ResPulse v1.0 — High-performance Synthetic Monitoring Engine in Rust</p>
       </footer>
     </div>
   );

@@ -155,7 +155,7 @@ pub async fn get_status_page(
     }
 
     Ok(Json(PublicStatusPage {
-        title: "ALiveMon Service Status".to_string(),
+        title: "ResPulse Service Status".to_string(),
         description: "Real-time performance and uptime status of systems and APIs".to_string(),
         all_systems_operational: all_up && active_incidents.is_empty(),
         overall_uptime_90d: 99.98,

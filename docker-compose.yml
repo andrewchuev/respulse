@@ -1,60 +1,60 @@
 services:
-  alivemon-db:
+  respulse-db:
     image: postgres:16-alpine
-    container_name: alivemon-db
+    container_name: respulse-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: alivemon
-      POSTGRES_PASSWORD: alivemon
-      POSTGRES_DB: alivemon
+      POSTGRES_USER: respulse
+      POSTGRES_PASSWORD: respulse
+      POSTGRES_DB: respulse
     volumes:
-      - alivemon_pg_data:/var/lib/postgresql/data
+      - respulse_pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U alivemon -d alivemon"]
+      test: ["CMD-SHELL", "pg_isready -U respulse -d respulse"]
       interval: 3s
       timeout: 3s
       retries: 5
     networks:
       default:
 
-  alivemon-backend:
+  respulse-backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: alivemon-backend
+    container_name: respulse-backend
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgres://alivemon:alivemon@alivemon-db:5432/alivemon
+      DATABASE_URL: postgres://respulse:respulse@respulse-db:5432/respulse
       PORT: 8080
-      RUST_LOG: alivemon_api=debug,tower_http=info
+      RUST_LOG: respulse_api=debug,tower_http=info
     depends_on:
-      alivemon-db:
+      respulse-db:
         condition: service_healthy
     networks:
       default:
       proxy:
         aliases:
-          - alivemon-api
+          - respulse-api
 
-  alivemon-frontend:
+  respulse-frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: alivemon-frontend
+    container_name: respulse-frontend
     restart: unless-stopped
     depends_on:
-      - alivemon-backend
+      - respulse-backend
     networks:
       default:
       proxy:
         aliases:
-          - alivemon-web
+          - respulse-web
 
 volumes:
-  alivemon_pg_data:
+  respulse_pg_data:
 
 networks:
   default:
-    name: alivemon-network
+    name: respulse-network
   proxy:
     external: true

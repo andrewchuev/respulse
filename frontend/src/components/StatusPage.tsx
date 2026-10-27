@@ -48,7 +48,7 @@ export const StatusPage: React.FC<StatusPageProps> = ({ onBack }) => {
       <div className="text-center space-y-2">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono font-medium mb-2">
           <Shield className="h-3.5 w-3.5" />
-          ALiveMon Live Status
+          ResPulse Live Status
         </div>
         <h1 className="text-3xl font-extrabold tracking-tight text-white">{data?.title || 'System Status'}</h1>
         <p className="text-sm text-muted-foreground max-w-lg mx-auto">
@@ -178,7 +178,7 @@ export const StatusPage: React.FC<StatusPageProps> = ({ onBack }) => {
 
       {/* Footer */}
       <footer className="text-center pt-8 border-t border-border/60 text-xs text-muted-foreground space-y-1">
-        <p className="font-medium text-white">ALiveMon Status Network</p>
+        <p className="font-medium text-white">ResPulse Status Network</p>
         <p>Continuous synthetic health monitoring powered by Rust & Axum.</p>
       </footer>
     </div>

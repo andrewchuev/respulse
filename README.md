@@ -1,4 +1,4 @@
-# ALiveMon — Modern Uptime & Synthetic Monitoring Service
+# ResPulse — Modern Uptime & Synthetic Monitoring Service
 
 > Высокопроизводительный сервис мониторинга доступности сайтов, API, портов и SSL-сертификатов на стеке **Rust (Axum)** + **React** + **Tailwind CSS** + **shadcn/ui**.
 
@@ -18,7 +18,7 @@
   - Доступна в один клик по переключателю в шапке.
   - Отображение статуса сервисов, активных инцидентов и глобального SLA.
 - **Локальный доступ по HTTPS:**
-  - Доступно по адресу: **`https://alivemon.wsl.local`** (через Caddy reverse proxy с автоматическим SSL).
+  - Доступно по адресу: **`https://respulse.wsl.local`** (через Caddy reverse proxy с автоматическим SSL).
 
 ## 🛠 Технологический стек
 
@@ -41,4 +41,4 @@ make logs
 ```
 
 После запуска сервис сразу доступен в браузере по адресу:
-👉 **[https://alivemon.wsl.local](https://alivemon.wsl.local)**
+👉 **[https://respulse.wsl.local](https://respulse.wsl.local)**

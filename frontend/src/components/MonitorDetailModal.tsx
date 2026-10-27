@@ -33,7 +33,7 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
 
   const copyToken = () => {
     if (data.heartbeat_token) {
-      const url = `https://alivemon.wsl.local/api/heartbeat/${data.heartbeat_token}`;
+      const url = `https://respulse.wsl.local/api/heartbeat/${data.heartbeat_token}`;
       navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -82,7 +82,7 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
                 </button>
               </div>
               <code className="block p-2 bg-background/90 rounded border font-mono text-xs text-white select-all break-all">
-                curl -X POST https://alivemon.wsl.local/api/heartbeat/{data.heartbeat_token}
+                curl -X POST https://respulse.wsl.local/api/heartbeat/{data.heartbeat_token}
               </code>
             </div>
           )}
