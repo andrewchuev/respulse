@@ -1,0 +1,60 @@
+services:
+  alivemon-db:
+    image: postgres:16-alpine
+    container_name: alivemon-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: alivemon
+      POSTGRES_PASSWORD: alivemon
+      POSTGRES_DB: alivemon
+    volumes:
+      - alivemon_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alivemon -d alivemon"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+    networks:
+      default:
+
+  alivemon-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: alivemon-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://alivemon:alivemon@alivemon-db:5432/alivemon
+      PORT: 8080
+      RUST_LOG: alivemon_api=debug,tower_http=info
+    depends_on:
+      alivemon-db:
+        condition: service_healthy
+    networks:
+      default:
+      proxy:
+        aliases:
+          - alivemon-api
+
+  alivemon-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: alivemon-frontend
+    restart: unless-stopped
+    depends_on:
+      - alivemon-backend
+    networks:
+      default:
+      proxy:
+        aliases:
+          - alivemon-web
+
+volumes:
+  alivemon_pg_data:
+
+networks:
+  default:
+    name: alivemon-network
+  proxy:
+    external: true
