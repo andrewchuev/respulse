@@ -1,4 +1,4 @@
-.PHONY: up down restart logs build ps seed clean release deploy
+.PHONY: up down restart logs build ps seed clean release deploy deploy-direct
 
 up:
 	docker compose up -d
@@ -55,11 +55,21 @@ release:
 	docker push $(REGISTRY)/respulse-frontend:latest
 	@echo "Released $(TAG). Run: make deploy TAG=$(TAG)"
 
+# Syncs configs, pins IMAGE_TAG in the server .env and restarts the stack; $(1) runs before `up` (e.g. a pull).
+rollout = scp deploy/docker-compose.yml deploy/Caddyfile $(PROD_HOST):$(PROD_DIR)/ \
+	&& ssh $(PROD_HOST) 'cd $(PROD_DIR) \
+		&& { grep -q "^IMAGE_TAG=" .env && sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$(TAG)/" .env || echo "IMAGE_TAG=$(TAG)" >> .env; } \
+		&& $(1) docker compose up -d --remove-orphans \
+		&& docker compose ps'
+
 # Rolls the server to TAG (default: current commit); use an older TAG to roll back.
 deploy:
-	scp deploy/docker-compose.yml deploy/Caddyfile $(PROD_HOST):$(PROD_DIR)/
-	ssh $(PROD_HOST) 'cd $(PROD_DIR) \
-		&& { grep -q "^IMAGE_TAG=" .env && sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$(TAG)/" .env || echo "IMAGE_TAG=$(TAG)" >> .env; } \
-		&& docker compose pull \
-		&& docker compose up -d --remove-orphans \
-		&& docker compose ps'
+	$(call rollout,docker compose pull &&)
+
+# Registry-free variant: builds locally and streams the images to the server over SSH.
+deploy-direct:
+	@test -z "$$(git status --porcelain)" || { echo "Working tree is dirty: commit or stash first"; exit 1; }
+	docker build -t $(REGISTRY)/respulse-backend:$(TAG) backend
+	docker build -t $(REGISTRY)/respulse-frontend:$(TAG) frontend
+	docker save $(REGISTRY)/respulse-backend:$(TAG) $(REGISTRY)/respulse-frontend:$(TAG) | gzip | ssh $(PROD_HOST) 'gunzip | docker load'
+	$(call rollout,)

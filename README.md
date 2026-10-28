@@ -340,6 +340,8 @@ Images are built **locally** (no CI runners needed), pushed to GitHub Container 
 3. `make deploy` syncs `deploy/docker-compose.yml` and `Caddyfile` to `/opt/respulse`, writes `IMAGE_TAG` into the server's `.env`, pulls and restarts the stack.
 4. Roll back with `make deploy TAG=<older sha>`.
 
+Without a registry login, `make deploy-direct` does steps 2-3 in one go by shipping the images over SSH (the previous tag must still exist on the server for rollbacks).
+
 The server `.env` needs `POSTGRES_*`, `JWT_SECRET`, `FASTSPRING_WEBHOOK_SECRET` (see `deploy/.env.example`).
 
 ---
@@ -355,6 +357,7 @@ The server `.env` needs `POSTGRES_*`, `JWT_SECRET`, `FASTSPRING_WEBHOOK_SECRET` 
 | `make build` | Rebuild Docker images |
 | `make ps` | Show container health and port statuses |
 | `make release` | Build both images locally, tag them with the git SHA and `latest`, push to the registry (needs a clean tree and `docker login ghcr.io`) |
+| `make deploy-direct` | Registry-free alternative: build locally, stream the images to the server over SSH (`docker save \| ssh docker load`) and roll out |
 | `make deploy` | Copy `deploy/` configs to the server, set `IMAGE_TAG`, `docker compose pull` and `up -d` (`TAG=<sha>` rolls back to an older release) |
 | `make seed` | Log in (`SEED_EMAIL`/`SEED_PASSWORD`, default demo owner) and populate the database with sample monitors |
 
