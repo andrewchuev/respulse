@@ -14,7 +14,6 @@ import {
   Zap,
   Sparkles,
   Check,
-  Copy,
   ArrowRight,
   ChevronDown,
   ChevronUp,
@@ -50,16 +49,9 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
   };
   // Playground state
   const [activeProtocol, setActiveProtocol] = useState<'http' | 'tcp' | 'ssl' | 'heartbeat' | 'alerts' | 'metrics'>('http');
-  const [copiedCmd, setCopiedCmd] = useState<string | null>(null);
 
   // FAQ accordion state
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-
-  const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedCmd(id);
-    setTimeout(() => setCopiedCmd(null), 2000);
-  };
 
   const toggleFaq = (idx: number) => {
     setOpenFaq(openFaq === idx ? null : idx);
@@ -181,21 +173,6 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
               <Activity className="h-4 w-4 text-emerald-400" />
               <span>Open Live Console</span>
             </Button>
-          </div>
-
-          {/* Quickstart Command Snippet */}
-          <div className="pt-4 flex items-center justify-center">
-            <div className="inline-flex items-center gap-3 bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-2 text-xs font-mono text-slate-300 shadow-xl backdrop-blur">
-              <span className="text-emerald-400 font-bold">$</span>
-              <span className="select-all">docker compose up -d</span>
-              <button
-                onClick={() => copyToClipboard('docker compose up -d', 'hero-clone')}
-                className="text-slate-400 hover:text-emerald-400 transition-colors p-1"
-                title="Copy launch command"
-              >
-                {copiedCmd === 'hero-clone' ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-              </button>
-            </div>
           </div>
 
           {/* Key Value Metrics Strip */}

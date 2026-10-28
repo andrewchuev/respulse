@@ -148,7 +148,7 @@
 ### 8. Product Promo & Tour Landing Page
 * **High-Impact SaaS Showcase:**
   * Accessible directly via `https://respulse.online?view=promo` (or local `https://respulse.wsl.local?view=promo`) or via the **Product Tour** navigation button in the top header.
-  * **Hero Section:** Systems-grade synthetic monitoring value proposition, 1-click Docker launch snippet, and animated real-time browser console mockup with simulated probes.
+  * **Hero Section:** Systems-grade synthetic monitoring value proposition, primary CTAs for registration and live console exploration, and animated real-time browser console mockup with simulated probes.
   * **Interactive Multi-Protocol Playground:** Tabbed live explorer covering HTTP/REST APIs, TCP sockets & databases, TLS certificate tracking, asynchronous worker heartbeats, and multi-channel alerts with executable curl examples.
   * **Architectural Deep Dive (Why Rust?):** Benchmark comparison matrix comparing ResPulse (Rust Axum + Tokio) against legacy NodeJS/Python engines (memory, zero GC jitter, thread concurrency, rustls memory safety).
   * **Two-Tier Transparent Pricing (Free & Pro $8/mo):** Simple, developer-friendly pricing:
