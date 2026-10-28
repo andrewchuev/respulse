@@ -5,10 +5,39 @@ use axum::{
 };
 
 use crate::api::monitors::AppState;
+use crate::auth::user_from_token;
+
+/// Prometheus scrapers send a static `Authorization: Bearer` credential: either the team's
+/// Ping Key (long-lived, fits `authorization.credentials`) or a user JWT.
+async fn scrape_team_id(state: &AppState, headers: &HeaderMap) -> Result<uuid::Uuid, (StatusCode, String)> {
+    let unauthorized = || (StatusCode::UNAUTHORIZED, "Unauthorized: bearer token required".to_string());
+
+    let token = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "))
+        .map(str::trim)
+        .filter(|t| !t.is_empty())
+        .ok_or_else(unauthorized)?;
+
+    if let Some(user) = user_from_token(&state.auth, &state.pool, token).await {
+        return Ok(user.team_id);
+    }
+
+    sqlx::query_scalar::<_, uuid::Uuid>("SELECT id FROM teams WHERE ping_key = $1")
+        .bind(token)
+        .fetch_optional(&state.pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+        .ok_or_else(unauthorized)
+}
 
 pub async fn get_prometheus_metrics(
     State(state): State<AppState>,
+    request_headers: HeaderMap,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let team_id = scrape_team_id(&state, &request_headers).await?;
+
     #[derive(sqlx::FromRow)]
     struct MonitorMetricRow {
         id: uuid::Uuid,
@@ -30,16 +59,19 @@ pub async fn get_prometheus_metrics(
             COALESCE(t.name, 'Default') as team_name
         FROM monitors m
         LEFT JOIN teams t ON t.id = m.team_id
+        WHERE m.team_id = $1
         ORDER BY m.name ASC
         "#
     )
+    .bind(team_id)
     .fetch_all(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     let (active_incidents,): (i64,) = sqlx::query_as(
-        "SELECT COUNT(*)::bigint FROM incidents WHERE status != 'RESOLVED'"
+        "SELECT COUNT(*)::bigint FROM incidents WHERE team_id = $1 AND status != 'RESOLVED'"
     )
+    .bind(team_id)
     .fetch_one(&state.pool)
     .await
     .unwrap_or((0,));

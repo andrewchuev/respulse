@@ -1,11 +1,16 @@
 use crate::api::monitors::AppState;
 use crate::auth::AuthUser;
-use crate::models::{ConfirmFastSpringPaymentRequest, FastSpringCheckoutConfig, PaymentTransaction};
+use crate::models::{FastSpringCheckoutConfig, PaymentTransaction, Team};
+use axum::body::Bytes;
 use axum::extract::State;
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use base64::engine::general_purpose::STANDARD as BASE64;
+use base64::Engine;
+use hmac::{Hmac, KeyInit, Mac};
 use serde_json::json;
+use sha2::Sha256;
 use std::env;
 use tracing::{error, info, warn};
 use uuid::Uuid;
@@ -16,13 +21,50 @@ const FASTSPRING_PRODUCT_DISPLAY: &str = "ResPulse Pro Plan";
 const PRO_PLAN_PRICE: f64 = 8.00;
 const PRO_PLAN_CURRENCY: &str = "USD";
 
+/// FastSpring signs every webhook body with HMAC-SHA256 and sends it base64-encoded here.
+const SIGNATURE_HEADER: &str = "x-fs-signature";
+
+fn is_live_mode() -> bool {
+    env::var("FASTSPRING_LIVE_MODE")
+        .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
+        .unwrap_or(false)
+}
+
+/// Webhook verification settings, resolved once at startup.
+pub struct WebhookConfig {
+    secret: Option<String>,
+}
+
+impl WebhookConfig {
+    pub fn from_env() -> Self {
+        let secret = env::var("FASTSPRING_WEBHOOK_SECRET").ok().filter(|s| !s.is_empty());
+        if secret.is_none() {
+            warn!("FASTSPRING_WEBHOOK_SECRET is not set: FastSpring webhooks will be rejected");
+        }
+        Self { secret }
+    }
+
+    fn verify(&self, body: &[u8], signature_b64: &str) -> bool {
+        let Some(secret) = self.secret.as_deref() else {
+            return false;
+        };
+        let Ok(signature) = BASE64.decode(signature_b64.trim()) else {
+            return false;
+        };
+        let Ok(mut mac) = Hmac::<Sha256>::new_from_slice(secret.as_bytes()) else {
+            return false;
+        };
+        mac.update(body);
+        // verify_slice compares in constant time.
+        mac.verify_slice(&signature).is_ok()
+    }
+}
+
 /// Returns FastSpring checkout configuration for the authenticated team.
 pub async fn get_fastspring_config(
     auth: AuthUser,
 ) -> Json<FastSpringCheckoutConfig> {
-    let is_live: bool = env::var("FASTSPRING_LIVE_MODE")
-        .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
-        .unwrap_or(false);
+    let is_live = is_live_mode();
 
     let store_domain = if is_live {
         format!("{}.onfastspring.com", FASTSPRING_STORE_ID)
@@ -54,95 +96,42 @@ pub async fn get_fastspring_config(
     })
 }
 
-/// Confirms FastSpring payment/order completion and upgrades the team to PRO.
+/// Reports whether the team's Pro upgrade has landed.
+///
+/// The plan is only ever upgraded by the signed FastSpring webhook; a client-supplied order
+/// reference proves nothing, so this endpoint never trusts the request body.
 pub async fn confirm_fastspring_payment(
     State(state): State<AppState>,
     auth: AuthUser,
-    Json(payload): Json<ConfirmFastSpringPaymentRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Response)> {
     auth.require_manage_team()?;
 
-    let tx_id = payload
-        .order_id
-        .or(payload.reference)
-        .or(payload.subscription_id)
-        .filter(|s| !s.trim().is_empty())
-        .unwrap_or_else(|| format!("FS-{}", Uuid::new_v4().simple()));
+    let team = sqlx::query_as::<_, Team>("SELECT * FROM teams WHERE id = $1")
+        .bind(auth.user.team_id)
+        .fetch_one(&state.pool)
+        .await
+        .map_err(|e| {
+            error!("Failed to load team for payment confirmation: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to load organization" })).into_response(),
+            )
+        })?;
 
-    let payer_email = payload
-        .payer_email
-        .filter(|s| !s.trim().is_empty())
-        .unwrap_or_else(|| auth.user.email.clone());
-
-    let recipient = format!("FastSpring ({})", FASTSPRING_STORE_ID);
-
-    // 1. Record transaction
-    let tx_record = sqlx::query_as::<_, PaymentTransaction>(
-        r#"
-        INSERT INTO payment_transactions (
-            team_id, provider, transaction_id, payer_email, recipient_email,
-            amount, currency, status, plan, billing_cycle, payload
-        )
-        VALUES ($1, 'FASTSPRING', $2, $3, $4, $5, $6, 'COMPLETED', 'PRO', 'MONTHLY', $7)
-        RETURNING *
-        "#,
-    )
-    .bind(auth.user.team_id)
-    .bind(&tx_id)
-    .bind(&payer_email)
-    .bind(&recipient)
-    .bind(PRO_PLAN_PRICE)
-    .bind(PRO_PLAN_CURRENCY)
-    .bind(json!({
-        "order_id": tx_id,
-        "product_path": FASTSPRING_PRODUCT_PATH,
-        "confirmed_by_user": auth.user.email,
-        "confirmed_at": chrono::Utc::now().to_rfc3339()
-    }))
-    .fetch_one(&state.pool)
-    .await
-    .map_err(|e| {
-        error!("Failed to record FastSpring transaction: {:?}", e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "error": format!("Database error: {}", e) })).into_response(),
-        )
-    })?;
-
-    // 2. Upgrade team to PRO plan
-    sqlx::query(
-        r#"
-        UPDATE teams
-        SET plan = 'PRO',
-            subscription_status = 'ACTIVE',
-            subscription_id = $1,
-            subscription_provider = 'FASTSPRING',
-            subscription_started_at = NOW()
-        WHERE id = $2
-        "#,
-    )
-    .bind(&tx_id)
-    .bind(auth.user.team_id)
-    .execute(&state.pool)
-    .await
-    .map_err(|e| {
-        error!("Failed to update team plan to PRO: {:?}", e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "error": format!("Database error: {}", e) })).into_response(),
-        )
-    })?;
-
-    info!(
-        "Team {} successfully upgraded to PRO plan via FastSpring order {}",
-        auth.user.team_id, tx_id
-    );
+    if team.plan != "PRO" {
+        return Err((
+            StatusCode::CONFLICT,
+            Json(json!({
+                "error": "Payment not confirmed yet. The plan upgrades automatically once FastSpring reports the order; try again in a minute."
+            }))
+            .into_response(),
+        ));
+    }
 
     Ok(Json(json!({
         "status": "ok",
         "plan": "PRO",
-        "message": "FastSpring order verified. Your organization has been upgraded to the Pro plan!",
-        "transaction": tx_record,
+        "message": "Your organization is on the Pro plan.",
         "provider": "FASTSPRING"
     })))
 }
@@ -150,11 +139,26 @@ pub async fn confirm_fastspring_payment(
 /// FastSpring Webhook listener for real-time order and subscription events.
 pub async fn fastspring_webhook(
     State(state): State<AppState>,
-    body: String,
+    headers: HeaderMap,
+    body: Bytes,
 ) -> StatusCode {
+    if state.webhook.secret.is_none() {
+        error!("Rejecting FastSpring webhook: FASTSPRING_WEBHOOK_SECRET is not configured");
+        return StatusCode::SERVICE_UNAVAILABLE;
+    }
+
+    let signature = headers
+        .get(SIGNATURE_HEADER)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    if !state.webhook.verify(&body, signature) {
+        warn!("Rejecting FastSpring webhook with missing or invalid signature");
+        return StatusCode::UNAUTHORIZED;
+    }
+
     info!("Received FastSpring webhook: {} bytes", body.len());
 
-    let parsed: Result<serde_json::Value, _> = serde_json::from_str(&body);
+    let parsed: Result<serde_json::Value, _> = serde_json::from_slice(&body);
     let events = match parsed {
         Ok(json) => {
             if let Some(events) = json.get("events").and_then(|e| e.as_array()) {
@@ -176,6 +180,12 @@ pub async fn fastspring_webhook(
         let data = event.get("data").unwrap_or(&event);
 
         info!("Processing FastSpring event: type={}", event_type);
+
+        // Test-store orders must never upgrade a team in live mode.
+        if is_live_mode() && data.get("live").and_then(|v| v.as_bool()) == Some(false) {
+            warn!("Ignoring non-live FastSpring event {} in live mode", event_type);
+            continue;
+        }
 
         let order_id = data.get("order")
             .or_else(|| data.get("id"))
@@ -306,4 +316,41 @@ pub async fn get_payment_history(
     })?;
 
     Ok(Json(records))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sign(secret: &str, body: &[u8]) -> String {
+        let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes()).unwrap();
+        mac.update(body);
+        BASE64.encode(mac.finalize().into_bytes())
+    }
+
+    fn config(secret: Option<&str>) -> WebhookConfig {
+        WebhookConfig { secret: secret.map(str::to_string) }
+    }
+
+    #[test]
+    fn accepts_valid_signature() {
+        let body = br#"{"events":[]}"#;
+        assert!(config(Some("s3cret")).verify(body, &sign("s3cret", body)));
+    }
+
+    #[test]
+    fn rejects_tampered_body_wrong_secret_and_garbage() {
+        let body = br#"{"events":[]}"#;
+        let cfg = config(Some("s3cret"));
+        assert!(!cfg.verify(br#"{"events":[1]}"#, &sign("s3cret", body)));
+        assert!(!cfg.verify(body, &sign("other", body)));
+        assert!(!cfg.verify(body, "not-base64!!"));
+        assert!(!cfg.verify(body, ""));
+    }
+
+    #[test]
+    fn fails_closed_without_secret() {
+        let body = b"{}";
+        assert!(!config(None).verify(body, &sign("anything", body)));
+    }
 }

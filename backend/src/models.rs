@@ -250,6 +250,7 @@ pub struct GlobalStats {
 pub enum WsMessage {
     MonitorUpdated(Monitor),
     CheckCompleted {
+        team_id: Uuid,
         monitor_id: Uuid,
         is_up: bool,
         response_time_ms: f64,
@@ -259,10 +260,22 @@ pub enum WsMessage {
     IncidentCreated(Incident),
     IncidentResolved(Incident),
     AlertDispatched {
+        team_id: Uuid,
         channel_name: String,
         status: String,
         event_type: String,
     },
+}
+
+impl WsMessage {
+    /// Tenant that owns the event; the WebSocket hub only forwards it to that team.
+    pub fn team_id(&self) -> Uuid {
+        match self {
+            WsMessage::MonitorUpdated(m) => m.team_id,
+            WsMessage::IncidentCreated(i) | WsMessage::IncidentResolved(i) => i.team_id,
+            WsMessage::CheckCompleted { team_id, .. } | WsMessage::AlertDispatched { team_id, .. } => *team_id,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
@@ -526,10 +539,3 @@ pub struct FastSpringCheckoutConfig {
     pub user_email: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ConfirmFastSpringPaymentRequest {
-    pub order_id: Option<String>,
-    pub reference: Option<String>,
-    pub subscription_id: Option<String>,
-    pub payer_email: Option<String>,
-}

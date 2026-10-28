@@ -5,10 +5,13 @@ import {
   createMonitor,
   createWebSocketConnection,
   deleteMonitor,
+  fetchAuthConfig,
   fetchAvailableUsers,
   fetchCurrentUser,
   fetchMonitors,
   fetchStats,
+  getAuthToken,
+  onUnauthorized,
   pauseMonitor,
   resumeMonitor,
   switchUser,
@@ -64,7 +67,15 @@ export function App() {
 
   const [currentView, setCurrentView] = useState<'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo'>(getViewFromLocation);
 
-  const changeView = (newView: 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo') => {
+  const requiresAuth = (view: string) =>
+    view === 'dashboard' || view === 'channels' || view === 'incidents' || view === 'team';
+
+  const changeView = (requested: 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo') => {
+    let newView = requested;
+    if (requiresAuth(newView) && !getAuthToken()) {
+      openAuth('login');
+      newView = 'promo';
+    }
     setCurrentView(newView);
     try {
       let targetPath = '/';
@@ -81,7 +92,8 @@ export function App() {
 
   useEffect(() => {
     const handlePopState = () => {
-      setCurrentView(getViewFromLocation());
+      const view = getViewFromLocation();
+      setCurrentView(requiresAuth(view) && !getAuthToken() ? 'promo' : view);
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -93,6 +105,7 @@ export function App() {
   const [availableUsers, setAvailableUsers] = useState<UserProfile[]>([]);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
+  const [demoMode, setDemoMode] = useState(false);
 
   const openAuth = (mode: 'login' | 'register') => {
     setAuthModalMode(mode);
@@ -142,10 +155,35 @@ export function App() {
   };
 
   useEffect(() => {
+    fetchAuthConfig()
+      .then((cfg) => setDemoMode(cfg.demo_mode))
+      .catch(() => setDemoMode(false));
+
+    // Any 401 from the API means the session is gone: return to the landing page and ask to sign in.
+    const unsubscribe = onUnauthorized(() => {
+      setCurrentUser(null);
+      setAvailableUsers([]);
+      changeView('promo');
+      openAuth('login');
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    if (!getAuthToken()) {
+      setLoading(false);
+      // Deep link to a protected view without a session: bounce to the landing page and open sign-in.
+      if (requiresAuth(currentView)) changeView(currentView);
+      return;
+    }
     loadUserData();
     loadData();
+  }, []);
 
-    // Setup live WebSocket stream
+  // Reconnect the live stream whenever the signed-in user changes, so it carries the right tenant.
+  useEffect(() => {
+    if (!currentUser) return;
+
     const unsubscribe = createWebSocketConnection((event) => {
       if (event.type === 'MonitorUpdated') {
         setMonitors((prev) =>
@@ -188,7 +226,7 @@ export function App() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [currentUser?.id]);
 
   const handleSwitchUser = async (email: string) => {
     try {
@@ -267,6 +305,7 @@ export function App() {
           isOpen={isAuthModalOpen}
           onClose={() => setIsAuthModalOpen(false)}
           initialMode={authModalMode}
+          demoMode={demoMode}
           onSuccess={(user) => {
             setCurrentUser(user);
             loadData();
@@ -303,6 +342,7 @@ export function App() {
           isOpen={isAuthModalOpen}
           onClose={() => setIsAuthModalOpen(false)}
           initialMode={authModalMode}
+          demoMode={demoMode}
           onSuccess={(user) => {
             setCurrentUser(user);
             loadData();
@@ -329,6 +369,7 @@ export function App() {
         totalActive={monitors.filter((m) => !m.is_paused).length}
         currentUser={currentUser}
         availableUsers={availableUsers}
+        demoMode={demoMode}
         onSwitchUser={handleSwitchUser}
         onOpenAuth={openAuth}
         onSignOut={handleSignOut}

@@ -10,6 +10,7 @@ interface HeaderProps {
   totalActive: number;
   currentUser: UserProfile | null;
   availableUsers: UserProfile[];
+  demoMode: boolean;
   onSwitchUser: (email: string) => void;
   onOpenAuth?: (mode: 'login' | 'register') => void;
   onSignOut?: () => void;
@@ -23,6 +24,7 @@ export const Header: React.FC<HeaderProps> = ({
   totalActive,
   currentUser,
   availableUsers,
+  demoMode,
   onSwitchUser,
   onOpenAuth,
   onSignOut,
@@ -270,7 +272,8 @@ export const Header: React.FC<HeaderProps> = ({
                   </div>
                 )}
 
-                {/* Role Switcher for Demo / B2B evaluation */}
+                {/* Role Switcher for Demo / B2B evaluation; the server only honours it in demo mode */}
+                {demoMode && (
                 <div className="p-2 space-y-1.5">
                   <span className="text-[10px] uppercase font-mono tracking-wider text-muted-foreground block">
                     Switch Active User / Role (RBAC)
@@ -310,6 +313,7 @@ export const Header: React.FC<HeaderProps> = ({
                     })}
                   </div>
                 </div>
+                )}
 
                 <div className="p-1.5 pt-2 flex items-center justify-between border-t border-white/5">
                   <button

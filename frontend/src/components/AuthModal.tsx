@@ -28,6 +28,7 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialMode?: 'login' | 'register';
+  demoMode?: boolean;
   onSuccess: (user: UserProfile) => void;
 }
 
@@ -35,6 +36,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
   initialMode = 'login',
+  demoMode = false,
   onSuccess,
 }) => {
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
@@ -207,7 +209,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <Lock className="h-3.5 w-3.5 text-emerald-400" />
                 Password
               </label>
-              {mode === 'login' && (
+              {mode === 'login' && demoMode && (
                 <span className="text-[11px] text-slate-500 hover:text-emerald-400 cursor-pointer">
                   Demo password: <code className="text-emerald-400 font-mono">password123</code>
                 </span>
@@ -259,6 +261,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         </form>
 
         {/* Quick Demo Personas Login */}
+        {demoMode && (
         <div className="mt-5 pt-4 border-t border-white/5 space-y-2.5">
           <div className="flex items-center justify-between text-[11px] text-slate-400 font-medium">
             <span className="flex items-center gap-1.5">
@@ -300,6 +303,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </button>
           </div>
         </div>
+        )}
       </DialogContent>
     </Dialog>
   );

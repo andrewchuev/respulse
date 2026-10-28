@@ -370,6 +370,7 @@ pub async fn execute_single_probe(
     }
 
     let _ = tx.send(WsMessage::CheckCompleted {
+        team_id: monitor.team_id,
         monitor_id: monitor.id,
         is_up: probe_result.is_up,
         response_time_ms: probe_result.response_time_ms,

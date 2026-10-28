@@ -1,4 +1,5 @@
-use crate::auth::AuthUser;
+use crate::api::payments::WebhookConfig;
+use crate::auth::{AuthConfig, AuthUser};
 use crate::db::DbPool;
 use crate::models::{
     CheckResult, CreateMonitorRequest, LatencyPoint, Monitor, MonitorWithStats,
@@ -22,6 +23,8 @@ pub struct AppState {
     pub pool: DbPool,
     pub tx: Sender<WsMessage>,
     pub http_client: Arc<Client>,
+    pub auth: Arc<AuthConfig>,
+    pub webhook: Arc<WebhookConfig>,
 }
 
 #[derive(FromRow)]

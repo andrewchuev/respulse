@@ -140,8 +140,9 @@
   * Transparent visual matrix displaying exact capabilities across 11 granular permissions (monitors, bulk actions, alerts, incidents, post-mortems, team management).
 * **Team & Organization Workspace:**
   * Dedicated **Team & RBAC** management view with member rosters, role dropdown selectors, member deletion, and *Invite Member* modal dialogs.
-* **Instant B2B Demo Persona Switcher:**
+* **Instant B2B Demo Persona Switcher (`DEMO_MODE=true` only):**
   * Profile dropdown in the top header allows instant switching between pre-seeded enterprise accounts (Owner, Admin, Engineer, Viewer) for live stakeholder demonstrations.
+  * Disabled by default: without `DEMO_MODE` the switcher, the 1-click sandbox login and the seeded demo passwords are all off.
 * **Context-Aware UI Safeguards:**
   * Prominent yellow *"Viewer Mode (Read-Only)"* banner automatically alerts non-privileged users.
   * Interactive action buttons (Add Monitor, Declare Incident, Add Channel, Pause/Resume, Delete) are gracefully disabled with informative tooltips explaining role requirements.
@@ -176,7 +177,8 @@
   * **Cryptographically Signed JWT Tokens:** Stateless JWT tokens issued via `jsonwebtoken` (HS256) valid for 7 days, carrying identity, organization ID, and role.
   * **Login Endpoint (`POST /api/auth/login`):** Validates credentials, updates login timestamp, and issues JWT tokens.
   * **Glassmorphic Auth Modal (`AuthModal.tsx`):** Seamless sign in / registration dialog with brand glow, error alerts, password reveal, and 1-click sandbox access.
-  * **Clean Session Management:** Tokens stored securely in client session with header extraction and instant "Sign Out" capability.
+  * **Strict Authentication:** Every API call except the public ones (health, status page, badges, heartbeat pings, `/api/auth/*`) requires `Authorization: Bearer <JWT>`; missing, forged or expired tokens get `401`. The server refuses to start without a `JWT_SECRET` of at least 32 characters.
+  * **Session Management:** The JWT is kept in `localStorage`; any `401` clears it and returns the user to the sign-in dialog. The WebSocket stream authenticates with the same token in its first frame and only delivers events of the user's own team.
 
 ---
 
@@ -325,7 +327,7 @@ ResPulse comes pre-configured with a default enterprise organization (`Acme Glob
 | 👁️ | **Dana Scully** | `dana@respulse.internal` | `VIEWER` | Read-only dashboards, latency charts, incident history (mutations return `403`) |
 
 > [!TIP]
-> Use the profile dropdown in the top-right header to switch between personas instantly in one click and observe the dynamic UI changes and server permission enforcement.
+> Demo personas are only available when the backend runs with `DEMO_MODE=true` (the default in the local `docker-compose.yml`, off in `deploy/`). Use the profile dropdown in the top-right header to switch between them in one click and observe the dynamic UI changes and server permission enforcement. The seeded accounts accept the demo password `password123` in this mode only.
 
 ---
 
@@ -339,13 +341,13 @@ ResPulse comes pre-configured with a default enterprise organization (`Acme Glob
 | `make logs` | Stream live logs from all containers |
 | `make build` | Rebuild Docker images |
 | `make ps` | Show container health and port statuses |
-| `make seed` | Populate database with sample monitors |
+| `make seed` | Log in (`SEED_EMAIL`/`SEED_PASSWORD`, default demo owner) and populate the database with sample monitors |
 
 ---
 
 ## 📡 REST API Reference
 
-All API routes are served under the `/api` prefix. Authenticated requests accept the user identity via `x-user-email` header or Bearer token (defaults to `alice@respulse.internal` if omitted).
+All API routes are served under the `/api` prefix. Authenticated routes require `Authorization: Bearer <JWT>` obtained from `/api/auth/login` or `/api/auth/register`; requests without a valid token get `401`. Public routes: `/api/health`, `/api/auth/*`, `/api/status-page`, badges and heartbeat/ping endpoints.
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
@@ -353,16 +355,17 @@ All API routes are served under the `/api` prefix. Authenticated requests accept
 | `POST` | `/api/auth/register` | Self-service registration (creates organization workspace + Owner with bcrypt password) |
 | `POST` | `/api/auth/login` | Authenticate with email/password and obtain signed JWT token |
 | `GET` | `/api/auth/me` | Current authenticated user profile, team details & permissions (Bearer JWT) |
-| `GET` | `/api/auth/users` | List available demo enterprise user personas for switching |
-| `POST` | `/api/auth/switch-user` | Switch current active persona identity |
+| `GET` | `/api/auth/config` | Public auth capabilities (`demo_mode`) used by the UI |
+| `GET` | `/api/auth/users` | List the members of the caller's team (persona switcher in demo mode) |
+| `POST` | `/api/auth/switch-user` | Passwordless login as a seeded demo persona (`DEMO_MODE=true` only, otherwise `404`) |
 | `GET` | `/api/team/members` | List all team members of the active enterprise organization |
 | `POST` | `/api/team/members` | Invite a new team member with role (`OWNER`/`ADMIN` required) |
 | `PUT` | `/api/team/members/:id/role` | Update a team member's role (`OWNER`/`ADMIN` required) |
 | `DELETE` | `/api/team/members/:id` | Remove a member from the team (`OWNER`/`ADMIN` required) |
-| `POST`/`PUT` | `/api/team/plan` | Update organization subscription plan (`FREE` or `PRO`, `OWNER`/`ADMIN` required) |
+| `POST`/`PUT` | `/api/team/plan` | Change plan (`OWNER`/`ADMIN`); downgrade to `FREE` always, upgrade to `PRO` only in demo mode (otherwise use checkout) |
 | `GET` | `/api/payments/fastspring/config` | Get FastSpring checkout configuration ($8/mo) for store `reslab` |
-| `POST` | `/api/payments/fastspring/confirm` | Confirm FastSpring order and activate Pro plan for the team |
-| `POST` | `/api/payments/fastspring/webhook` | FastSpring Server Webhook handler (order & subscription events) |
+| `POST` | `/api/payments/fastspring/confirm` | Report whether the Pro upgrade has landed (`200` if PRO, `409` while the webhook is pending); never upgrades by itself |
+| `POST` | `/api/payments/fastspring/webhook` | FastSpring webhook (order & subscription events); requires a valid `X-FS-Signature` HMAC-SHA256 (base64) over the raw body, `503` if `FASTSPRING_WEBHOOK_SECRET` is unset |
 | `GET` | `/api/payments/history` | List payment transaction history and invoices for team |
 | `GET` | `/api/monitors` | List all monitors with 24h/7d/30d uptime & history bars |
 | `POST` | `/api/monitors` | Create a new monitor (HTTP, PORT, SSL, HEARTBEAT) |
@@ -386,7 +389,7 @@ All API routes are served under the `/api` prefix. Authenticated requests accept
 | `POST` | `/api/incidents/:id/updates` | Append a new live status update to the incident timeline |
 | `GET` | `/api/stats` | Global metrics (total, operational, down, average latency) |
 | `GET` | `/api/status-page` | Public status page data |
-| `GET` | `/api/metrics` / `/metrics` | Prometheus metrics scrape endpoint (`respulse_monitors_total`, statuses, latencies, incidents) |
+| `GET` | `/api/metrics` / `/metrics` | Prometheus scrape endpoint scoped to one team; send `Authorization: Bearer <team Ping Key or JWT>` (`respulse_monitors_total`, statuses, latencies, incidents) |
 | `GET` | `/api/badge/:token[.svg]` | Vector SVG status badge by monitor UUID or heartbeat token |
 | `GET` | `/api/badge/:ping_key/:slug[.svg]` | Vector SVG status badge by team Ping Key and monitor slug (supports `?label=...`) |
 | `GET`/`POST` | `/api/heartbeat/:token` | Push endpoint: signal task success / heartbeat ping |
@@ -396,7 +399,7 @@ All API routes are served under the `/api` prefix. Authenticated requests accept
 | `GET`/`POST` | `/api/heartbeat/:token/log` | Push endpoint: record diagnostic log without changing UP/DOWN state |
 | `GET`/`POST` | `/api/ping/:ping_key/:slug` | Slug push endpoint: human-readable ping (append `?create=1` to auto-provision) |
 | `GET`/`POST` | `/api/ping/:ping_key/:slug/:action` | Slug push endpoint: lifecycle actions (`start`, `fail`, `0`, `1`, `log`) |
-| `GET` | `/ws` | WebSocket stream for live events and status updates |
+| `GET` | `/ws` | WebSocket stream for live events; first frame must be `{"type":"auth","token":"<JWT>"}` (closed with `1008` otherwise), events are filtered to the caller's team |
 
 ---
 
@@ -407,3 +410,9 @@ All API routes are served under the `/api` prefix. Authenticated requests accept
 | `DATABASE_URL` | `postgres://respulse:respulse@respulse-db:5432/respulse` | PostgreSQL connection string |
 | `PORT` | `8080` | Port on which the Rust Axum API listens |
 | `RUST_LOG` | `respulse_api=debug,tower_http=info` | Logging filter level |
+| `JWT_SECRET` | *required* | HS256 signing key, at least 32 characters (`openssl rand -hex 32`); the server exits if missing or short |
+| `DEMO_MODE` | `false` | Enables demo persona switching, 1-click sandbox login and seeded demo passwords |
+| `FASTSPRING_WEBHOOK_SECRET` | *unset* | HMAC SHA256 secret configured on the FastSpring webhook; webhooks are rejected without it |
+| `FASTSPRING_LIVE_MODE` | `false` | Use the live FastSpring storefront and ignore non-live (test) orders |
+| `APP_URL` | — | Public base URL of the deployment |
+| `APP_USER_AGENT` | `ResPulse/1.0 (+https://respulse.online)` | User-Agent sent by HTTP probes |

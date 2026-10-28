@@ -268,6 +268,14 @@ pub async fn update_team_plan(
         ));
     }
 
+    // Paid upgrades go through the signed FastSpring webhook; self-service PRO is a demo-only shortcut.
+    if plan_upper == "PRO" && !state.auth.demo_mode {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "Upgrade to Pro through checkout" })).into_response(),
+        ));
+    }
+
     sqlx::query("UPDATE teams SET plan = $1 WHERE id = $2")
         .bind(&plan_upper)
         .bind(auth.user.team_id)

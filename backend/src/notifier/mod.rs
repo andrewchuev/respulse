@@ -108,6 +108,7 @@ pub async fn dispatch_alert(
 
             if let Some(ref sender) = tx {
                 let _ = sender.send(WsMessage::AlertDispatched {
+                    team_id: m.team_id,
                     channel_name: ch.name.clone(),
                     status: status.to_string(),
                     event_type: event_name.to_string(),

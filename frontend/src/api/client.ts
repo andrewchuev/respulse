@@ -30,50 +30,53 @@ import {
 
 const API_BASE = '/api';
 
-// RBAC user context & JWT token stored in localStorage
-let jwtToken: string | null = localStorage.getItem('respulse_jwt_token');
-let activeUserEmail: string = localStorage.getItem('respulse_active_email') || 'alice@respulse.internal';
+const TOKEN_KEY = 'respulse_jwt_token';
+
+let unauthorizedHandler: (() => void) | null = null;
+
+/** Registers a callback fired when the API rejects the current session (missing or expired token). */
+export function onUnauthorized(handler: () => void): () => void {
+  unauthorizedHandler = handler;
+  return () => {
+    if (unauthorizedHandler === handler) unauthorizedHandler = null;
+  };
+}
 
 export function getAuthToken(): string | null {
-  return localStorage.getItem('respulse_jwt_token');
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
 }
 
-export function getActiveUserEmail(): string {
-  return activeUserEmail;
-}
-
-export function setAuthSession(token: string, email: string) {
-  jwtToken = token;
-  activeUserEmail = email;
-  localStorage.setItem('respulse_jwt_token', token);
-  localStorage.setItem('respulse_active_email', email);
+export function setAuthSession(token: string) {
+  localStorage.setItem(TOKEN_KEY, token);
 }
 
 export function clearAuthSession() {
-  jwtToken = null;
-  activeUserEmail = '';
-  localStorage.removeItem('respulse_jwt_token');
+  localStorage.removeItem(TOKEN_KEY);
+  // Leftover from the removed x-user-email persona mechanism.
   localStorage.removeItem('respulse_active_email');
 }
 
-export function setActiveUserEmail(email: string) {
-  activeUserEmail = email;
-  localStorage.setItem('respulse_active_email', email);
-}
-
 function authHeaders(custom: Record<string, string> = {}): Record<string, string> {
-  const headers: Record<string, string> = {
-    ...custom,
-  };
-  const token = localStorage.getItem('respulse_jwt_token') || jwtToken;
+  const headers: Record<string, string> = { ...custom };
+  const token = getAuthToken();
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  const email = localStorage.getItem('respulse_active_email') || activeUserEmail;
-  if (email) {
-    headers['x-user-email'] = email;
-  }
   return headers;
+}
+
+/** fetch wrapper that drops the session and notifies the app when the API answers 401. */
+async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const res = await fetch(input, init);
+  if (res.status === 401) {
+    clearAuthSession();
+    unauthorizedHandler?.();
+  }
+  return res;
 }
 
 // -----------------------------------------------------------------------------
@@ -91,7 +94,7 @@ export async function registerUser(payload: RegisterPayload): Promise<AuthRespon
     throw new Error(err.error || 'Registration failed');
   }
   const data: AuthResponse = await res.json();
-  setAuthSession(data.token, data.user.email);
+  setAuthSession(data.token);
   return data;
 }
 
@@ -106,12 +109,12 @@ export async function loginUser(payload: LoginPayload): Promise<AuthResponse> {
     throw new Error(err.error || 'Invalid email or password');
   }
   const data: AuthResponse = await res.json();
-  setAuthSession(data.token, data.user.email);
+  setAuthSession(data.token);
   return data;
 }
 
 export async function fetchCurrentUser(): Promise<UserProfile> {
-  const res = await fetch(`${API_BASE}/auth/me`, {
+  const res = await apiFetch(`${API_BASE}/auth/me`, {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error('Failed to fetch current user profile');
@@ -119,27 +122,30 @@ export async function fetchCurrentUser(): Promise<UserProfile> {
 }
 
 export async function fetchAvailableUsers(): Promise<UserProfile[]> {
-  const res = await fetch(`${API_BASE}/auth/users`, {
+  const res = await apiFetch(`${API_BASE}/auth/users`, {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error('Failed to fetch available demo users');
   return res.json();
 }
 
+export async function fetchAuthConfig(): Promise<{ demo_mode: boolean }> {
+  const res = await fetch(`${API_BASE}/auth/config`);
+  if (!res.ok) return { demo_mode: false };
+  return res.json();
+}
+
+/** Passwordless login as a seeded demo persona; the server only allows it in demo mode. */
 export async function switchUser(email: string): Promise<UserProfile> {
   const res = await fetch(`${API_BASE}/auth/switch-user`, {
     method: 'POST',
-    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
   });
-  if (!res.ok) throw new Error('Failed to switch user');
-  const data = await res.json();
-  if (data.token && data.user) {
-    setAuthSession(data.token, data.user.email);
-    return data.user;
-  }
-  setActiveUserEmail(email);
-  return data;
+  if (!res.ok) throw new Error('Demo login is not available');
+  const data: AuthResponse = await res.json();
+  setAuthSession(data.token);
+  return data.user;
 }
 
 // -----------------------------------------------------------------------------
@@ -147,7 +153,7 @@ export async function switchUser(email: string): Promise<UserProfile> {
 // -----------------------------------------------------------------------------
 
 export async function fetchTeamMembers(): Promise<TeamMember[]> {
-  const res = await fetch(`${API_BASE}/team/members`, {
+  const res = await apiFetch(`${API_BASE}/team/members`, {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error('Failed to fetch team members');
@@ -155,7 +161,7 @@ export async function fetchTeamMembers(): Promise<TeamMember[]> {
 }
 
 export async function inviteTeamMember(payload: InviteMemberPayload): Promise<TeamMember> {
-  const res = await fetch(`${API_BASE}/team/members`, {
+  const res = await apiFetch(`${API_BASE}/team/members`, {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
@@ -168,7 +174,7 @@ export async function inviteTeamMember(payload: InviteMemberPayload): Promise<Te
 }
 
 export async function updateMemberRole(memberId: string, role: UserRole): Promise<TeamMember> {
-  const res = await fetch(`${API_BASE}/team/members/${memberId}/role`, {
+  const res = await apiFetch(`${API_BASE}/team/members/${memberId}/role`, {
     method: 'PUT',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ role }),
@@ -181,7 +187,7 @@ export async function updateMemberRole(memberId: string, role: UserRole): Promis
 }
 
 export async function deleteTeamMember(memberId: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/team/members/${memberId}`, {
+  const res = await apiFetch(`${API_BASE}/team/members/${memberId}`, {
     method: 'DELETE',
     headers: authHeaders(),
   });
@@ -196,7 +202,7 @@ export async function deleteTeamMember(memberId: string): Promise<void> {
 // -----------------------------------------------------------------------------
 
 export async function fetchMonitors(): Promise<MonitorWithStats[]> {
-  const res = await fetch(`${API_BASE}/monitors`, {
+  const res = await apiFetch(`${API_BASE}/monitors`, {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error('Failed to fetch monitors');
@@ -204,7 +210,7 @@ export async function fetchMonitors(): Promise<MonitorWithStats[]> {
 }
 
 export async function fetchMonitor(id: string): Promise<MonitorWithStats> {
-  const res = await fetch(`${API_BASE}/monitors/${id}`, {
+  const res = await apiFetch(`${API_BASE}/monitors/${id}`, {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error('Failed to fetch monitor details');
@@ -212,7 +218,7 @@ export async function fetchMonitor(id: string): Promise<MonitorWithStats> {
 }
 
 export async function createMonitor(payload: CreateMonitorPayload): Promise<Monitor> {
-  const res = await fetch(`${API_BASE}/monitors`, {
+  const res = await apiFetch(`${API_BASE}/monitors`, {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
@@ -225,7 +231,7 @@ export async function createMonitor(payload: CreateMonitorPayload): Promise<Moni
 }
 
 export async function updateMonitor(id: string, payload: UpdateMonitorPayload): Promise<Monitor> {
-  const res = await fetch(`${API_BASE}/monitors/${id}`, {
+  const res = await apiFetch(`${API_BASE}/monitors/${id}`, {
     method: 'PUT',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
@@ -238,7 +244,7 @@ export async function updateMonitor(id: string, payload: UpdateMonitorPayload): 
 }
 
 export async function deleteMonitor(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/monitors/${id}`, {
+  const res = await apiFetch(`${API_BASE}/monitors/${id}`, {
     method: 'DELETE',
     headers: authHeaders(),
   });
@@ -249,7 +255,7 @@ export async function deleteMonitor(id: string): Promise<void> {
 }
 
 export async function pauseMonitor(id: string): Promise<Monitor> {
-  const res = await fetch(`${API_BASE}/monitors/${id}/pause`, {
+  const res = await apiFetch(`${API_BASE}/monitors/${id}/pause`, {
     method: 'POST',
     headers: authHeaders(),
   });
@@ -261,7 +267,7 @@ export async function pauseMonitor(id: string): Promise<Monitor> {
 }
 
 export async function resumeMonitor(id: string): Promise<Monitor> {
-  const res = await fetch(`${API_BASE}/monitors/${id}/resume`, {
+  const res = await apiFetch(`${API_BASE}/monitors/${id}/resume`, {
     method: 'POST',
     headers: authHeaders(),
   });
@@ -273,7 +279,7 @@ export async function resumeMonitor(id: string): Promise<Monitor> {
 }
 
 export async function triggerTest(id: string): Promise<Monitor> {
-  const res = await fetch(`${API_BASE}/monitors/${id}/test`, {
+  const res = await apiFetch(`${API_BASE}/monitors/${id}/test`, {
     method: 'POST',
     headers: authHeaders(),
   });
@@ -285,7 +291,7 @@ export async function triggerTest(id: string): Promise<Monitor> {
 }
 
 export async function bulkAction(payload: BulkActionPayload): Promise<BulkActionResponse> {
-  const res = await fetch(`${API_BASE}/monitors/bulk`, {
+  const res = await apiFetch(`${API_BASE}/monitors/bulk`, {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
@@ -298,7 +304,7 @@ export async function bulkAction(payload: BulkActionPayload): Promise<BulkAction
 }
 
 export async function fetchStats(): Promise<GlobalStats> {
-  const res = await fetch(`${API_BASE}/stats`, {
+  const res = await apiFetch(`${API_BASE}/stats`, {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error('Failed to fetch stats');
@@ -310,7 +316,7 @@ export async function fetchStats(): Promise<GlobalStats> {
 // -----------------------------------------------------------------------------
 
 export async function fetchIncidents(): Promise<IncidentWithDetails[]> {
-  const res = await fetch(`${API_BASE}/incidents`, {
+  const res = await apiFetch(`${API_BASE}/incidents`, {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error('Failed to fetch incidents');
@@ -318,7 +324,7 @@ export async function fetchIncidents(): Promise<IncidentWithDetails[]> {
 }
 
 export async function fetchIncident(id: string): Promise<IncidentWithDetails> {
-  const res = await fetch(`${API_BASE}/incidents/${id}`, {
+  const res = await apiFetch(`${API_BASE}/incidents/${id}`, {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error('Failed to fetch incident details');
@@ -326,7 +332,7 @@ export async function fetchIncident(id: string): Promise<IncidentWithDetails> {
 }
 
 export async function updateIncident(id: string, payload: UpdateIncidentPayload): Promise<Incident> {
-  const res = await fetch(`${API_BASE}/incidents/${id}`, {
+  const res = await apiFetch(`${API_BASE}/incidents/${id}`, {
     method: 'PUT',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
@@ -339,7 +345,7 @@ export async function updateIncident(id: string, payload: UpdateIncidentPayload)
 }
 
 export async function addIncidentUpdate(id: string, payload: AddIncidentUpdatePayload): Promise<IncidentUpdate> {
-  const res = await fetch(`${API_BASE}/incidents/${id}/updates`, {
+  const res = await apiFetch(`${API_BASE}/incidents/${id}/updates`, {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
@@ -352,7 +358,7 @@ export async function addIncidentUpdate(id: string, payload: AddIncidentUpdatePa
 }
 
 export async function createManualIncident(payload: CreateManualIncidentPayload): Promise<IncidentWithDetails> {
-  const res = await fetch(`${API_BASE}/incidents`, {
+  const res = await apiFetch(`${API_BASE}/incidents`, {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
@@ -375,7 +381,7 @@ export async function fetchStatusPage(): Promise<PublicStatusPage> {
 // -----------------------------------------------------------------------------
 
 export async function fetchChannels(): Promise<NotificationChannel[]> {
-  const res = await fetch(`${API_BASE}/notifications`, {
+  const res = await apiFetch(`${API_BASE}/notifications`, {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error('Failed to fetch notification channels');
@@ -383,7 +389,7 @@ export async function fetchChannels(): Promise<NotificationChannel[]> {
 }
 
 export async function createChannel(payload: CreateChannelPayload): Promise<NotificationChannel> {
-  const res = await fetch(`${API_BASE}/notifications`, {
+  const res = await apiFetch(`${API_BASE}/notifications`, {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
@@ -399,7 +405,7 @@ export async function updateChannel(
   id: string,
   payload: Partial<CreateChannelPayload>
 ): Promise<NotificationChannel> {
-  const res = await fetch(`${API_BASE}/notifications/${id}`, {
+  const res = await apiFetch(`${API_BASE}/notifications/${id}`, {
     method: 'PUT',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
@@ -412,7 +418,7 @@ export async function updateChannel(
 }
 
 export async function deleteChannel(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/notifications/${id}`, {
+  const res = await apiFetch(`${API_BASE}/notifications/${id}`, {
     method: 'DELETE',
     headers: authHeaders(),
   });
@@ -423,7 +429,7 @@ export async function deleteChannel(id: string): Promise<void> {
 }
 
 export async function testChannel(id: string): Promise<{ success: boolean; message: string; error?: string }> {
-  const res = await fetch(`${API_BASE}/notifications/${id}/test`, {
+  const res = await apiFetch(`${API_BASE}/notifications/${id}/test`, {
     method: 'POST',
     headers: authHeaders(),
   });
@@ -431,7 +437,7 @@ export async function testChannel(id: string): Promise<{ success: boolean; messa
 }
 
 export async function fetchAlertLogs(): Promise<AlertLogWithDetails[]> {
-  const res = await fetch(`${API_BASE}/notifications/logs`, {
+  const res = await apiFetch(`${API_BASE}/notifications/logs`, {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error('Failed to fetch alert delivery logs');
@@ -440,7 +446,7 @@ export async function fetchAlertLogs(): Promise<AlertLogWithDetails[]> {
 
 // Payments & FastSpring
 export async function fetchFastSpringConfig(): Promise<FastSpringCheckoutConfig> {
-  const res = await fetch(`${API_BASE}/payments/fastspring/config`, {
+  const res = await apiFetch(`${API_BASE}/payments/fastspring/config`, {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error('Failed to fetch FastSpring configuration');
@@ -448,20 +454,20 @@ export async function fetchFastSpringConfig(): Promise<FastSpringCheckoutConfig>
 }
 
 export async function confirmFastSpringPayment(payload: ConfirmFastSpringPaymentPayload): Promise<any> {
-  const res = await fetch(`${API_BASE}/payments/fastspring/confirm`, {
+  const res = await apiFetch(`${API_BASE}/payments/fastspring/confirm`, {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(errorText || 'Failed to confirm FastSpring payment');
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to confirm FastSpring payment');
   }
   return res.json();
 }
 
 export async function fetchPaymentHistory(): Promise<PaymentTransaction[]> {
-  const res = await fetch(`${API_BASE}/payments/history`, {
+  const res = await apiFetch(`${API_BASE}/payments/history`, {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error('Failed to fetch payment history');
@@ -472,13 +478,25 @@ export function createWebSocketConnection(onMessage: (data: any) => void) {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const host = window.location.host;
   const wsUrl = `${protocol}//${host}/ws`;
+  // Server closes with 1008 (policy violation) when the token is rejected.
+  const POLICY_VIOLATION = 1008;
 
   let ws: WebSocket | null = null;
   let retryTimer: any = null;
+  let stopped = false;
+
+  function scheduleReconnect() {
+    if (!stopped) retryTimer = setTimeout(connect, 3000);
+  }
 
   function connect() {
+    const token = getAuthToken();
+    if (!token) return;
+
     try {
       ws = new WebSocket(wsUrl);
+      // The JWT is sent as the first frame rather than in the URL to keep it out of access logs.
+      ws.onopen = () => ws?.send(JSON.stringify({ type: 'auth', token }));
       ws.onmessage = (event) => {
         try {
           const parsed = JSON.parse(event.data);
@@ -488,21 +506,22 @@ export function createWebSocketConnection(onMessage: (data: any) => void) {
         }
       };
 
-      ws.onclose = () => {
-        retryTimer = setTimeout(connect, 3000);
+      ws.onclose = (event) => {
+        if (event.code !== POLICY_VIOLATION) scheduleReconnect();
       };
 
       ws.onerror = () => {
         ws?.close();
       };
     } catch (e) {
-      retryTimer = setTimeout(connect, 3000);
+      scheduleReconnect();
     }
   }
 
   connect();
 
   return () => {
+    stopped = true;
     clearTimeout(retryTimer);
     ws?.close();
   };

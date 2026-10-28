@@ -27,6 +27,10 @@ services:
       DATABASE_URL: postgres://respulse:respulse@respulse-db:5432/respulse
       PORT: 8080
       RUST_LOG: respulse_api=debug,tower_http=info
+      # Local development only; production must set its own secrets in deploy/.env
+      JWT_SECRET: ${JWT_SECRET:-local-dev-only-jwt-secret-change-me-0123456789}
+      DEMO_MODE: ${DEMO_MODE:-true}
+      FASTSPRING_WEBHOOK_SECRET: ${FASTSPRING_WEBHOOK_SECRET:-}
     depends_on:
       respulse-db:
         condition: service_healthy

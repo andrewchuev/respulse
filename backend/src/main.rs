@@ -6,13 +6,15 @@ mod notifier;
 mod probe;
 
 use api::monitors::AppState;
+use api::payments::WebhookConfig;
+use auth::AuthConfig;
 use reqwest::Client;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::broadcast;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
-use tracing::info;
+use tracing::{info, warn};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
@@ -48,10 +50,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .expect("Failed to build HTTP client"),
     );
 
+    let auth = Arc::new(AuthConfig::from_env()?);
+    if auth.demo_mode {
+        warn!("DEMO_MODE is enabled: passwordless persona login and demo passwords are active");
+    }
+
     let state = AppState {
         pool: pool.clone(),
         tx: tx.clone(),
         http_client,
+        auth,
+        webhook: Arc::new(WebhookConfig::from_env()),
     };
 
     // Spawn probe background scheduler

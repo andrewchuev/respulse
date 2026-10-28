@@ -1,5 +1,5 @@
 use crate::api::monitors::AppState;
-use crate::auth::{create_jwt, hash_password, verify_password, AuthUser};
+use crate::auth::{hash_password, AuthUser};
 use crate::models::{
     AuthResponse, LoginRequest, RegisterRequest, SwitchUserRequest, Team, User, UserProfile,
     UserRole,
@@ -123,7 +123,7 @@ pub async fn register(
     })?;
 
     // Generate JWT
-    let token = create_jwt(&user, "OWNER").map_err(|e| {
+    let token = state.auth.create_jwt(&user, "OWNER").map_err(|e| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({ "error": format!("Failed to generate JWT: {}", e) })).into_response(),
@@ -180,7 +180,7 @@ pub async fn login(
         }
     };
 
-    if !verify_password(password, &user.password_hash) {
+    if !state.auth.verify_password(password, &user.password_hash) {
         return Err((
             StatusCode::UNAUTHORIZED,
             Json(json!({ "error": "Invalid email or password" })).into_response(),
@@ -218,7 +218,7 @@ pub async fn login(
     let role = UserRole::from_str(&user.role);
 
     // Generate JWT
-    let token = create_jwt(&user, &user.role).map_err(|e| {
+    let token = state.auth.create_jwt(&user, &user.role).map_err(|e| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({ "error": format!("Failed to generate JWT: {}", e) })).into_response(),
@@ -287,16 +287,38 @@ pub async fn get_current_user(
     Ok(Json(profile))
 }
 
+/// Seeded demo accounts live under this domain; only they can be switched to without a password.
+const DEMO_EMAIL_DOMAIN: &str = "@respulse.internal";
+
+/// Public auth capabilities so the UI can hide demo-only controls.
+pub async fn auth_config(State(state): State<AppState>) -> Json<serde_json::Value> {
+    Json(json!({ "demo_mode": state.auth.demo_mode }))
+}
+
+/// Passwordless persona login for the seeded demo organization. Disabled unless `DEMO_MODE` is on.
 pub async fn switch_user(
     State(state): State<AppState>,
-    auth: AuthUser,
     Json(payload): Json<SwitchUserRequest>,
 ) -> Result<Json<AuthResponse>, (StatusCode, Response)> {
+    if !state.auth.demo_mode {
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "Demo persona switching is disabled" })).into_response(),
+        ));
+    }
+
+    let email = payload.email.trim().to_lowercase();
+    if !email.ends_with(DEMO_EMAIL_DOMAIN) {
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "Demo user not found" })).into_response(),
+        ));
+    }
+
     let user = sqlx::query_as::<_, User>(
-        "SELECT * FROM users WHERE email = $1 AND team_id = $2 AND is_active = TRUE"
+        "SELECT * FROM users WHERE email = $1 AND is_active = TRUE"
     )
-    .bind(&payload.email)
-    .bind(auth.user.team_id)
+    .bind(&email)
     .fetch_optional(&state.pool)
     .await
     .map_err(|e| {
@@ -311,7 +333,7 @@ pub async fn switch_user(
         None => {
             return Err((
                 StatusCode::NOT_FOUND,
-                Json(json!({ "error": format!("User not found in your organization: {}", payload.email) })).into_response(),
+                Json(json!({ "error": "Demo user not found" })).into_response(),
             ));
         }
     };
@@ -320,22 +342,14 @@ pub async fn switch_user(
         "SELECT * FROM teams WHERE id = $1"
     )
     .bind(user.team_id)
-    .fetch_optional(&state.pool)
+    .fetch_one(&state.pool)
     .await
     .map_err(|e| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({ "error": format!("Database error: {}", e) })).into_response(),
         )
-    })?
-    .unwrap_or(Team {
-        id: user.team_id,
-        name: "ResPulse Enterprise Team".to_string(),
-        slug: "respulse-enterprise".to_string(),
-        ping_key: "pk_live_enterprise0000000000001".to_string(),
-        plan: "PRO".to_string(),
-        created_at: chrono::Utc::now(),
-    });
+    })?;
 
     let role = UserRole::from_str(&user.role);
 
@@ -345,7 +359,12 @@ pub async fn switch_user(
         .execute(&state.pool)
         .await;
 
-    let token = create_jwt(&user, &user.role).unwrap_or_else(|_| "demo-token".to_string());
+    let token = state.auth.create_jwt(&user, &user.role).map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": format!("Failed to generate JWT: {}", e) })).into_response(),
+        )
+    })?;
 
     let profile = UserProfile {
         id: user.id,
