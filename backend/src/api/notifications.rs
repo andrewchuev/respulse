@@ -28,11 +28,13 @@ struct ChannelStatsRow {
 }
 
 pub async fn list_channels(
+    auth: AuthUser,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<ChannelWithStats>>, (StatusCode, String)> {
     let channels: Vec<NotificationChannel> = sqlx::query_as::<_, NotificationChannel>(
-        "SELECT * FROM notification_channels ORDER BY created_at DESC"
+        "SELECT * FROM notification_channels WHERE team_id = $1 ORDER BY created_at DESC"
     )
+    .bind(auth.user.team_id)
     .fetch_all(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -86,11 +88,12 @@ pub async fn create_channel(
 
     let channel = sqlx::query_as::<_, NotificationChannel>(
         r#"
-        INSERT INTO notification_channels (name, channel_type, config, is_active)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO notification_channels (team_id, name, channel_type, config, is_active)
+        VALUES ($1, $2, $3, $4, $5)
         RETURNING *
         "#
     )
+    .bind(auth.user.team_id)
     .bind(payload.name.trim())
     .bind(payload.channel_type.to_uppercase().trim())
     .bind(payload.config)
@@ -124,9 +127,10 @@ pub async fn update_channel(
     }
 
     let existing: NotificationChannel = sqlx::query_as::<_, NotificationChannel>(
-        "SELECT * FROM notification_channels WHERE id = $1"
+        "SELECT * FROM notification_channels WHERE id = $1 AND team_id = $2"
     )
     .bind(id)
+    .bind(auth.user.team_id)
     .fetch_optional(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
@@ -141,7 +145,7 @@ pub async fn update_channel(
         r#"
         UPDATE notification_channels
         SET name = $1, channel_type = $2, config = $3, is_active = $4
-        WHERE id = $5
+        WHERE id = $5 AND team_id = $6
         RETURNING *
         "#
     )
@@ -150,6 +154,7 @@ pub async fn update_channel(
     .bind(config)
     .bind(is_active)
     .bind(id)
+    .bind(auth.user.team_id)
     .fetch_one(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -169,8 +174,9 @@ pub async fn delete_channel(
         ));
     }
 
-    sqlx::query("DELETE FROM notification_channels WHERE id = $1")
+    sqlx::query("DELETE FROM notification_channels WHERE id = $1 AND team_id = $2")
         .bind(id)
+        .bind(auth.user.team_id)
         .execute(&state.pool)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -198,9 +204,10 @@ pub async fn test_channel(
     }
 
     let channel: NotificationChannel = sqlx::query_as::<_, NotificationChannel>(
-        "SELECT * FROM notification_channels WHERE id = $1"
+        "SELECT * FROM notification_channels WHERE id = $1 AND team_id = $2"
     )
     .bind(id)
+    .bind(auth.user.team_id)
     .fetch_optional(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
@@ -252,6 +259,7 @@ struct AlertLogRow {
 }
 
 pub async fn list_alert_logs(
+    auth: AuthUser,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<AlertLogWithDetails>>, (StatusCode, String)> {
     let rows: Vec<AlertLogRow> = sqlx::query_as(
@@ -270,10 +278,12 @@ pub async fn list_alert_logs(
         FROM alert_logs l
         JOIN notification_channels c ON l.channel_id = c.id
         LEFT JOIN monitors m ON l.monitor_id = m.id
+        WHERE c.team_id = $1
         ORDER BY l.sent_at DESC
         LIMIT 50
         "#
     )
+    .bind(auth.user.team_id)
     .fetch_all(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;

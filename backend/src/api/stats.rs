@@ -1,4 +1,5 @@
 use crate::api::monitors::AppState;
+use crate::auth::AuthUser;
 use crate::models::{GlobalStats, Monitor, MonitorWithStats, UptimeBarPoint};
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -21,11 +22,13 @@ struct UptimeCounts {
 }
 
 pub async fn get_stats(
+    auth: AuthUser,
     State(state): State<AppState>,
 ) -> Result<Json<GlobalStats>, (StatusCode, String)> {
     let monitors: Vec<Monitor> = sqlx::query_as::<_, Monitor>(
-        "SELECT * FROM monitors"
+        "SELECT * FROM monitors WHERE team_id = $1"
     )
+    .bind(auth.user.team_id)
     .fetch_all(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -40,12 +43,14 @@ pub async fn get_stats(
         r#"
         SELECT
             COUNT(*)::bigint as total,
-            COUNT(*) FILTER (WHERE is_up = true)::bigint as up,
-            AVG(response_time_ms)::float8 as avg_time
-        FROM check_results
-        WHERE checked_at >= $1
+            COUNT(*) FILTER (WHERE c.is_up = true)::bigint as up,
+            AVG(c.response_time_ms)::float8 as avg_time
+        FROM check_results c
+        JOIN monitors m ON m.id = c.monitor_id
+        WHERE m.team_id = $1 AND c.checked_at >= $2
         "#
     )
+    .bind(auth.user.team_id)
     .bind(day_ago)
     .fetch_one(&state.pool)
     .await
@@ -54,6 +59,8 @@ pub async fn get_stats(
     let overall_uptime_24h = if agg.total > 0 {
         ((agg.up as f64 / agg.total as f64) * 10000.0).round() / 100.0
     } else if up_monitors > 0 && down_monitors == 0 {
+        100.0
+    } else if total_monitors == 0 {
         100.0
     } else {
         0.0
@@ -86,7 +93,7 @@ pub async fn get_status_page(
     State(state): State<AppState>,
 ) -> Result<Json<PublicStatusPage>, (StatusCode, String)> {
     let monitors: Vec<Monitor> = sqlx::query_as::<_, Monitor>(
-        "SELECT * FROM monitors WHERE is_paused = FALSE ORDER BY name ASC"
+        "SELECT * FROM monitors WHERE team_id = '00000000-0000-0000-0000-000000000001' AND is_paused = FALSE ORDER BY name ASC"
     )
     .fetch_all(&state.pool)
     .await
@@ -96,7 +103,7 @@ pub async fn get_status_page(
 
     // Fetch active ongoing incidents
     let active_rows: Vec<crate::models::Incident> = sqlx::query_as::<_, crate::models::Incident>(
-        "SELECT * FROM incidents WHERE status = 'ONGOING' AND is_published = TRUE ORDER BY started_at DESC"
+        "SELECT * FROM incidents WHERE team_id = '00000000-0000-0000-0000-000000000001' AND status = 'ONGOING' AND is_published = TRUE ORDER BY started_at DESC"
     )
     .fetch_all(&state.pool)
     .await
@@ -125,7 +132,7 @@ pub async fn get_status_page(
     // Fetch resolved incidents with post-mortems (past 7 days)
     let seven_days_ago = Utc::now() - Duration::days(7);
     let resolved_rows: Vec<crate::models::Incident> = sqlx::query_as::<_, crate::models::Incident>(
-        "SELECT * FROM incidents WHERE status = 'RESOLVED' AND is_published = TRUE AND started_at >= $1 ORDER BY started_at DESC LIMIT 10"
+        "SELECT * FROM incidents WHERE team_id = '00000000-0000-0000-0000-000000000001' AND status = 'RESOLVED' AND is_published = TRUE AND started_at >= $1 ORDER BY started_at DESC LIMIT 10"
     )
     .bind(seven_days_ago)
     .fetch_all(&state.pool)

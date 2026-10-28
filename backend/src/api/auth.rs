@@ -277,12 +277,14 @@ pub async fn get_current_user(
 
 pub async fn switch_user(
     State(state): State<AppState>,
+    auth: AuthUser,
     Json(payload): Json<SwitchUserRequest>,
 ) -> Result<Json<AuthResponse>, (StatusCode, Response)> {
     let user = sqlx::query_as::<_, User>(
-        "SELECT * FROM users WHERE email = $1 AND is_active = TRUE"
+        "SELECT * FROM users WHERE email = $1 AND team_id = $2 AND is_active = TRUE"
     )
     .bind(&payload.email)
+    .bind(auth.user.team_id)
     .fetch_optional(&state.pool)
     .await
     .map_err(|e| {
@@ -297,7 +299,7 @@ pub async fn switch_user(
         None => {
             return Err((
                 StatusCode::NOT_FOUND,
-                Json(json!({ "error": format!("User not found with email: {}", payload.email) })).into_response(),
+                Json(json!({ "error": format!("User not found in your organization: {}", payload.email) })).into_response(),
             ));
         }
     };
@@ -351,10 +353,12 @@ pub async fn switch_user(
 
 pub async fn list_available_users(
     State(state): State<AppState>,
+    auth: AuthUser,
 ) -> Result<Json<Vec<UserProfile>>, (StatusCode, Response)> {
     let users = sqlx::query_as::<_, User>(
-        "SELECT * FROM users WHERE is_active = TRUE ORDER BY created_at ASC"
+        "SELECT * FROM users WHERE team_id = $1 AND is_active = TRUE ORDER BY created_at ASC"
     )
+    .bind(auth.user.team_id)
     .fetch_all(&state.pool)
     .await
     .map_err(|e| {
@@ -365,8 +369,9 @@ pub async fn list_available_users(
     })?;
 
     let team = sqlx::query_as::<_, Team>(
-        "SELECT * FROM teams LIMIT 1"
+        "SELECT * FROM teams WHERE id = $1"
     )
+    .bind(auth.user.team_id)
     .fetch_optional(&state.pool)
     .await
     .map_err(|e| {
@@ -376,9 +381,9 @@ pub async fn list_available_users(
         )
     })?
     .unwrap_or(Team {
-        id: uuid::Uuid::nil(),
-        name: "ResPulse Enterprise Team".to_string(),
-        slug: "respulse-enterprise".to_string(),
+        id: auth.user.team_id,
+        name: "My Team".to_string(),
+        slug: "my-team".to_string(),
         created_at: chrono::Utc::now(),
     });
 

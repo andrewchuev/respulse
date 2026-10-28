@@ -109,8 +109,9 @@ pub async fn update_member_role(
 ) -> Result<Json<TeamMember>, (StatusCode, Response)> {
     auth.require_manage_team()?;
 
-    let target = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
+    let target = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1 AND team_id = $2")
         .bind(member_id)
+        .bind(auth.user.team_id)
         .fetch_optional(&state.pool)
         .await
         .map_err(|e| {
@@ -147,11 +148,12 @@ pub async fn update_member_role(
     }
 
     let updated = sqlx::query_as::<_, TeamMember>(
-        "UPDATE users SET role = $1 WHERE id = $2 
+        "UPDATE users SET role = $1 WHERE id = $2 AND team_id = $3
          RETURNING id, team_id, email, name, role, avatar_url, is_active, created_at, last_login_at"
     )
     .bind(payload.role.as_str())
     .bind(member_id)
+    .bind(auth.user.team_id)
     .fetch_one(&state.pool)
     .await
     .map_err(|e| {
@@ -171,8 +173,9 @@ pub async fn remove_member(
 ) -> Result<StatusCode, (StatusCode, Response)> {
     auth.require_manage_team()?;
 
-    let target = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
+    let target = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1 AND team_id = $2")
         .bind(member_id)
+        .bind(auth.user.team_id)
         .fetch_optional(&state.pool)
         .await
         .map_err(|e| {
@@ -206,8 +209,9 @@ pub async fn remove_member(
         ));
     }
 
-    sqlx::query("DELETE FROM users WHERE id = $1")
+    sqlx::query("DELETE FROM users WHERE id = $1 AND team_id = $2")
         .bind(member_id)
+        .bind(auth.user.team_id)
         .execute(&state.pool)
         .await
         .map_err(|e| {

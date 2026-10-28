@@ -29,10 +29,14 @@ struct UptimeCounts {
     pub up: i64,
 }
 
-pub async fn list_monitors(State(state): State<AppState>) -> Result<Json<Vec<MonitorWithStats>>, (StatusCode, String)> {
+pub async fn list_monitors(
+    auth: AuthUser,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<MonitorWithStats>>, (StatusCode, String)> {
     let monitors: Vec<Monitor> = sqlx::query_as::<_, Monitor>(
-        "SELECT * FROM monitors ORDER BY created_at DESC"
+        "SELECT * FROM monitors WHERE team_id = $1 ORDER BY created_at DESC"
     )
+    .bind(auth.user.team_id)
     .fetch_all(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -148,13 +152,15 @@ pub async fn list_monitors(State(state): State<AppState>) -> Result<Json<Vec<Mon
 }
 
 pub async fn get_monitor(
+    auth: AuthUser,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<MonitorWithStats>, (StatusCode, String)> {
     let monitor: Monitor = sqlx::query_as::<_, Monitor>(
-        "SELECT * FROM monitors WHERE id = $1"
+        "SELECT * FROM monitors WHERE id = $1 AND team_id = $2"
     )
     .bind(id)
+    .bind(auth.user.team_id)
     .fetch_optional(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
@@ -292,13 +298,14 @@ pub async fn create_monitor(
     let monitor = sqlx::query_as::<_, Monitor>(
         r#"
         INSERT INTO monitors (
-            name, url, monitor_type, interval_seconds, timeout_seconds,
+            team_id, name, url, monitor_type, interval_seconds, timeout_seconds,
             method, headers, body, expected_status_code, keyword, port, heartbeat_token,
             auth_username, auth_password, tags, group_name
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
         RETURNING *
         "#
     )
+    .bind(auth.user.team_id)
     .bind(payload.name)
     .bind(payload.url)
     .bind(payload.monitor_type.to_uppercase())
@@ -344,9 +351,10 @@ pub async fn update_monitor(
     }
 
     let existing: Monitor = sqlx::query_as::<_, Monitor>(
-        "SELECT * FROM monitors WHERE id = $1"
+        "SELECT * FROM monitors WHERE id = $1 AND team_id = $2"
     )
     .bind(id)
+    .bind(auth.user.team_id)
     .fetch_optional(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
@@ -374,7 +382,7 @@ pub async fn update_monitor(
             method = $5, headers = $6, body = $7, expected_status_code = $8,
             keyword = $9, port = $10, auth_username = $11, auth_password = $12,
             tags = $13, group_name = $14, updated_at = NOW()
-        WHERE id = $15
+        WHERE id = $15 AND team_id = $16
         RETURNING *
         "#
     )
@@ -393,6 +401,7 @@ pub async fn update_monitor(
     .bind(tags)
     .bind(group_name)
     .bind(id)
+    .bind(auth.user.team_id)
     .fetch_one(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -413,8 +422,9 @@ pub async fn delete_monitor(
         ));
     }
 
-    sqlx::query("DELETE FROM monitors WHERE id = $1")
+    sqlx::query("DELETE FROM monitors WHERE id = $1 AND team_id = $2")
         .bind(id)
+        .bind(auth.user.team_id)
         .execute(&state.pool)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -438,11 +448,12 @@ pub async fn pause_monitor(
         r#"
         UPDATE monitors
         SET is_paused = TRUE, status = 'PAUSED', updated_at = NOW()
-        WHERE id = $1
+        WHERE id = $1 AND team_id = $2
         RETURNING *
         "#
     )
     .bind(id)
+    .bind(auth.user.team_id)
     .fetch_one(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -467,11 +478,12 @@ pub async fn resume_monitor(
         r#"
         UPDATE monitors
         SET is_paused = FALSE, status = 'PENDING', updated_at = NOW()
-        WHERE id = $1
+        WHERE id = $1 AND team_id = $2
         RETURNING *
         "#
     )
     .bind(id)
+    .bind(auth.user.team_id)
     .fetch_one(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -501,9 +513,10 @@ pub async fn trigger_test(
     }
 
     let monitor: Monitor = sqlx::query_as::<_, Monitor>(
-        "SELECT * FROM monitors WHERE id = $1"
+        "SELECT * FROM monitors WHERE id = $1 AND team_id = $2"
     )
     .bind(id)
+    .bind(auth.user.team_id)
     .fetch_optional(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
@@ -512,9 +525,10 @@ pub async fn trigger_test(
     execute_single_probe(state.pool.clone(), state.http_client.clone(), monitor.clone(), state.tx.clone()).await;
 
     let updated: Monitor = sqlx::query_as::<_, Monitor>(
-        "SELECT * FROM monitors WHERE id = $1"
+        "SELECT * FROM monitors WHERE id = $1 AND team_id = $2"
     )
     .bind(id)
+    .bind(auth.user.team_id)
     .fetch_one(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -545,17 +559,19 @@ pub async fn bulk_action(
     match payload.action.as_str() {
         "pause" => {
             let res = sqlx::query(
-                "UPDATE monitors SET is_paused = TRUE, status = 'PAUSED', updated_at = NOW() WHERE id = ANY($1)"
+                "UPDATE monitors SET is_paused = TRUE, status = 'PAUSED', updated_at = NOW() WHERE id = ANY($1) AND team_id = $2"
             )
             .bind(&payload.ids)
+            .bind(auth.user.team_id)
             .execute(&state.pool)
             .await
             .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
             let affected = res.rows_affected() as usize;
 
-            if let Ok(updated) = sqlx::query_as::<_, Monitor>("SELECT * FROM monitors WHERE id = ANY($1)")
+            if let Ok(updated) = sqlx::query_as::<_, Monitor>("SELECT * FROM monitors WHERE id = ANY($1) AND team_id = $2")
                 .bind(&payload.ids)
+                .bind(auth.user.team_id)
                 .fetch_all(&state.pool)
                 .await
             {
@@ -572,17 +588,19 @@ pub async fn bulk_action(
         }
         "resume" => {
             let res = sqlx::query(
-                "UPDATE monitors SET is_paused = FALSE, status = 'PENDING', updated_at = NOW() WHERE id = ANY($1)"
+                "UPDATE monitors SET is_paused = FALSE, status = 'PENDING', updated_at = NOW() WHERE id = ANY($1) AND team_id = $2"
             )
             .bind(&payload.ids)
+            .bind(auth.user.team_id)
             .execute(&state.pool)
             .await
             .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
             let affected = res.rows_affected() as usize;
 
-            if let Ok(updated) = sqlx::query_as::<_, Monitor>("SELECT * FROM monitors WHERE id = ANY($1)")
+            if let Ok(updated) = sqlx::query_as::<_, Monitor>("SELECT * FROM monitors WHERE id = ANY($1) AND team_id = $2")
                 .bind(&payload.ids)
+                .bind(auth.user.team_id)
                 .fetch_all(&state.pool)
                 .await
             {
@@ -605,8 +623,9 @@ pub async fn bulk_action(
             }))
         }
         "delete" => {
-            let res = sqlx::query("DELETE FROM monitors WHERE id = ANY($1)")
+            let res = sqlx::query("DELETE FROM monitors WHERE id = ANY($1) AND team_id = $2")
                 .bind(&payload.ids)
+                .bind(auth.user.team_id)
                 .execute(&state.pool)
                 .await
                 .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -620,8 +639,9 @@ pub async fn bulk_action(
             }))
         }
         "test" => {
-            let selected = sqlx::query_as::<_, Monitor>("SELECT * FROM monitors WHERE id = ANY($1)")
+            let selected = sqlx::query_as::<_, Monitor>("SELECT * FROM monitors WHERE id = ANY($1) AND team_id = $2")
                 .bind(&payload.ids)
+                .bind(auth.user.team_id)
                 .fetch_all(&state.pool)
                 .await
                 .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -645,17 +665,19 @@ pub async fn bulk_action(
         "set_group" => {
             let group = payload.value.unwrap_or_else(|| "Default".to_string());
             let res = sqlx::query(
-                "UPDATE monitors SET group_name = $1, updated_at = NOW() WHERE id = ANY($2)"
+                "UPDATE monitors SET group_name = $1, updated_at = NOW() WHERE id = ANY($2) AND team_id = $3"
             )
             .bind(&group)
             .bind(&payload.ids)
+            .bind(auth.user.team_id)
             .execute(&state.pool)
             .await
             .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
             let affected = res.rows_affected() as usize;
-            if let Ok(updated) = sqlx::query_as::<_, Monitor>("SELECT * FROM monitors WHERE id = ANY($1)")
+            if let Ok(updated) = sqlx::query_as::<_, Monitor>("SELECT * FROM monitors WHERE id = ANY($1) AND team_id = $2")
                 .bind(&payload.ids)
+                .bind(auth.user.team_id)
                 .fetch_all(&state.pool)
                 .await
             {
@@ -674,17 +696,19 @@ pub async fn bulk_action(
             let tag = payload.value.ok_or((StatusCode::BAD_REQUEST, "Tag value required".to_string()))?;
             let tag_trimmed = tag.trim().to_lowercase().replace('#', "");
             let res = sqlx::query(
-                "UPDATE monitors SET tags = array_append(tags, $1), updated_at = NOW() WHERE id = ANY($2) AND NOT ($1 = ANY(tags))"
+                "UPDATE monitors SET tags = array_append(tags, $1), updated_at = NOW() WHERE id = ANY($2) AND team_id = $3 AND NOT ($1 = ANY(tags))"
             )
             .bind(&tag_trimmed)
             .bind(&payload.ids)
+            .bind(auth.user.team_id)
             .execute(&state.pool)
             .await
             .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
             let affected = res.rows_affected() as usize;
-            if let Ok(updated) = sqlx::query_as::<_, Monitor>("SELECT * FROM monitors WHERE id = ANY($1)")
+            if let Ok(updated) = sqlx::query_as::<_, Monitor>("SELECT * FROM monitors WHERE id = ANY($1) AND team_id = $2")
                 .bind(&payload.ids)
+                .bind(auth.user.team_id)
                 .fetch_all(&state.pool)
                 .await
             {

@@ -14,6 +14,7 @@ use uuid::Uuid;
 #[derive(FromRow)]
 struct IncidentRow {
     pub id: Uuid,
+    pub team_id: Uuid,
     pub monitor_id: Uuid,
     pub status: String,
     pub started_at: DateTime<Utc>,
@@ -31,12 +32,14 @@ struct IncidentRow {
 }
 
 pub async fn list_incidents(
+    auth: AuthUser,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<IncidentWithDetails>>, (StatusCode, String)> {
     let rows: Vec<IncidentRow> = sqlx::query_as(
         r#"
         SELECT
             i.id,
+            i.team_id,
             i.monitor_id,
             i.status,
             i.started_at,
@@ -53,10 +56,12 @@ pub async fn list_incidents(
             m.url as monitor_url
         FROM incidents i
         JOIN monitors m ON i.monitor_id = m.id
+        WHERE i.team_id = $1
         ORDER BY i.started_at DESC
         LIMIT 100
         "#
     )
+    .bind(auth.user.team_id)
     .fetch_all(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -79,6 +84,7 @@ pub async fn list_incidents(
         list.push(IncidentWithDetails {
             incident: Incident {
                 id: r.id,
+                team_id: r.team_id,
                 monitor_id: r.monitor_id,
                 status: r.status,
                 started_at: r.started_at,
@@ -102,6 +108,7 @@ pub async fn list_incidents(
 }
 
 pub async fn get_incident(
+    auth: AuthUser,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<IncidentWithDetails>, (StatusCode, String)> {
@@ -109,6 +116,7 @@ pub async fn get_incident(
         r#"
         SELECT
             i.id,
+            i.team_id,
             i.monitor_id,
             i.status,
             i.started_at,
@@ -125,10 +133,11 @@ pub async fn get_incident(
             m.url as monitor_url
         FROM incidents i
         JOIN monitors m ON i.monitor_id = m.id
-        WHERE i.id = $1
+        WHERE i.id = $1 AND i.team_id = $2
         "#
     )
     .bind(id)
+    .bind(auth.user.team_id)
     .fetch_optional(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
@@ -150,6 +159,7 @@ pub async fn get_incident(
     Ok(Json(IncidentWithDetails {
         incident: Incident {
             id: r.id,
+            team_id: r.team_id,
             monitor_id: r.monitor_id,
             status: r.status,
             started_at: r.started_at,
@@ -183,9 +193,10 @@ pub async fn update_incident(
     }
 
     let existing: Incident = sqlx::query_as::<_, Incident>(
-        "SELECT * FROM incidents WHERE id = $1"
+        "SELECT * FROM incidents WHERE id = $1 AND team_id = $2"
     )
     .bind(id)
+    .bind(auth.user.team_id)
     .fetch_optional(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
@@ -215,7 +226,7 @@ pub async fn update_incident(
         UPDATE incidents
         SET title = $1, severity = $2, stage = $3, summary = $4,
             post_mortem = $5, is_published = $6, status = $7, resolved_at = $8
-        WHERE id = $9
+        WHERE id = $9 AND team_id = $10
         RETURNING *
         "#
     )
@@ -228,6 +239,7 @@ pub async fn update_incident(
     .bind(status)
     .bind(resolved_at)
     .bind(id)
+    .bind(auth.user.team_id)
     .fetch_one(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -250,6 +262,18 @@ pub async fn add_incident_update(
             StatusCode::FORBIDDEN,
             format!("Forbidden: role {} does not have permission to post incident updates", auth.role.as_str()),
         ));
+    }
+
+    // Verify incident belongs to caller's team
+    let incident_exists = sqlx::query("SELECT 1 FROM incidents WHERE id = $1 AND team_id = $2")
+        .bind(id)
+        .bind(auth.user.team_id)
+        .fetch_optional(&state.pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    if incident_exists.is_none() {
+        return Err((StatusCode::NOT_FOUND, "Incident not found".to_string()));
     }
 
     let stage_upper = payload.stage.to_uppercase();
@@ -276,18 +300,20 @@ pub async fn add_incident_update(
             r#"
             UPDATE incidents
             SET stage = 'RESOLVED', status = 'RESOLVED', resolved_at = COALESCE(resolved_at, NOW())
-            WHERE id = $1
+            WHERE id = $1 AND team_id = $2
             "#
         )
         .bind(id)
+        .bind(auth.user.team_id)
         .execute(&state.pool)
         .await;
     } else {
         let _ = sqlx::query(
-            "UPDATE incidents SET stage = $1 WHERE id = $2"
+            "UPDATE incidents SET stage = $1 WHERE id = $2 AND team_id = $3"
         )
         .bind(&stage_upper)
         .bind(id)
+        .bind(auth.user.team_id)
         .execute(&state.pool)
         .await;
     }
@@ -308,9 +334,10 @@ pub async fn create_manual_incident(
     }
 
     let monitor = sqlx::query_as::<_, crate::models::Monitor>(
-        "SELECT * FROM monitors WHERE id = $1"
+        "SELECT * FROM monitors WHERE id = $1 AND team_id = $2"
     )
     .bind(payload.monitor_id)
+    .bind(auth.user.team_id)
     .fetch_optional(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
@@ -324,12 +351,13 @@ pub async fn create_manual_incident(
 
     let inc = sqlx::query_as::<_, Incident>(
         r#"
-        INSERT INTO incidents (id, monitor_id, status, started_at, root_cause, title, severity, stage, summary, is_published)
-        VALUES ($1, $2, 'ONGOING', NOW(), 'Manual Incident', $3, $4, $5, $6, TRUE)
+        INSERT INTO incidents (id, team_id, monitor_id, status, started_at, root_cause, title, severity, stage, summary, is_published)
+        VALUES ($1, $2, $3, 'ONGOING', NOW(), 'Manual Incident', $4, $5, $6, $7, TRUE)
         RETURNING *
         "#
     )
     .bind(incident_id)
+    .bind(auth.user.team_id)
     .bind(payload.monitor_id)
     .bind(&payload.title)
     .bind(&severity)

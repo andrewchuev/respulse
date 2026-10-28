@@ -6,6 +6,7 @@ use uuid::Uuid;
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Monitor {
     pub id: Uuid,
+    pub team_id: Uuid,
     pub name: String,
     pub url: String,
     pub monitor_type: String, // 'HTTP', 'KEYWORD', 'PORT', 'SSL', 'HEARTBEAT'
@@ -116,6 +117,7 @@ pub struct CheckResult {
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Incident {
     pub id: Uuid,
+    pub team_id: Uuid,
     pub monitor_id: Uuid,
     pub status: String, // 'ONGOING', 'RESOLVED'
     pub started_at: DateTime<Utc>,
@@ -241,6 +243,7 @@ pub enum WsMessage {
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct NotificationChannel {
     pub id: Uuid,
+    pub team_id: Uuid,
     pub name: String,
     pub channel_type: String,
     pub config: serde_json::Value,

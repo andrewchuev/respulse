@@ -142,11 +142,12 @@ pub async fn execute_single_probe(
 
             let _ = sqlx::query(
                 r#"
-                INSERT INTO incidents (id, monitor_id, status, started_at, root_cause, title, severity, stage, summary)
-                VALUES ($1, $2, 'ONGOING', NOW(), $3, $4, 'MAJOR', 'INVESTIGATING', $5)
+                INSERT INTO incidents (id, team_id, monitor_id, status, started_at, root_cause, title, severity, stage, summary)
+                VALUES ($1, $2, $3, 'ONGOING', NOW(), $4, $5, 'MAJOR', 'INVESTIGATING', $6)
                 "#
             )
             .bind(incident_id)
+            .bind(monitor.team_id)
             .bind(monitor.id)
             .bind(&probe_result.error)
             .bind(&title)
@@ -167,6 +168,7 @@ pub async fn execute_single_probe(
 
             let inc = Incident {
                 id: incident_id,
+                team_id: monitor.team_id,
                 monitor_id: monitor.id,
                 status: "ONGOING".to_string(),
                 started_at: Utc::now(),

@@ -33,8 +33,9 @@ pub async fn dispatch_alert(
     tx: Option<&Sender<WsMessage>>,
 ) {
     let channels: Vec<NotificationChannel> = match sqlx::query_as::<_, NotificationChannel>(
-        "SELECT * FROM notification_channels WHERE is_active = TRUE"
+        "SELECT * FROM notification_channels WHERE team_id = $1 AND is_active = TRUE"
     )
+    .bind(monitor.team_id)
     .fetch_all(pool)
     .await
     {
@@ -177,6 +178,7 @@ pub async fn deliver_to_channel(
 pub async fn test_channel(client: &Client, channel: &NotificationChannel) -> Result<(), String> {
     let dummy_monitor = Monitor {
         id: Uuid::new_v4(),
+        team_id: channel.team_id,
         name: "Test System Service".to_string(),
         url: std::env::var("APP_URL").unwrap_or_else(|_| "https://respulse.online".to_string()),
         monitor_type: "HTTP".to_string(),
