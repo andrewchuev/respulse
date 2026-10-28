@@ -54,6 +54,26 @@ export const FastSpringCheckoutModal: React.FC<FastSpringCheckoutModalProps> = (
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  // True while FastSpring's popup is on screen. The popup is an iframe outside this dialog, and a
+  // modal Radix dialog would make it inert (body pointer-events: none) and trap focus, so clicks
+  // would fall through to the dialog. The dialog is therefore hidden for as long as the popup lives.
+  const [popupActive, setPopupActive] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) setPopupActive(false);
+  }, [isOpen]);
+
+  // Safety net: if FastSpring never reports the popup closing, bring the dialog back.
+  useEffect(() => {
+    if (!popupActive) return;
+    let missingChecks = 0;
+    const timer = window.setInterval(() => {
+      const popupPresent = document.querySelector('iframe[src*="onfastspring.com"]');
+      missingChecks = popupPresent ? 0 : missingChecks + 1;
+      if (missingChecks >= 6) setPopupActive(false);
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [popupActive]);
 
   // Load FastSpring SBL script and fetch config
   useEffect(() => {
@@ -83,6 +103,7 @@ export const FastSpringCheckoutModal: React.FC<FastSpringCheckoutModalProps> = (
 
         // Register Global FastSpring Callbacks
         window.fscClosedCallback = (orderRef: any) => {
+          setPopupActive(false);
           if (orderRef) {
             const refId = typeof orderRef === 'string' ? orderRef : orderRef.id || orderRef.reference;
             if (refId) {
@@ -93,6 +114,7 @@ export const FastSpringCheckoutModal: React.FC<FastSpringCheckoutModalProps> = (
         };
 
         window.fscErrorCallback = (_code: any, message: any) => {
+          setPopupActive(false);
           if (message) {
             setError(typeof message === 'string' ? message : 'FastSpring checkout encountered an issue');
           }
@@ -142,15 +164,26 @@ export const FastSpringCheckoutModal: React.FC<FastSpringCheckoutModalProps> = (
   const handleOpenPopupCheckout = () => {
     if (!config) return;
 
-    if (window.fastspring?.builder) {
+    const builder = window.fastspring?.builder;
+    if (builder) {
       try {
-        window.fastspring.builder.reset();
-        window.fastspring.builder.tag({
+        builder.reset();
+        builder.tag({
           team_id: config.team_id,
           user_email: config.user_email,
         });
-        window.fastspring.builder.add(config.product_path);
-        window.fastspring.builder.checkout();
+        builder.add(config.product_path);
+        setPopupActive(true);
+        // Let React unmount the dialog first so its pointer-events lock is gone when the popup appears.
+        window.setTimeout(() => {
+          try {
+            builder.checkout();
+          } catch (e) {
+            console.warn('FastSpring popup failed to open, falling back to web checkout', e);
+            setPopupActive(false);
+            handleOpenWebCheckout(config.checkout_url);
+          }
+        }, 100);
         return;
       } catch (e) {
         console.warn('FastSpring builder popup error, falling back to web checkout', e);
@@ -192,7 +225,7 @@ export const FastSpringCheckoutModal: React.FC<FastSpringCheckoutModalProps> = (
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen && !popupActive} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[620px] bg-slate-900/95 backdrop-blur-2xl border border-white/10 ring-1 ring-white/5 shadow-2xl shadow-black/90 max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between gap-3">
