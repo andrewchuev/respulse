@@ -33,6 +33,7 @@ import { SkeletonDashboard } from './components/SkeletonDashboard';
 import { PromoLandingPage } from './components/PromoLandingPage';
 import { AuthModal } from './components/AuthModal';
 import { LegalPage } from './components/LegalPage';
+import { legalReady } from './legal/content';
 import { AdminReport } from './components/AdminReport';
 import { FastSpringCheckoutModal } from './components/FastSpringCheckoutModal';
 
@@ -502,11 +503,13 @@ export function App() {
 
       <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground">
         <p className="font-mono">ResPulse v1.0 — High-performance Synthetic Monitoring Engine in Rust</p>
-        <p className="font-mono mt-1 space-x-3">
-          <a href="/terms" className="hover:text-emerald-400 transition-colors">Terms</a>
-          <a href="/privacy" className="hover:text-emerald-400 transition-colors">Privacy</a>
-          {billingEnabled && <a href="/refund" className="hover:text-emerald-400 transition-colors">Refunds</a>}
-        </p>
+        {legalReady && (
+          <p className="font-mono mt-1 space-x-3">
+            <a href="/terms" className="hover:text-emerald-400 transition-colors">Terms</a>
+            <a href="/privacy" className="hover:text-emerald-400 transition-colors">Privacy</a>
+            {billingEnabled && <a href="/refund" className="hover:text-emerald-400 transition-colors">Refunds</a>}
+          </p>
+        )}
       </footer>
     </div>
   );

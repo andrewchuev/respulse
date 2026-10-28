@@ -25,6 +25,7 @@ import {
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { BetaPricing } from './BetaPricing';
+import { legalReady } from '../legal/content';
 import { DEFAULT_APP_CONFIG } from '../api/client';
 import { PlanLimits } from '../types';
 
@@ -1149,12 +1150,16 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
             <a href="#faq" className="hover:text-emerald-400 transition-colors">
               FAQ
             </a>
-            <a href="/terms" className="hover:text-emerald-400 transition-colors">
-              Terms
-            </a>
-            <a href="/privacy" className="hover:text-emerald-400 transition-colors">
-              Privacy
-            </a>
+            {legalReady && (
+              <>
+                <a href="/terms" className="hover:text-emerald-400 transition-colors">
+                  Terms
+                </a>
+                <a href="/privacy" className="hover:text-emerald-400 transition-colors">
+                  Privacy
+                </a>
+              </>
+            )}
             {billingEnabled && (
               <a href="/refund" className="hover:text-emerald-400 transition-colors">
                 Refunds

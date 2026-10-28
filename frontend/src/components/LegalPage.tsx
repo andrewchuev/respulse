@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Activity } from 'lucide-react';
-import { LegalKind, legalConfig, legalDocs } from '../legal/content';
+import { LegalKind, legalConfig, legalDocs, legalReady } from '../legal/content';
 
 const NAV: { kind: LegalKind; label: string; href: string }[] = [
   { kind: 'terms', label: 'Terms of Service', href: '/terms' },
@@ -10,6 +10,16 @@ const NAV: { kind: LegalKind; label: string; href: string }[] = [
 
 export const LegalPage: React.FC<{ kind: LegalKind }> = ({ kind }) => {
   const doc = legalDocs[kind];
+
+  // Keep unfinished drafts (placeholders still in place) out of search engines.
+  useEffect(() => {
+    if (legalReady) return;
+    const meta = document.createElement('meta');
+    meta.name = 'robots';
+    meta.content = 'noindex, nofollow';
+    document.head.appendChild(meta);
+    return () => meta.remove();
+  }, []);
 
   useEffect(() => {
     const previous = document.title;

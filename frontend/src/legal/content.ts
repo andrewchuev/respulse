@@ -29,6 +29,9 @@ export const legalConfig = {
   updated: 'October 28, 2026',
 };
 
+/** True once every bracketed placeholder in `legalConfig` has been replaced with real details. */
+export const legalReady = !Object.values(legalConfig).some((v) => typeof v === 'string' && v.startsWith('['));
+
 const c = legalConfig;
 
 export const legalDocs: Record<LegalKind, LegalDoc> = {

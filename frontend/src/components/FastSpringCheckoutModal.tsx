@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { confirmFastSpringPayment, fetchFastSpringConfig } from '../api/client';
 import { FastSpringCheckoutConfig } from '../types';
+import { legalReady } from '../legal/content';
 
 interface FastSpringCheckoutModalProps {
   isOpen: boolean;
@@ -450,12 +451,14 @@ export const FastSpringCheckoutModal: React.FC<FastSpringCheckoutModalProps> = (
               <Building2 className="h-3 w-3 text-slate-500" />
               <span>Merchant of Record: <strong className="text-slate-300 font-medium">FastSpring (reslab)</strong></span>
             </div>
+            {legalReady && (
             <div className="text-[10px] text-slate-500">
               By subscribing you agree to the{' '}
               <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-emerald-400">Terms</a>
               {' '}and{' '}
               <a href="/refund" target="_blank" rel="noopener noreferrer" className="underline hover:text-emerald-400">Refund Policy</a>.
             </div>
+            )}
           </div>
           <Button
             type="button"
