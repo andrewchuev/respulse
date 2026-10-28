@@ -16,13 +16,7 @@ pub async fn run_probe_scheduler(pool: DbPool, tx: Sender<WsMessage>) {
     let user_agent = std::env::var("APP_USER_AGENT")
         .unwrap_or_else(|_| "ResPulse/1.0 (+https://respulse.online)".to_string());
 
-    let client = Client::builder()
-        .user_agent(user_agent)
-        .danger_accept_invalid_certs(true)
-        .build()
-        .expect("Failed to build reqwest client");
-
-    let client = Arc::new(client);
+    let client = Arc::new(crate::net_guard::policy().build_client(user_agent));
 
     info!("Starting probe scheduler loop...");
 

@@ -6,22 +6,29 @@ use tokio::time::timeout;
 
 pub async fn check_tcp(monitor: &Monitor) -> ProbeResult {
     let port = monitor.port.unwrap_or(80);
-    // Extract hostname from url (strip http:// or https:// if present)
-    let host = monitor.url
-        .trim_start_matches("http://")
-        .trim_start_matches("https://")
-        .split('/')
-        .next()
-        .unwrap_or(&monitor.url)
-        .split(':')
-        .next()
-        .unwrap_or(&monitor.url);
+    let host = crate::net_guard::extract_host(&monitor.url);
 
     let addr = format!("{}:{}", host, port);
     let to = Duration::from_secs(monitor.timeout_seconds.max(1) as u64);
 
+    // Connect to the vetted addresses instead of the hostname so DNS cannot change in between.
+    let targets = match crate::net_guard::policy().resolve_allowed(&host, port as u16).await {
+        Ok(targets) => targets,
+        Err(e) => {
+            return ProbeResult {
+            is_up: false,
+            status_code: None,
+            response_time_ms: 0.0,
+            dns_time_ms: None,
+            connect_time_ms: None,
+            tls_time_ms: None,
+            error: Some(format!("TCP check to {}: {}", addr, e)),
+        };
+        }
+    };
+
     let start = Instant::now();
-    match timeout(to, TcpStream::connect(&addr)).await {
+    match timeout(to, TcpStream::connect(&targets[..])).await {
         Ok(Ok(_stream)) => {
             let elapsed = start.elapsed().as_secs_f64() * 1000.0;
             ProbeResult {

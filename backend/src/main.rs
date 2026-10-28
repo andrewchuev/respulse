@@ -2,13 +2,15 @@ mod api;
 mod auth;
 mod db;
 mod models;
+mod net_guard;
 mod notifier;
 mod probe;
+mod rate_limit;
 
 use api::monitors::AppState;
 use api::payments::WebhookConfig;
 use auth::AuthConfig;
-use reqwest::Client;
+use rate_limit::RateLimits;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::broadcast;
@@ -42,13 +44,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let user_agent = std::env::var("APP_USER_AGENT")
         .unwrap_or_else(|_| "ResPulse/1.0 (+https://respulse.online)".to_string());
 
-    let http_client = Arc::new(
-        Client::builder()
-            .user_agent(user_agent)
-            .danger_accept_invalid_certs(true)
-            .build()
-            .expect("Failed to build HTTP client"),
-    );
+    let target_policy = net_guard::init_from_env();
+    if target_policy.allow_private() {
+        warn!("ALLOW_PRIVATE_TARGETS is enabled: probes and webhooks may reach private networks");
+    }
+    let http_client = Arc::new(target_policy.build_client(user_agent));
+
+    let limits = Arc::new(RateLimits::new());
+    limits.spawn_cleanup();
 
     let auth = Arc::new(AuthConfig::from_env()?);
     if auth.demo_mode {
@@ -61,6 +64,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         http_client,
         auth,
         webhook: Arc::new(WebhookConfig::from_env()),
+        limits,
     };
 
     // Spawn probe background scheduler
@@ -93,7 +97,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("ResPulse API Server listening on http://{}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app).await?;
+    // Connect info gives the auth rate limiter the TCP peer address.
+    axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>()).await?;
 
     Ok(())
 }

@@ -18,6 +18,19 @@ pub async fn check_http(client: &Client, monitor: &Monitor) -> ProbeResult {
     let timeout = Duration::from_secs(monitor.timeout_seconds.max(1) as u64);
     let method = Method::from_str(&monitor.method).unwrap_or(Method::GET);
 
+    // Hostnames are vetted by the client's resolver; IP literals never reach it, so check them here.
+    if let Err(e) = crate::net_guard::policy().check_url(&monitor.url) {
+        return ProbeResult {
+            is_up: false,
+            status_code: None,
+            response_time_ms: 0.0,
+            dns_time_ms: None,
+            connect_time_ms: None,
+            tls_time_ms: None,
+            error: Some(format!("Target not allowed: {}", e)),
+        };
+    }
+
     let mut request_builder = client.request(method, &monitor.url).timeout(timeout);
 
     // Add custom headers if specified

@@ -30,6 +30,8 @@ services:
       # Local development only; production must set its own secrets in deploy/.env
       JWT_SECRET: ${JWT_SECRET:-local-dev-only-jwt-secret-change-me-0123456789}
       DEMO_MODE: ${DEMO_MODE:-true}
+      # Local development monitors local services; production keeps this off (SSRF guard)
+      ALLOW_PRIVATE_TARGETS: ${ALLOW_PRIVATE_TARGETS:-true}
       FASTSPRING_WEBHOOK_SECRET: ${FASTSPRING_WEBHOOK_SECRET:-}
     depends_on:
       respulse-db:

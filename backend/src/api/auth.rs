@@ -4,17 +4,26 @@ use crate::models::{
     AuthResponse, LoginRequest, RegisterRequest, SwitchUserRequest, Team, User, UserProfile,
     UserRole,
 };
-use axum::extract::State;
-use axum::http::StatusCode;
+use crate::rate_limit::{client_ip, too_many_requests};
+use axum::extract::{ConnectInfo, State};
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde_json::json;
+use std::net::SocketAddr;
 use uuid::Uuid;
 
 pub async fn register(
     State(state): State<AppState>,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     Json(payload): Json<RegisterRequest>,
 ) -> Result<Json<AuthResponse>, (StatusCode, Response)> {
+    state
+        .limits
+        .check_register(client_ip(&headers, peer))
+        .map_err(too_many_requests)?;
+
     let company_name = payload.company_name.trim();
     let name = payload.name.trim();
     let email = payload.email.trim().to_lowercase();
@@ -152,8 +161,15 @@ pub async fn register(
 
 pub async fn login(
     State(state): State<AppState>,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     Json(payload): Json<LoginRequest>,
 ) -> Result<Json<AuthResponse>, (StatusCode, Response)> {
+    state
+        .limits
+        .check_login(client_ip(&headers, peer))
+        .map_err(too_many_requests)?;
+
     let email = payload.email.trim().to_lowercase();
     let password = payload.password.trim();
 

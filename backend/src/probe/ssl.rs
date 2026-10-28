@@ -10,15 +10,8 @@ use tokio_rustls::TlsConnector;
 use x509_parser::prelude::*;
 
 pub async fn check_ssl(monitor: &Monitor) -> ProbeResult {
-    let host = monitor.url
-        .trim_start_matches("https://")
-        .trim_start_matches("http://")
-        .split('/')
-        .next()
-        .unwrap_or(&monitor.url)
-        .split(':')
-        .next()
-        .unwrap_or(&monitor.url);
+    let host = crate::net_guard::extract_host(&monitor.url);
+    let host = host.as_str();
 
     let port = monitor.port.unwrap_or(443);
     let addr = format!("{}:{}", host, port);
@@ -48,8 +41,24 @@ pub async fn check_ssl(monitor: &Monitor) -> ProbeResult {
         }
     };
 
+    // Connect to the vetted addresses instead of the hostname so DNS cannot change in between.
+    let targets = match crate::net_guard::policy().resolve_allowed(host, port as u16).await {
+        Ok(targets) => targets,
+        Err(e) => {
+            return ProbeResult {
+                is_up: false,
+                status_code: None,
+                response_time_ms: 0.0,
+                dns_time_ms: None,
+                connect_time_ms: None,
+                tls_time_ms: None,
+                error: Some(format!("SSL check to {}: {}", addr, e)),
+            };
+        }
+    };
+
     let start = Instant::now();
-    let stream_res = timeout(to, TcpStream::connect(&addr)).await;
+    let stream_res = timeout(to, TcpStream::connect(&targets[..])).await;
     let stream = match stream_res {
         Ok(Ok(s)) => s,
         Ok(Err(e)) => {

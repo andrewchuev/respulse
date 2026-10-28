@@ -74,6 +74,17 @@ pub async fn list_channels(
     Ok(Json(result))
 }
 
+/// Webhook-style channels post to a user-supplied URL, so it must not point at internal networks.
+async fn validate_channel_config(config: &serde_json::Value) -> Result<(), (StatusCode, String)> {
+    if let Some(url) = config.get("webhook_url").and_then(|v| v.as_str()) {
+        crate::net_guard::policy()
+            .validate_url(url)
+            .await
+            .map_err(|e| (StatusCode::BAD_REQUEST, format!("Webhook URL not allowed: {}", e)))?;
+    }
+    Ok(())
+}
+
 pub async fn create_channel(
     auth: AuthUser,
     State(state): State<AppState>,
@@ -85,6 +96,8 @@ pub async fn create_channel(
             format!("Forbidden: role {} does not have permission to create channels", auth.role.as_str()),
         ));
     }
+
+    validate_channel_config(&payload.config).await?;
 
     let filter_tags = payload.filter_tags.unwrap_or_default();
 
@@ -142,6 +155,9 @@ pub async fn update_channel(
 
     let name = payload.name.unwrap_or(existing.name);
     let channel_type = payload.channel_type.unwrap_or(existing.channel_type);
+    if let Some(new_config) = payload.config.as_ref() {
+        validate_channel_config(new_config).await?;
+    }
     let config = payload.config.unwrap_or(existing.config);
     let is_active = payload.is_active.unwrap_or(existing.is_active);
     let filter_tags = payload.filter_tags.unwrap_or(existing.filter_tags);

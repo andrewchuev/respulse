@@ -5,7 +5,9 @@ use crate::models::{
     CheckResult, CreateMonitorRequest, LatencyPoint, Monitor, MonitorWithStats,
     UptimeBarPoint, UpdateMonitorRequest, WsMessage,
 };
+use crate::net_guard;
 use crate::probe::runner::execute_single_probe;
+use crate::rate_limit::RateLimits;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -18,6 +20,17 @@ use std::sync::Arc;
 use tokio::sync::broadcast::Sender;
 use uuid::Uuid;
 
+/// Rejects targets that would let a monitor probe internal networks.
+async fn validate_monitor_target(monitor_type: &str, url: &str) -> Result<(), (StatusCode, String)> {
+    let policy = net_guard::policy();
+    let result = match monitor_type.to_uppercase().as_str() {
+        "HEARTBEAT" => return Ok(()),
+        "PORT" | "TCP" | "SSL" => policy.validate_host(&net_guard::extract_host(url)).await,
+        _ => policy.validate_url(url).await,
+    };
+    result.map_err(|e| (StatusCode::BAD_REQUEST, format!("Target not allowed: {}", e)))
+}
+
 #[derive(Clone)]
 pub struct AppState {
     pub pool: DbPool,
@@ -25,6 +38,7 @@ pub struct AppState {
     pub http_client: Arc<Client>,
     pub auth: Arc<AuthConfig>,
     pub webhook: Arc<WebhookConfig>,
+    pub limits: Arc<RateLimits>,
 }
 
 #[derive(FromRow)]
@@ -315,6 +329,8 @@ pub async fn create_monitor(
         ));
     }
 
+    validate_monitor_target(&payload.monitor_type, &payload.url).await?;
+
     let interval = payload.interval_seconds;
     let min_interval = if team_plan == "PRO" { 10 } else { 60 };
     if interval < min_interval {
@@ -425,6 +441,10 @@ pub async fn update_monitor(
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
     .ok_or((StatusCode::NOT_FOUND, "Monitor not found".to_string()))?;
+
+    if let Some(new_url) = payload.url.as_deref() {
+        validate_monitor_target(&existing.monitor_type, new_url).await?;
+    }
 
     let name = payload.name.unwrap_or(existing.name);
     let url = payload.url.unwrap_or(existing.url);

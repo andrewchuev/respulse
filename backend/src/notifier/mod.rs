@@ -126,6 +126,13 @@ pub async fn deliver_to_channel(
     error_detail: Option<&str>,
     duration_secs: Option<i32>,
 ) -> Result<(), String> {
+    // Hostnames are vetted by the client's resolver; IP literals never reach it, so check them here.
+    if let Some(url) = ch.config.get("webhook_url").and_then(|v| v.as_str()) {
+        crate::net_guard::policy()
+            .check_url(url)
+            .map_err(|e| format!("Webhook URL not allowed: {}", e))?;
+    }
+
     let title = match event_name {
         "DOWN" => format!("🚨 INCIDENT: {} is DOWN", monitor.name),
         "RESOLVED" => format!("✅ RESOLVED: {} is UP", monitor.name),

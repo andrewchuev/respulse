@@ -178,6 +178,8 @@
   * **Login Endpoint (`POST /api/auth/login`):** Validates credentials, updates login timestamp, and issues JWT tokens.
   * **Glassmorphic Auth Modal (`AuthModal.tsx`):** Seamless sign in / registration dialog with brand glow, error alerts, password reveal, and 1-click sandbox access.
   * **Strict Authentication:** Every API call except the public ones (health, status page, badges, heartbeat pings, `/api/auth/*`) requires `Authorization: Bearer <JWT>`; missing, forged or expired tokens get `401`. The server refuses to start without a `JWT_SECRET` of at least 32 characters.
+  * **Abuse Protection:** `POST /api/auth/login` allows 10 attempts per IP and then one every 6 seconds, `POST /api/auth/register` 3 signups per IP and then one every 20 minutes; excess requests get `429` with `Retry-After`. The client IP comes from the last `X-Forwarded-For` entry set by the reverse proxy, and only when the TCP peer is an internal address.
+  * **SSRF Guard:** Monitor targets and webhook URLs may not resolve to private, loopback, link-local, CGNAT, multicast or reserved ranges (IPv4, IPv6 and IPv6-embedded IPv4). Hostnames are re-checked at connect time (DNS rebinding), redirects are vetted per hop, and creating such a monitor or channel returns `400`. Set `ALLOW_PRIVATE_TARGETS=true` for self-hosted setups that monitor internal services.
   * **Session Management:** The JWT is kept in `localStorage`; any `401` clears it and returns the user to the sign-in dialog. The WebSocket stream authenticates with the same token in its first frame and only delivers events of the user's own team.
 
 ---
@@ -433,6 +435,7 @@ All API routes are served under the `/api` prefix. Authenticated routes require 
 | `RUST_LOG` | `respulse_api=debug,tower_http=info` | Logging filter level |
 | `JWT_SECRET` | *required* | HS256 signing key, at least 32 characters (`openssl rand -hex 32`); the server exits if missing or short |
 | `DEMO_MODE` | `false` | Enables demo persona switching, 1-click sandbox login and seeded demo passwords |
+| `ALLOW_PRIVATE_TARGETS` | `false` | Lets monitors and webhooks reach private, loopback and link-local addresses; leave off on a public server (SSRF guard) |
 | `FASTSPRING_WEBHOOK_SECRET` | *unset* | HMAC SHA256 secret configured on the FastSpring webhook; webhooks are rejected without it |
 | `FASTSPRING_LIVE_MODE` | `false` | Use the live FastSpring storefront and ignore non-live (test) orders |
 | `APP_URL` | — | Public base URL of the deployment |
