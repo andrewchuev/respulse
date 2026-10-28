@@ -191,11 +191,11 @@ export const FastSpringCheckoutModal: React.FC<FastSpringCheckoutModalProps> = (
                 <DialogTitle className="text-lg font-bold text-white flex items-center gap-2">
                   Upgrade to ResPulse Pro
                   <Badge variant="outline" className="text-[10px] font-mono text-emerald-400 border-emerald-500/30 bg-emerald-950/40">
-                    $8.00 / month
+                    $8.00 / month (excl. VAT)
                   </Badge>
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">
-                  Secure global checkout &amp; automated invoicing powered by <strong className="text-slate-200">FastSpring</strong>
+                  Secure global checkout powered by <strong className="text-slate-200">FastSpring</strong>. Prices exclude local VAT / taxes.
                 </DialogDescription>
               </div>
             </div>
@@ -242,9 +242,12 @@ export const FastSpringCheckoutModal: React.FC<FastSpringCheckoutModalProps> = (
                   <Sparkles className="h-3.5 w-3.5" />
                   What's Included in Pro
                 </div>
-                <span className="text-xs font-mono text-slate-300">
-                  <strong className="text-white text-base font-bold">$8.00</strong> / month
-                </span>
+                <div className="text-right">
+                  <span className="text-xs font-mono text-slate-300">
+                    <strong className="text-white text-base font-bold">$8.00</strong> / month
+                  </span>
+                  <span className="text-[10px] text-slate-400 block font-mono">excl. local VAT / tax</span>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-300">
@@ -305,7 +308,7 @@ export const FastSpringCheckoutModal: React.FC<FastSpringCheckoutModalProps> = (
                     In-page modal checkout. Pay with Credit Card, Apple Pay, Google Pay, or PayPal.
                   </p>
                   <div className="mt-2.5 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400 group-hover:translate-x-0.5 transition-transform">
-                    <span>Pay with FastSpring ($8.00) &rarr;</span>
+                    <span>Pay with FastSpring ($8.00 + VAT) &rarr;</span>
                   </div>
                 </button>
 
@@ -328,7 +331,7 @@ export const FastSpringCheckoutModal: React.FC<FastSpringCheckoutModalProps> = (
                     Open full FastSpring hosted checkout in a new browser tab.
                   </p>
                   <div className="mt-2.5 flex items-center gap-1.5 text-[11px] font-semibold text-cyan-400">
-                    <span>Open Web Checkout ($8.00) &rarr;</span>
+                    <span>Open Web Checkout ($8.00 + VAT) &rarr;</span>
                   </div>
                 </button>
               </div>
@@ -336,7 +339,7 @@ export const FastSpringCheckoutModal: React.FC<FastSpringCheckoutModalProps> = (
               {/* Supported payment methods banner */}
               <div className="flex items-center justify-between bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 text-[11px] font-mono text-slate-400">
                 <span className="truncate pr-2">
-                  Accepted: <strong>Cards (Visa, MC, Amex)</strong>, <strong>Apple Pay</strong>, <strong>Google Pay</strong>, <strong>Wire</strong>
+                  Net price: <strong>$8.00 USD / mo</strong> &bull; Local VAT / sales tax is added at checkout
                 </span>
                 {config && (
                   <button

@@ -875,6 +875,9 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
                     <span className="text-4xl font-extrabold text-white">$8</span>
                     <span className="text-xs text-slate-400 font-mono">/ month (monthly billing)</span>
                   </div>
+                  <div className="text-[11px] text-slate-400 font-mono mt-1">
+                    * Price excludes applicable local VAT / sales tax (calculated at checkout)
+                  </div>
                   <p className="text-xs text-slate-300 mt-2 leading-relaxed">
                     Production monitoring for startups, engineers and squads requiring zero-latency alerts.
                   </p>
@@ -934,7 +937,7 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
                 }}
                 className="w-full mt-8 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-[0_0_20px_rgba(16,185,129,0.35)]"
               >
-                Upgrade to Pro — $8/mo
+                Upgrade to Pro — $8/mo (excl. VAT)
               </Button>
             </div>
           </div>
@@ -1030,7 +1033,7 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
               },
               {
                 q: "What is included in the $8/month Pro plan?",
-                a: "The Pro plan ($8 USD / month, cancel anytime) offers turbo 10-second probe intervals, up to 100 synthetic monitors, unlimited cron tasks with timezones, up to 10 team members with 4-tier RBAC, 90-day retention with SRE RCA post-mortems, Prometheus metric exports, tag-based alert routing, and custom domain status pages."
+                a: "The Pro plan ($8.00 USD / month excl. VAT, cancel anytime) offers turbo 10-second probe intervals, up to 100 synthetic monitors, unlimited cron tasks with timezones, up to 10 team members with 4-tier RBAC, 90-day retention with SRE RCA post-mortems, Prometheus metric exports, tag-based alert routing, and custom domain status pages."
               },
               {
                 q: "How does Role-Based Access Control (RBAC) enforce security?",

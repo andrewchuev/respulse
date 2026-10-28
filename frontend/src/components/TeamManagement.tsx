@@ -391,11 +391,11 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({ currentUser, onU
                       : 'border-slate-700 text-slate-400 bg-slate-900'
                   }`}
                 >
-                  {currentUser?.team_plan === 'PRO' ? 'PRO PLAN ($8.00/MO)' : 'FREE PLAN ($0/FOREVER)'}
+                  {currentUser?.team_plan === 'PRO' ? 'PRO PLAN ($8.00/MO EXCL. VAT)' : 'FREE PLAN ($0/FOREVER)'}
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Processed securely via <strong className="text-slate-300">FastSpring</strong> (Store: <code className="text-slate-400">reslab</code>)
+                Processed securely via <strong className="text-slate-300">FastSpring</strong> (Store: <code className="text-slate-400">reslab</code>). Price excludes applicable VAT/tax.
               </p>
             </div>
           </div>
@@ -408,7 +408,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({ currentUser, onU
                 className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs h-9 gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
               >
                 <Sparkles className="h-3.5 w-3.5 text-amber-300" />
-                Upgrade to Pro via FastSpring ($8/mo)
+                Upgrade to Pro via FastSpring ($8/mo + VAT)
               </Button>
             ) : (
               <Button
