@@ -18,8 +18,8 @@ fn days_from_env(name: &str, default: i32) -> i32 {
 }
 
 pub async fn run_retention_loop(pool: DbPool) {
-    let free_days = days_from_env("RETENTION_FREE_DAYS", 14);
-    let pro_days = days_from_env("RETENTION_PRO_DAYS", 90);
+    let free_days = days_from_env("RETENTION_FREE_DAYS", crate::plans::FREE.retention_days);
+    let pro_days = days_from_env("RETENTION_PRO_DAYS", crate::plans::PRO.retention_days);
     info!("Check history retention: {} days (Free), {} days (Pro)", free_days, pro_days);
 
     // Let startup settle before the first pass, then run daily.

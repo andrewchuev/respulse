@@ -308,7 +308,11 @@ const DEMO_EMAIL_DOMAIN: &str = "@respulse.internal";
 
 /// Public auth capabilities so the UI can hide demo-only controls.
 pub async fn auth_config(State(state): State<AppState>) -> Json<serde_json::Value> {
-    Json(json!({ "demo_mode": state.auth.demo_mode }))
+    Json(json!({
+        "demo_mode": state.auth.demo_mode,
+        "billing_enabled": state.settings.billing_enabled,
+        "plans": { "FREE": crate::plans::FREE, "PRO": crate::plans::PRO },
+    }))
 }
 
 /// Passwordless persona login for the seeded demo organization. Disabled unless `DEMO_MODE` is on.

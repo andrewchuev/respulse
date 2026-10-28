@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { InviteMemberPayload, PaymentTransaction, TeamMember, UserProfile, UserRole } from '../types';
+import { InviteMemberPayload, PaymentTransaction, PlanLimits, TeamMember, UserProfile, UserRole } from '../types';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -34,11 +34,23 @@ interface TeamManagementProps {
   currentUser: UserProfile | null;
   onUserRefreshed?: () => void;
   onOpenUpgradeModal?: () => void;
+  /** False during the free beta: no prices, no checkout. */
+  billingEnabled?: boolean;
+  planLimits?: PlanLimits;
 }
 
-export const TeamManagement: React.FC<TeamManagementProps> = ({ currentUser, onUserRefreshed, onOpenUpgradeModal }) => {
+export const TeamManagement: React.FC<TeamManagementProps> = ({
+  currentUser,
+  onUserRefreshed,
+  onOpenUpgradeModal,
+  billingEnabled = true,
+  planLimits,
+}) => {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [payments, setPayments] = useState<PaymentTransaction[]>([]);
+  const limitsForPlan = planLimits ?? (currentUser?.team_plan === 'PRO'
+    ? { max_monitors: 100, min_interval_seconds: 10, max_members: 10, retention_days: 90 }
+    : { max_monitors: 25, min_interval_seconds: 30, max_members: 1, retention_days: 30 });
   const [showBillingHistory, setShowBillingHistory] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -391,17 +403,27 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({ currentUser, onU
                       : 'border-slate-700 text-slate-400 bg-slate-900'
                   }`}
                 >
-                  {currentUser?.team_plan === 'PRO' ? 'PRO PLAN ($8.00/MO EXCL. VAT)' : 'FREE PLAN ($0/FOREVER)'}
+                  {currentUser?.team_plan === 'PRO'
+                    ? 'PRO PLAN'
+                    : billingEnabled
+                      ? 'FREE PLAN ($0/FOREVER)'
+                      : 'FREE OPEN BETA'}
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Processed securely via <strong className="text-slate-300">FastSpring</strong> (Store: <code className="text-slate-400">reslab</code>). Price excludes applicable VAT/tax.
+                {billingEnabled ? (
+                  <>
+                    Processed securely via <strong className="text-slate-300">FastSpring</strong> (Store: <code className="text-slate-400">reslab</code>). Price excludes applicable VAT/tax.
+                  </>
+                ) : (
+                  <>ResPulse is free during the open beta. If a paid plan is introduced later, you will be told well in advance.</>
+                )}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {currentUser?.team_plan === 'FREE' ? (
+            {!billingEnabled ? null : currentUser?.team_plan === 'FREE' ? (
               <Button
                 size="sm"
                 onClick={onOpenUpgradeModal}
@@ -439,19 +461,19 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({ currentUser, onU
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-border/50 text-xs text-slate-300">
           <div>
             <span className="text-[10px] text-muted-foreground font-mono block">Max Targets:</span>
-            <span className="font-semibold text-white">{currentUser?.team_plan === 'PRO' ? '100 Monitors' : '10 Monitors'}</span>
+            <span className="font-semibold text-white">{limitsForPlan.max_monitors} Monitors</span>
           </div>
           <div>
             <span className="text-[10px] text-muted-foreground font-mono block">Probe Frequency:</span>
-            <span className="font-semibold text-white">{currentUser?.team_plan === 'PRO' ? '10s Turbo' : '60s Standard'}</span>
+            <span className="font-semibold text-white">{limitsForPlan.min_interval_seconds}s minimum interval</span>
           </div>
           <div>
             <span className="text-[10px] text-muted-foreground font-mono block">Prometheus Exporter:</span>
-            <span className="font-semibold text-white">{currentUser?.team_plan === 'PRO' ? 'Enabled (/metrics)' : 'Pro only'}</span>
+            <span className="font-semibold text-white">{currentUser?.team_plan === 'PRO' ? 'Enabled (/metrics)' : billingEnabled ? 'Pro only' : 'Not in beta'}</span>
           </div>
           <div>
             <span className="text-[10px] text-muted-foreground font-mono block">Team Seats:</span>
-            <span className="font-semibold text-white">{currentUser?.team_plan === 'PRO' ? '10 Seats (RBAC)' : '1 Solo Seat'}</span>
+            <span className="font-semibold text-white">{limitsForPlan.max_members > 1 ? `${limitsForPlan.max_members} Seats (RBAC)` : '1 Solo Seat'}</span>
           </div>
         </div>
 

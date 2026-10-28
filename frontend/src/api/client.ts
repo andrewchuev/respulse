@@ -1,5 +1,7 @@
 import {
   AddIncidentUpdatePayload,
+  AdminReportData,
+  AppConfig,
   AlertLogWithDetails,
   AuthResponse,
   BulkActionPayload,
@@ -129,9 +131,35 @@ export async function fetchAvailableUsers(): Promise<UserProfile[]> {
   return res.json();
 }
 
-export async function fetchAuthConfig(): Promise<{ demo_mode: boolean }> {
-  const res = await fetch(`${API_BASE}/auth/config`);
-  if (!res.ok) return { demo_mode: false };
+// Mirrors the backend defaults so the UI still renders sensibly if the config request fails.
+export const DEFAULT_APP_CONFIG: AppConfig = {
+  demo_mode: false,
+  billing_enabled: false,
+  plans: {
+    FREE: { max_monitors: 25, min_interval_seconds: 30, max_members: 1, retention_days: 30 },
+    PRO: { max_monitors: 100, min_interval_seconds: 10, max_members: 10, retention_days: 90 },
+  },
+};
+
+export async function fetchAuthConfig(): Promise<AppConfig> {
+  try {
+    const res = await fetch(`${API_BASE}/auth/config`);
+    if (!res.ok) return DEFAULT_APP_CONFIG;
+    return { ...DEFAULT_APP_CONFIG, ...(await res.json()) };
+  } catch {
+    return DEFAULT_APP_CONFIG;
+  }
+}
+
+export async function fetchAdminAccess(): Promise<boolean> {
+  const res = await apiFetch(`${API_BASE}/admin/access`, { headers: authHeaders() });
+  if (!res.ok) return false;
+  return !!(await res.json()).is_admin;
+}
+
+export async function fetchAdminReport(): Promise<AdminReportData> {
+  const res = await apiFetch(`${API_BASE}/admin/report`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(res.status === 403 ? 'Operator access only' : 'Failed to load report');
   return res.json();
 }
 

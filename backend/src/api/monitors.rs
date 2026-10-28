@@ -6,6 +6,7 @@ use crate::models::{
     UptimeBarPoint, UpdateMonitorRequest, WsMessage,
 };
 use crate::net_guard;
+use crate::plans::{self, AppSettings};
 use crate::probe::runner::execute_single_probe;
 use crate::rate_limit::RateLimits;
 use axum::extract::{Path, State};
@@ -39,6 +40,7 @@ pub struct AppState {
     pub auth: Arc<AuthConfig>,
     pub webhook: Arc<WebhookConfig>,
     pub limits: Arc<RateLimits>,
+    pub settings: Arc<AppSettings>,
 }
 
 #[derive(FromRow)]
@@ -318,13 +320,15 @@ pub async fn create_monitor(
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    let max_monitors = if team_plan == "PRO" { 100 } else { 10 };
-    if monitor_count >= max_monitors {
+    let plan_limits = plans::limits(&team_plan);
+    if monitor_count >= plan_limits.max_monitors {
         return Err((
             StatusCode::BAD_REQUEST,
             format!(
-                "Monitor limit reached ({} max on {} plan). Upgrade to Pro for up to 100 monitors.",
-                max_monitors, team_plan
+                "Monitor limit reached ({} max on the {} plan).{}",
+                plan_limits.max_monitors,
+                team_plan,
+                state.settings.upgrade_hint()
             ),
         ));
     }
@@ -332,13 +336,15 @@ pub async fn create_monitor(
     validate_monitor_target(&payload.monitor_type, &payload.url).await?;
 
     let interval = payload.interval_seconds;
-    let min_interval = if team_plan == "PRO" { 10 } else { 60 };
+    let min_interval = plan_limits.min_interval_seconds;
     if interval < min_interval {
         return Err((
             StatusCode::BAD_REQUEST,
             format!(
-                "Minimum probe interval on {} plan is {}s. Turbo 10s intervals require Pro plan.",
-                team_plan, min_interval
+                "Minimum probe interval on the {} plan is {}s.{}",
+                team_plan,
+                min_interval,
+                state.settings.upgrade_hint()
             ),
         ));
     }
@@ -458,13 +464,15 @@ pub async fn update_monitor(
             .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
             .unwrap_or_else(|| "FREE".to_string());
 
-        let min_interval = if team_plan == "PRO" { 10 } else { 60 };
+        let min_interval = plans::limits(&team_plan).min_interval_seconds;
         if req_interval < min_interval {
             return Err((
                 StatusCode::BAD_REQUEST,
                 format!(
-                    "Minimum probe interval on {} plan is {}s. Turbo 10s intervals require Pro plan.",
-                    team_plan, min_interval
+                    "Minimum probe interval on the {} plan is {}s.{}",
+                    team_plan,
+                    min_interval,
+                    state.settings.upgrade_hint()
                 ),
             ));
         }

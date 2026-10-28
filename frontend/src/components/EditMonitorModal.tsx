@@ -7,9 +7,19 @@ import { Badge } from './ui/badge';
 import { Activity, ShieldCheck, Server, Heart, Code2, Lock, ChevronDown, ChevronUp, Copy, Check, Pencil } from 'lucide-react';
 import { updateMonitor } from '../api/client';
 
+const INTERVAL_OPTIONS: { value: number; label: string }[] = [
+  { value: 10, label: '⚡ Every 10 seconds' },
+  { value: 30, label: '⚡ Every 30 seconds' },
+  { value: 60, label: 'Every 1 minute' },
+  { value: 300, label: 'Every 5 minutes' },
+  { value: 600, label: 'Every 10 minutes' },
+];
+
 interface EditMonitorModalProps {
   monitor: MonitorWithStats | null;
   isOpen: boolean;
+  /** Fastest check interval the plan allows, in seconds. */
+  minInterval?: number;
   onClose: () => void;
   onUpdated: (updated: Monitor) => void;
 }
@@ -17,6 +27,7 @@ interface EditMonitorModalProps {
 export const EditMonitorModal: React.FC<EditMonitorModalProps> = ({
   monitor,
   isOpen,
+  minInterval = 30,
   onClose,
   onUpdated,
 }) => {
@@ -489,11 +500,11 @@ export const EditMonitorModal: React.FC<EditMonitorModalProps> = ({
                   </>
                 ) : (
                   <>
-                    <option value={10}>⚡ Every 10 seconds (Turbo Pro)</option>
-                    <option value={30}>⚡ Every 30 seconds (Pro)</option>
-                    <option value={60}>Every 1 minute (Standard)</option>
-                    <option value={300}>Every 5 minutes</option>
-                    <option value={600}>Every 10 minutes</option>
+                    {INTERVAL_OPTIONS.filter((o) => o.value >= minInterval || o.value === interval).map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
                   </>
                 )}
               </select>

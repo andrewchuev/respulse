@@ -153,9 +153,8 @@
   * **Hero Section:** Systems-grade synthetic monitoring value proposition, primary CTAs for registration and live console exploration, and animated real-time browser console mockup with simulated probes.
   * **Interactive Multi-Protocol Playground:** Tabbed live explorer covering HTTP/REST APIs, TCP sockets & databases, TLS certificate tracking, asynchronous worker heartbeats, and multi-channel alerts with executable curl examples.
   * **Architectural Deep Dive (Why Rust?):** Benchmark comparison matrix comparing ResPulse (Rust Axum + Tokio) against legacy NodeJS/Python engines (memory, zero GC jitter, thread concurrency, rustls memory safety).
-  * **Two-Tier Transparent Pricing (Free & Pro $8/mo):** Simple, developer-friendly pricing:
-    * **Free Tier ($0 / forever):** 10 synthetic monitors, 60s standard intervals, 10 cron jobs, multi-channel alerts, 14-day history, SVG status badges, solo workspace.
-    * **Pro Tier ($8 / month, monthly subscription):** Up to 100 synthetic monitors, **turbo 10-second probe intervals**, unlimited cron & background tasks with timezones, **Prometheus metrics exporter (`/api/metrics`)**, **tag-based alert routing (`filter_tags`)**, full 64KB execution/STDERR capture, up to 10 team members with 4-tier RBAC, 90-day retention with SRE post-mortems (RCA), and custom domain status pages.
+  * **Free Open Beta (current mode):** `BILLING_ENABLED=false` hides prices and checkout. Every team gets the Free limits: **25 monitors, 30-second minimum interval, 30-day history, solo workspace**, heartbeat/cron monitoring, multi-channel alerts and SVG badges. Pro-only features (10-second probes, up to 100 monitors, 10 team members, Prometheus exporter, 90-day history) are planned for a possible paid plan and are not offered during the beta.
+  * **Paid plan (dormant):** with `BILLING_ENABLED=true` the Pro plan ($8/month: up to 100 monitors, 10-second probes, 10 team members, Prometheus exporter, 90-day history) and the checkout below come back.
   * **FastSpring Payment & Subscription Integration:**
     * Native self-service checkout for the Pro Plan ($8.00 USD / month).
     * Processed securely via **FastSpring** (Merchant of Record, store `reslab`).
@@ -350,6 +349,12 @@ The server `.env` needs `POSTGRES_*`, `JWT_SECRET`, `FASTSPRING_WEBHOOK_SECRET` 
 
 ---
 
+## 📊 Operator Report
+
+Emails listed in `ADMIN_EMAILS` see a **Report** tab (`/admin`) with aggregate numbers to judge whether the service is worth developing: signups per day, the activation funnel (signed up → created a monitor → connected an alert channel → active in the last 7 days), weekly cohorts, demand signals (teams near or at their limits, teams using fast probes), monitors by type and server load (checks per day, probes per second, database size). It shows team names but never user emails, and excludes the seeded demo organization.
+
+---
+
 ## 🛠 Makefile Commands
 
 | Command | Description |
@@ -378,7 +383,7 @@ All API routes are served under the `/api` prefix. Authenticated routes require 
 | `POST` | `/api/auth/register` | Self-service registration (creates organization workspace + Owner with bcrypt password) |
 | `POST` | `/api/auth/login` | Authenticate with email/password and obtain signed JWT token |
 | `GET` | `/api/auth/me` | Current authenticated user profile, team details & permissions (Bearer JWT) |
-| `GET` | `/api/auth/config` | Public auth capabilities (`demo_mode`) used by the UI |
+| `GET` | `/api/auth/config` | Public capabilities used by the UI: `demo_mode`, `billing_enabled` and the plan limits |
 | `GET` | `/api/auth/users` | List the members of the caller's team (persona switcher in demo mode) |
 | `POST` | `/api/auth/switch-user` | Passwordless login as a seeded demo persona (`DEMO_MODE=true` only, otherwise `404`) |
 | `GET` | `/api/team/members` | List all team members of the active enterprise organization |
@@ -410,6 +415,8 @@ All API routes are served under the `/api` prefix. Authenticated routes require 
 | `GET` | `/api/incidents/:id` | Get incident details and full chronological timeline |
 | `PUT` | `/api/incidents/:id` | Update incident metadata, severity, stage, RCA post-mortem & publication |
 | `POST` | `/api/incidents/:id/updates` | Append a new live status update to the incident timeline |
+| `GET` | `/api/admin/access` | Whether the caller may open the operator report (`ADMIN_EMAILS`) |
+| `GET` | `/api/admin/report` | Operator report: signups, activation funnel, cohorts, demand signals, load (admins only, `403` otherwise) |
 | `GET` | `/api/stats` | Global metrics (total, operational, down, average latency) |
 | `GET` | `/api/status-page` | Public status page data |
 | `GET` | `/api/metrics` / `/metrics` | Prometheus scrape endpoint scoped to one team; send `Authorization: Bearer <team Ping Key or JWT>` (`respulse_monitors_total`, statuses, latencies, incidents) |
@@ -435,9 +442,11 @@ All API routes are served under the `/api` prefix. Authenticated routes require 
 | `RUST_LOG` | `respulse_api=debug,tower_http=info` | Logging filter level |
 | `JWT_SECRET` | *required* | HS256 signing key, at least 32 characters (`openssl rand -hex 32`); the server exits if missing or short |
 | `DEMO_MODE` | `false` | Enables demo persona switching, 1-click sandbox login and seeded demo passwords |
+| `BILLING_ENABLED` | `false` | Shows prices, upgrade buttons and checkout; leave off during the free open beta |
+| `ADMIN_EMAILS` | *unset* | Comma-separated emails that can open the operator report at `/admin` (aggregates only, demo org excluded) |
 | `ALLOW_PRIVATE_TARGETS` | `false` | Lets monitors and webhooks reach private, loopback and link-local addresses; leave off on a public server (SSRF guard) |
 | `CORS_ALLOWED_ORIGINS` | *unset* | Comma-separated origins allowed to call the API cross-origin; unset means same-origin only (the bundled SPA needs nothing) |
-| `RETENTION_FREE_DAYS` / `RETENTION_PRO_DAYS` | `14` / `90` | How long probe history (`check_results`) is kept per plan; pruned daily in batches |
+| `RETENTION_FREE_DAYS` / `RETENTION_PRO_DAYS` | `30` / `90` | How long probe history (`check_results`) is kept per plan; pruned daily in batches |
 | `FASTSPRING_WEBHOOK_SECRET` | *unset* | HMAC SHA256 secret configured on the FastSpring webhook; webhooks are rejected without it |
 | `FASTSPRING_LIVE_MODE` | `false` | Use the live FastSpring storefront and ignore non-live (test) orders |
 | `APP_URL` | — | Public base URL of the deployment |

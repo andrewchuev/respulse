@@ -68,12 +68,12 @@ pub async fn invite_member(
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": e.to_string() })).into_response()))?;
 
-    let max_members = if team_plan == "PRO" { 10 } else { 1 };
+    let max_members = crate::plans::limits(&team_plan).max_members;
     if member_count >= max_members {
         return Err((
             StatusCode::BAD_REQUEST,
             Json(json!({
-                "error": format!("Team member limit reached ({} max on {} plan). Upgrade to Pro ($8/mo) for up to 10 team members with RBAC.", max_members, team_plan)
+                "error": format!("Team member limit reached ({} max on the {} plan).{}", max_members, team_plan, state.settings.upgrade_hint())
             })).into_response(),
         ));
     }

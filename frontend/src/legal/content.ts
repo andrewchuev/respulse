@@ -52,11 +52,10 @@ export const legalDocs: Record<LegalKind, LegalDoc> = {
         ],
       },
       {
-        heading: '3. Plans, limits and billing',
+        heading: '3. Open beta, plans and limits',
         paragraphs: [
-          'The Free plan includes up to 10 monitors, a 60-second minimum check interval and 14 days of history. The Pro plan costs USD 8 per month excluding VAT and sales tax and includes up to 100 monitors, 10-second checks, up to 10 team members and 90 days of history. Current limits are shown in the product and may be updated for new customers.',
-          'Payments are processed by FastSpring, our merchant of record. FastSpring charges you, collects applicable taxes, issues receipts and handles payment-method data; we never see your card details. The Pro subscription renews monthly until canceled.',
-          'You can cancel at any time using the links in your FastSpring order emails or by contacting us. After cancellation Pro stays active until the end of the paid period, then the workspace returns to the Free plan. Refunds are described in the Refund Policy.',
+          `${c.product} is currently offered free of charge during an open beta. Every team gets the same limits: up to 25 monitors, checks as often as every 30 seconds, 30 days of history and one user. Limits may change, and we will try to give notice of changes that reduce what you have.`,
+          'We may introduce a paid plan later for heavier use (for example faster probes, team seats and a metrics exporter). If we do, we will announce it at least 30 days before it affects you, nothing will be charged without your explicit checkout, and the pricing, billing and refund terms will be published before you are asked to pay.',
         ],
       },
       {
@@ -80,7 +79,7 @@ export const legalDocs: Record<LegalKind, LegalDoc> = {
       {
         heading: '6. Availability and changes',
         paragraphs: [
-          'We aim for a reliable service but provide it on a best-effort basis without an uptime guarantee. Probes run from our infrastructure, so results reflect what our servers can reach and may differ from what your users experience. We may perform maintenance, and we may change or discontinue features with reasonable notice where practical.',
+          'We aim for a reliable service but, as a beta, provide it on a best-effort basis without an uptime guarantee. Probes run from our infrastructure, so results reflect what our servers can reach and may differ from what your users experience. We may perform maintenance, and we may change or discontinue features with reasonable notice where practical.',
         ],
       },
       {
@@ -121,7 +120,7 @@ export const legalDocs: Record<LegalKind, LegalDoc> = {
           'Service configuration: monitor targets, check settings, tags, folders, notification channel settings, incident updates and post-mortems that you write.',
           'Sensitive items you choose to enter: HTTP headers or request bodies, HTTP Basic credentials, webhook URLs and bot tokens. They are stored in our database so checks and alerts can run.',
           'Monitoring results: status, response times, status codes, error messages and heartbeat payloads (up to 64 KB) for your monitors.',
-          'Billing data: order and subscription identifiers, amounts, currency, status and the buyer email received from FastSpring. We do not receive or store payment card numbers.',
+          'Billing data: none while the service is free. If paid plans are introduced, our payment provider will share order identifiers, amounts, status and the buyer email with us; card numbers never reach us.',
           'Technical data: IP address, user agent and request metadata in server logs, and the IP address used by rate limiting to curb abuse.',
         ],
       },
@@ -130,7 +129,7 @@ export const legalDocs: Record<LegalKind, LegalDoc> = {
         bullets: [
           'to provide, secure and support the service, including running your checks and delivering alerts;',
           'to authenticate you, prevent abuse and enforce plan limits;',
-          'to process subscriptions and refunds through FastSpring;',
+          'to understand overall usage (such as signups, active teams and number of monitors) and decide how to develop the service; this uses aggregate figures and team names, not your email or the content of your monitors;',
           'to communicate about the service, such as security notices and changes to these policies.',
         ],
         paragraphs: ['We do not sell personal data and do not use it for advertising.'],
@@ -138,13 +137,13 @@ export const legalDocs: Record<LegalKind, LegalDoc> = {
       {
         heading: '3. Retention',
         paragraphs: [
-          'Monitoring results are kept for 14 days on the Free plan and 90 days on Pro, then deleted automatically. Account and configuration data is kept while your account exists. Billing records are kept as long as needed for accounting and legal obligations. Server logs are kept for a limited time for security and troubleshooting. Server backups are rotated and kept for about two weeks.',
+          'Monitoring results are kept for 30 days (90 days on any future paid plan), then deleted automatically. Account and configuration data is kept while your account exists. Billing records are kept as long as needed for accounting and legal obligations. Server logs are kept for a limited time for security and troubleshooting. Server backups are rotated and kept for about two weeks.',
         ],
       },
       {
         heading: '4. Who we share data with',
         bullets: [
-          'FastSpring, the merchant of record, which processes payments and taxes under its own privacy policy.',
+          'A payment provider, only if paid plans are introduced (it would process payments and taxes under its own privacy policy).',
           `${c.hosting}, which hosts our servers and database.`,
           'The destinations you configure: alert messages are sent to the Telegram, Discord, Slack or webhook endpoints you set up, and probes contact the targets you monitor.',
           'Authorities where the law requires it.',
@@ -153,7 +152,7 @@ export const legalDocs: Record<LegalKind, LegalDoc> = {
       {
         heading: '5. Cookies and local storage',
         paragraphs: [
-          'We do not use advertising or tracking cookies. The app stores your sign-in token and interface preferences (such as the compact view) in your browser\'s local storage. When you open the checkout, a script and frame from FastSpring are loaded, which may set their own cookies.',
+          'We do not use advertising or tracking cookies. The app stores your sign-in token and interface preferences (such as the compact view) in your browser\'s local storage. Checkout is currently switched off. If it is introduced, a script and frame from the payment provider will be loaded when you open it, and they may set their own cookies.',
           'Avatar images may be loaded from third-party image hosts, which can see your IP address when your browser requests them.',
         ],
       },
@@ -172,7 +171,7 @@ export const legalDocs: Record<LegalKind, LegalDoc> = {
       {
         heading: '8. International transfers, children and changes',
         paragraphs: [
-          'Data may be processed in countries other than your own, including by FastSpring; where required we rely on appropriate safeguards. The service is not directed to children under 16. We will post updates to this policy here and note the date below.',
+          'Data may be processed in countries other than your own; where required we rely on appropriate safeguards. The service is not directed to children under 16. We will post updates to this policy here and note the date below.',
         ],
       },
       {
@@ -184,43 +183,28 @@ export const legalDocs: Record<LegalKind, LegalDoc> = {
 
   refund: {
     title: 'Refund Policy',
-    summary: `How refunds and cancellations work for ${c.product} Pro. Payments are handled by FastSpring, our merchant of record.`,
+    summary: `${c.product} is currently free, so there is nothing to pay for or refund. This page explains what will apply if paid plans are introduced.`,
     sections: [
       {
-        heading: '1. Cancelling',
+        heading: '1. Today',
         paragraphs: [
-          'You can cancel the Pro subscription at any time using the link in your FastSpring order emails or by contacting us. Cancelling stops future charges; Pro stays active until the end of the period you already paid for, and then the workspace returns to the Free plan. Charges already made are not refunded automatically when you cancel.',
+          'During the open beta no payment is requested and no subscription can be purchased.',
         ],
       },
       {
-        heading: '2. Refunds',
+        heading: '2. If paid plans are introduced',
+        paragraphs: [
+          'The final terms will be published before any purchase is possible and will take precedence over this page. The intended approach is:',
+        ],
         bullets: [
-          `First payment: if the service does not meet your needs, you can request a full refund within ${c.refundWindowDays} days of your initial purchase.`,
-          `Renewals: you can request a refund of a renewal charge within ${c.renewalRefundDays} days of that charge; we will generally approve it if you did not rely on the renewed period.`,
-          'Later requests and partial-period refunds are considered case by case, for example after a prolonged outage on our side.',
-          'Taxes collected on the order are refunded together with the amount.',
+          'You can cancel at any time; the plan stays active until the end of the paid period and then returns to the free plan.',
+          `A full refund of the first payment on request within ${c.refundWindowDays} days of the purchase, and of a renewal payment within ${c.renewalRefundDays} days of the charge.`,
+          'Taxes collected on an order are refunded together with the amount.',
+          'Refunds are issued to the original payment method by our payment provider.',
         ],
       },
       {
-        heading: '3. How to request a refund',
-        paragraphs: [
-          `Email ${c.supportEmail} from the address used at checkout and include your FastSpring order reference (it is on your receipt). We reply within a few business days. The refund is issued by FastSpring to your original payment method; banks usually need 5 to 10 business days to show it.`,
-        ],
-      },
-      {
-        heading: '4. What happens to your plan',
-        paragraphs: [
-          'When a refund also ends the subscription, your workspace returns to the Free plan right away. Your data is kept, but Free plan limits and 14-day history apply, and results older than that are deleted by the retention process.',
-        ],
-      },
-      {
-        heading: '5. Chargebacks and your rights',
-        paragraphs: [
-          'Please contact us before opening a dispute with your bank so we can resolve the problem quickly. Nothing in this policy limits any statutory rights you have as a consumer.',
-        ],
-      },
-      {
-        heading: '6. Contact',
+        heading: '3. Contact',
         paragraphs: [`${c.operator}, ${c.operatorAddress}, ${c.supportEmail}.`],
       },
     ],

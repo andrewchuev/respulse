@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { CreateMonitorPayload, GlobalStats, MonitorWithStats, UserProfile } from './types';
+import { AppConfig, CreateMonitorPayload, GlobalStats, MonitorWithStats, UserProfile } from './types';
 import {
   clearAuthSession,
   createMonitor,
   createWebSocketConnection,
   deleteMonitor,
+  DEFAULT_APP_CONFIG,
+  fetchAdminAccess,
   fetchAuthConfig,
   fetchAvailableUsers,
   fetchCurrentUser,
@@ -31,9 +33,10 @@ import { SkeletonDashboard } from './components/SkeletonDashboard';
 import { PromoLandingPage } from './components/PromoLandingPage';
 import { AuthModal } from './components/AuthModal';
 import { LegalPage } from './components/LegalPage';
+import { AdminReport } from './components/AdminReport';
 import { FastSpringCheckoutModal } from './components/FastSpringCheckoutModal';
 
-type View = 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo' | 'terms' | 'privacy' | 'refund';
+type View = 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo' | 'terms' | 'privacy' | 'refund' | 'admin';
 
 export function App() {
   const [monitors, setMonitors] = useState<MonitorWithStats[]>([]);
@@ -62,6 +65,7 @@ export function App() {
       if (view === 'incidents' || path === '/incidents') return 'incidents';
       if (view === 'team' || path === '/team') return 'team';
       if (view === 'status' || view === 'status-page' || path === '/status' || path === '/status-page') return 'status-page';
+      if (path === '/admin') return 'admin';
       if (path === '/terms') return 'terms';
       if (path === '/privacy') return 'privacy';
       if (path === '/refund') return 'refund';
@@ -74,7 +78,7 @@ export function App() {
   const [currentView, setCurrentView] = useState<View>(getViewFromLocation);
 
   const requiresAuth = (view: string) =>
-    view === 'dashboard' || view === 'channels' || view === 'incidents' || view === 'team';
+    view === 'dashboard' || view === 'channels' || view === 'incidents' || view === 'team' || view === 'admin';
 
   const changeView = (requested: View) => {
     let newView = requested;
@@ -111,7 +115,13 @@ export function App() {
   const [availableUsers, setAvailableUsers] = useState<UserProfile[]>([]);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
-  const [demoMode, setDemoMode] = useState(false);
+  const [appConfig, setAppConfig] = useState<AppConfig>(DEFAULT_APP_CONFIG);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const demoMode = appConfig.demo_mode;
+  const billingEnabled = appConfig.billing_enabled;
+  const planKey = currentUser?.team_plan === 'PRO' ? 'PRO' : 'FREE';
+  // Checkout is hidden while the service is a free beta.
+  const openUpgrade = billingEnabled ? () => setIsFastSpringModalOpen(true) : undefined;
 
   const openAuth = (mode: 'login' | 'register') => {
     setAuthModalMode(mode);
@@ -161,9 +171,7 @@ export function App() {
   };
 
   useEffect(() => {
-    fetchAuthConfig()
-      .then((cfg) => setDemoMode(cfg.demo_mode))
-      .catch(() => setDemoMode(false));
+    fetchAuthConfig().then(setAppConfig);
 
     // Any 401 from the API means the session is gone: return to the landing page and ask to sign in.
     const unsubscribe = onUnauthorized(() => {
@@ -185,6 +193,15 @@ export function App() {
     loadUserData();
     loadData();
   }, []);
+
+  // The operator link only appears for emails the server lists in ADMIN_EMAILS.
+  useEffect(() => {
+    if (!currentUser) {
+      setIsAdmin(false);
+      return;
+    }
+    fetchAdminAccess().then(setIsAdmin).catch(() => setIsAdmin(false));
+  }, [currentUser?.id]);
 
   // Reconnect the live stream whenever the signed-in user changes, so it carries the right tenant.
   useEffect(() => {
@@ -338,7 +355,9 @@ export function App() {
             setIsAddModalOpen(true);
           }}
           onOpenAuth={openAuth}
-          onOpenUpgradeModal={() => setIsFastSpringModalOpen(true)}
+          onOpenUpgradeModal={openUpgrade}
+          billingEnabled={billingEnabled}
+          plans={appConfig.plans}
         />
         <FastSpringCheckoutModal
           isOpen={isFastSpringModalOpen}
@@ -380,10 +399,11 @@ export function App() {
         currentUser={currentUser}
         availableUsers={availableUsers}
         demoMode={demoMode}
+        isAdmin={isAdmin}
         onSwitchUser={handleSwitchUser}
         onOpenAuth={openAuth}
         onSignOut={handleSignOut}
-        onOpenUpgradeModal={() => setIsFastSpringModalOpen(true)}
+        onOpenUpgradeModal={openUpgrade}
       />
 
       {/* Viewer Mode Banner */}
@@ -401,11 +421,15 @@ export function App() {
           <NotificationChannels currentUser={currentUser} />
         ) : currentView === 'incidents' ? (
           <IncidentManagement currentUser={currentUser} />
+        ) : currentView === 'admin' ? (
+          <AdminReport />
         ) : currentView === 'team' ? (
           <TeamManagement
             currentUser={currentUser}
             onUserRefreshed={loadUserData}
-            onOpenUpgradeModal={() => setIsFastSpringModalOpen(true)}
+            onOpenUpgradeModal={openUpgrade}
+            billingEnabled={billingEnabled}
+            planLimits={appConfig.plans[planKey]}
           />
         ) : (
           <>
@@ -431,11 +455,13 @@ export function App() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSubmit={handleCreate}
+        minInterval={appConfig.plans[planKey].min_interval_seconds}
       />
 
       <EditMonitorModal
         monitor={editingMonitor}
         isOpen={!!editingMonitor}
+        minInterval={appConfig.plans[planKey].min_interval_seconds}
         onClose={() => setEditingMonitor(null)}
         onUpdated={(updated) => {
           loadData();
@@ -479,7 +505,7 @@ export function App() {
         <p className="font-mono mt-1 space-x-3">
           <a href="/terms" className="hover:text-emerald-400 transition-colors">Terms</a>
           <a href="/privacy" className="hover:text-emerald-400 transition-colors">Privacy</a>
-          <a href="/refund" className="hover:text-emerald-400 transition-colors">Refunds</a>
+          {billingEnabled && <a href="/refund" className="hover:text-emerald-400 transition-colors">Refunds</a>}
         </p>
       </footer>
     </div>

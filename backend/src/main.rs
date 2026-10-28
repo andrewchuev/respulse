@@ -4,6 +4,7 @@ mod db;
 mod models;
 mod net_guard;
 mod notifier;
+mod plans;
 mod probe;
 mod rate_limit;
 mod retention;
@@ -11,6 +12,7 @@ mod retention;
 use api::monitors::AppState;
 use api::payments::WebhookConfig;
 use auth::AuthConfig;
+use plans::AppSettings;
 use rate_limit::RateLimits;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -67,6 +69,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         auth,
         webhook: Arc::new(WebhookConfig::from_env()),
         limits,
+        settings: Arc::new(AppSettings::from_env()),
     };
 
     // Spawn probe background scheduler

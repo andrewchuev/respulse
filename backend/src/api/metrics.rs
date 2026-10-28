@@ -38,6 +38,19 @@ pub async fn get_prometheus_metrics(
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     let team_id = scrape_team_id(&state, &request_headers).await?;
 
+    // Prometheus export is a Pro feature; it stays off for Free teams during the open beta.
+    let plan: Option<String> = sqlx::query_scalar("SELECT plan FROM teams WHERE id = $1")
+        .bind(team_id)
+        .fetch_optional(&state.pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    if plan.as_deref() != Some("PRO") {
+        return Err((
+            StatusCode::FORBIDDEN,
+            "Prometheus export is a Pro feature and is not available during the free beta".to_string(),
+        ));
+    }
+
     #[derive(sqlx::FromRow)]
     struct MonitorMetricRow {
         id: uuid::Uuid,

@@ -1,16 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Activity, Plus, Radio, Globe, Bell, AlertTriangle, Users, ChevronDown, Check, Sparkles, LogOut, KeyRound, CreditCard } from 'lucide-react';
+import { Activity, Plus, Radio, Globe, Bell, AlertTriangle, Users, ChevronDown, Check, Sparkles, LogOut, KeyRound, CreditCard, BarChart3 } from 'lucide-react';
 import { Button } from './ui/button';
 import { UserProfile, UserRole } from '../types';
 
 interface HeaderProps {
-  currentView: 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo';
-  setCurrentView: (view: 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo') => void;
+  currentView: 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo' | 'admin';
+  setCurrentView: (view: 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo' | 'admin') => void;
   onOpenAddModal: () => void;
   totalActive: number;
   currentUser: UserProfile | null;
   availableUsers: UserProfile[];
   demoMode: boolean;
+  isAdmin?: boolean;
   onSwitchUser: (email: string) => void;
   onOpenAuth?: (mode: 'login' | 'register') => void;
   onSignOut?: () => void;
@@ -25,6 +26,7 @@ export const Header: React.FC<HeaderProps> = ({
   currentUser,
   availableUsers,
   demoMode,
+  isAdmin = false,
   onSwitchUser,
   onOpenAuth,
   onSignOut,
@@ -165,6 +167,19 @@ export const Header: React.FC<HeaderProps> = ({
               <Sparkles className="h-3.5 w-3.5 text-amber-400" />
               Overview & Promo
             </button>
+            {isAdmin && (
+              <button
+                onClick={() => setCurrentView('admin')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  currentView === 'admin'
+                    ? 'bg-background text-foreground shadow-sm border border-border/60'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <BarChart3 className="h-3.5 w-3.5" />
+                Report
+              </button>
+            )}
           </nav>
         </div>
 

@@ -32,6 +32,8 @@ services:
       DEMO_MODE: ${DEMO_MODE:-true}
       # Local development monitors local services; production keeps this off (SSRF guard)
       ALLOW_PRIVATE_TARGETS: ${ALLOW_PRIVATE_TARGETS:-true}
+      BILLING_ENABLED: ${BILLING_ENABLED:-false}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
       FASTSPRING_WEBHOOK_SECRET: ${FASTSPRING_WEBHOOK_SECRET:-}
     depends_on:
       respulse-db:

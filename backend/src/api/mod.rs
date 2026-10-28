@@ -1,3 +1,4 @@
+pub mod admin;
 pub mod auth;
 pub mod badge;
 pub mod fastspring;
@@ -35,6 +36,9 @@ pub fn create_router() -> Router<AppState> {
         .route("/payments/fastspring/confirm", axum::routing::post(payments::confirm_fastspring_payment))
         .route("/payments/fastspring/webhook", axum::routing::post(payments::fastspring_webhook))
         .route("/payments/history", get(payments::get_payment_history))
+        // Operator report
+        .route("/admin/access", get(admin::admin_access))
+        .route("/admin/report", get(admin::get_report))
         // Monitors
         .route("/monitors", get(monitors::list_monitors).post(monitors::create_monitor))
         .route("/monitors/bulk", axum::routing::post(monitors::bulk_action))

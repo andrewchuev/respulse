@@ -62,8 +62,13 @@ impl WebhookConfig {
 
 /// Returns FastSpring checkout configuration for the authenticated team.
 pub async fn get_fastspring_config(
+    State(state): State<AppState>,
     auth: AuthUser,
-) -> Json<FastSpringCheckoutConfig> {
+) -> Result<Json<FastSpringCheckoutConfig>, StatusCode> {
+    if !state.settings.billing_enabled {
+        return Err(StatusCode::NOT_FOUND);
+    }
+
     let is_live = is_live_mode();
 
     let store_domain = if is_live {
@@ -81,7 +86,7 @@ pub async fn get_fastspring_config(
         auth.user.email
     );
 
-    Json(FastSpringCheckoutConfig {
+    Ok(Json(FastSpringCheckoutConfig {
         store_id: FASTSPRING_STORE_ID.to_string(),
         is_test: !is_live,
         storefront: popup_storefront,
@@ -93,7 +98,7 @@ pub async fn get_fastspring_config(
         checkout_url,
         team_id: auth.user.team_id.to_string(),
         user_email: auth.user.email.clone(),
-    })
+    }))
 }
 
 /// Reports whether the team's Pro upgrade has landed.

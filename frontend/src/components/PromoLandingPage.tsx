@@ -24,6 +24,9 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
+import { BetaPricing } from './BetaPricing';
+import { DEFAULT_APP_CONFIG } from '../api/client';
+import { PlanLimits } from '../types';
 
 interface PromoLandingPageProps {
   onOpenDashboard: () => void;
@@ -31,6 +34,9 @@ interface PromoLandingPageProps {
   onOpenAddModal?: () => void;
   onOpenAuth?: (mode: 'login' | 'register') => void;
   onOpenUpgradeModal?: () => void;
+  /** False during the free beta: hides prices, checkout and Pro-only promises. */
+  billingEnabled?: boolean;
+  plans?: { FREE: PlanLimits; PRO: PlanLimits };
 }
 
 export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
@@ -39,7 +45,10 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
   onOpenAddModal,
   onOpenAuth,
   onOpenUpgradeModal,
+  billingEnabled = true,
+  plans,
 }) => {
+  const freeLimits = (plans ?? DEFAULT_APP_CONFIG.plans).FREE;
   const handlePrimaryCta = () => {
     if (onOpenAuth) {
       onOpenAuth('register');
@@ -182,8 +191,12 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
             {[
               { val: '< 10 ms', label: 'Scheduler Precision', icon: Clock, color: 'text-emerald-400' },
               { val: '100% Rust', label: 'Zero GC Observability', icon: Cpu, color: 'text-cyan-400' },
-              { val: '10s Turbo', label: 'High-Frequency Probing', icon: Zap, color: 'text-purple-400' },
-              { val: '/metrics', label: 'Prometheus Exporter', icon: BarChart3, color: 'text-amber-400' },
+              billingEnabled
+                ? { val: '10s Turbo', label: 'High-Frequency Probing', icon: Zap, color: 'text-purple-400' }
+                : { val: `${freeLimits.min_interval_seconds}s`, label: 'Probe Intervals', icon: Zap, color: 'text-purple-400' },
+              billingEnabled
+                ? { val: '/metrics', label: 'Prometheus Exporter', icon: BarChart3, color: 'text-amber-400' }
+                : { val: 'Heartbeat', label: 'Cron Dead-Man\'s Switch', icon: BarChart3, color: 'text-amber-400' },
               { val: '4-Tier RBAC', label: 'Enterprise Teams', icon: Users, color: 'text-blue-400' },
             ].map((stat, i) => {
               const Icon = stat.icon;
@@ -792,17 +805,20 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
         <div className="max-w-4xl mx-auto px-4">
           <div className="text-center space-y-3 mb-10">
             <Badge variant="outline" className="text-xs font-mono font-normal text-emerald-400 border-emerald-500/30 bg-emerald-500/10">
-              Simple, Transparent Pricing
+              {billingEnabled ? 'Simple, Transparent Pricing' : 'Free During the Open Beta'}
             </Badge>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-              Two Plans. Zero Complications.
+              {billingEnabled ? 'Two Plans. Zero Complications.' : 'Free While We Build It With You'}
             </h2>
             <p className="text-sm sm:text-base text-slate-400 max-w-lg mx-auto">
-              Get started for free forever, or upgrade to Pro for high-frequency turbo probes, team RBAC, and Prometheus metrics.
+              {billingEnabled
+                ? 'Get started for free forever, or upgrade to Pro for high-frequency turbo probes, team RBAC, and Prometheus metrics.'
+                : 'Use ResPulse for free while it is in beta. If we introduce a paid plan later, you will hear about it well in advance.'}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2 max-w-3xl mx-auto">
+          {!billingEnabled && <BetaPricing limits={freeLimits} onGetStarted={onOpenDashboard} />}
+          <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 pt-2 max-w-3xl mx-auto ${billingEnabled ? '' : 'hidden'}`}>
             {/* Plan 1: Free Forever */}
             <div className="rounded-2xl border border-white/10 bg-slate-900/40 p-7 flex flex-col justify-between backdrop-blur">
               <div className="space-y-5">
@@ -1032,8 +1048,8 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
                 a: "Yes! ResPulse provides native /metrics and /api/metrics endpoints. Any Prometheus scraper or OpenTelemetry collector can gather platform gauges (monitor operational status, probe latencies, heartbeat durations, and active incidents) for visualization in your central Grafana dashboards."
               },
               {
-                q: "What is included in the $8/month Pro plan?",
-                a: "The Pro plan ($8.00 USD / month excl. VAT, cancel anytime) offers turbo 10-second probe intervals, up to 100 synthetic monitors, unlimited cron tasks with timezones, up to 10 team members with 4-tier RBAC, 90-day retention with SRE RCA post-mortems, Prometheus metric exports, tag-based alert routing, and custom domain status pages."
+                q: billingEnabled ? "What is included in the $8/month Pro plan?" : "Is ResPulse free?",
+                a: billingEnabled ? "The Pro plan ($8.00 USD / month excl. VAT, cancel anytime) offers turbo 10-second probe intervals, up to 100 synthetic monitors, unlimited cron tasks with timezones, up to 10 team members with 4-tier RBAC, 90-day retention with SRE RCA post-mortems, Prometheus metric exports, tag-based alert routing, and custom domain status pages." : "Yes, ResPulse is free while it is in open beta, with generous limits for small teams and side projects. A paid plan with faster probes, team seats and a Prometheus exporter may come later; if it does, you will get advance notice and nothing will be charged without your explicit checkout.",
               },
               {
                 q: "How does Role-Based Access Control (RBAC) enforce security?",
@@ -1139,9 +1155,11 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
             <a href="/privacy" className="hover:text-emerald-400 transition-colors">
               Privacy
             </a>
-            <a href="/refund" className="hover:text-emerald-400 transition-colors">
-              Refunds
-            </a>
+            {billingEnabled && (
+              <a href="/refund" className="hover:text-emerald-400 transition-colors">
+                Refunds
+              </a>
+            )}
           </div>
         </div>
       </footer>

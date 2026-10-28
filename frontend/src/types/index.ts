@@ -280,6 +280,56 @@ export interface PaymentTransaction {
   refunded_at?: string | null;
 }
 
+export interface PlanLimits {
+  max_monitors: number;
+  min_interval_seconds: number;
+  max_members: number;
+  retention_days: number;
+}
+
+export interface AppConfig {
+  demo_mode: boolean;
+  billing_enabled: boolean;
+  plans: { FREE: PlanLimits; PRO: PlanLimits };
+}
+
+export interface AdminReportData {
+  generated_at: string;
+  totals: {
+    teams: number;
+    users: number;
+    activated_teams: number;
+    teams_with_alert_channel: number;
+    teams_with_heartbeat: number;
+    active_teams_7d: number;
+    active_teams_30d: number;
+    pro_teams: number;
+    monitors: number;
+    avg_monitors_per_active_team: number;
+  };
+  limit_pressure: { near_limit: number; at_limit: number; fast_interval_teams: number };
+  signups_daily: { date: string; teams: number }[];
+  cohorts: { week: string; teams: number; activated: number; active_14d: number }[];
+  monitors_by_type: { type: string; count: number }[];
+  load: {
+    checks_24h: number;
+    probe_monitors: number;
+    probes_per_second: number;
+    database_bytes: number;
+    history_table_bytes: number;
+  };
+  incidents: { total: number; open: number };
+  alerts_7d: { success: number; failed: number };
+  recent_teams: {
+    name: string;
+    created_at: string;
+    plan: string;
+    monitors: number;
+    members: number;
+    last_login_at: string | null;
+  }[];
+}
+
 export interface ConfirmFastSpringPaymentPayload {
   order_id?: string;
   reference?: string;
