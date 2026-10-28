@@ -18,6 +18,7 @@ import { Header } from './components/Header';
 import { StatsOverview } from './components/StatsOverview';
 import { MonitorList } from './components/MonitorList';
 import { AddMonitorModal } from './components/AddMonitorModal';
+import { EditMonitorModal } from './components/EditMonitorModal';
 import { MonitorDetailModal } from './components/MonitorDetailModal';
 import { StatusPage } from './components/StatusPage';
 import { NotificationChannels } from './components/NotificationChannels';
@@ -31,6 +32,7 @@ export function App() {
   const [monitors, setMonitors] = useState<MonitorWithStats[]>([]);
   const [stats, setStats] = useState<GlobalStats | null>(null);
   const [selectedMonitor, setSelectedMonitor] = useState<MonitorWithStats | null>(null);
+  const [editingMonitor, setEditingMonitor] = useState<MonitorWithStats | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const getViewFromLocation = (): 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo' => {
     try {
@@ -340,6 +342,7 @@ export function App() {
               onDelete={handleDelete}
               onTest={handleTest}
               onSelect={setSelectedMonitor}
+              onEdit={(m) => setEditingMonitor(m)}
               onAddClick={() => setIsAddModalOpen(true)}
               onRefreshData={loadData}
               isViewer={isViewer}
@@ -354,9 +357,24 @@ export function App() {
         onSubmit={handleCreate}
       />
 
+      <EditMonitorModal
+        monitor={editingMonitor}
+        isOpen={!!editingMonitor}
+        onClose={() => setEditingMonitor(null)}
+        onUpdated={(updated) => {
+          loadData();
+          setEditingMonitor(null);
+          if (selectedMonitor && selectedMonitor.id === updated.id) {
+            setSelectedMonitor((prev) => (prev ? { ...prev, ...updated } : null));
+          }
+        }}
+      />
+
       <MonitorDetailModal
         monitor={selectedMonitor}
         onClose={() => setSelectedMonitor(null)}
+        onEdit={(m) => setEditingMonitor(m)}
+        isViewer={isViewer}
       />
 
       <AuthModal

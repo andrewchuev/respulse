@@ -62,6 +62,7 @@
 * **Perceived Performance & Skeleton UI:**
   * Zero-layout-shift shimmering skeleton loaders during initial data fetching across KPI metrics, filter bars, and 30-bar timelines.
 * **Quick Management Actions:**
+  * **Edit Monitor Parameters:** Fine-tune target URLs, check frequencies, HTTP methods/expected status/basic auth, TCP ports, heartbeat slugs, cron patterns/timezones, grace buffers, folders, and tags at any time with full RBAC protection and live WebSocket synchronization.
   * **Test Now:** Trigger an immediate probe on demand.
   * **Pause / Resume:** Suspend monitoring during maintenance.
   * **Search & Filters:** Instant search by name or target URL, with filters for status and monitor type.

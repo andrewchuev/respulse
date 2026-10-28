@@ -4,17 +4,22 @@ import { fetchMonitor } from '../api/client';
 import { formatMs, timeAgo } from '../lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Badge } from './ui/badge';
+import { Button } from './ui/button';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { Activity, Clock, ShieldCheck, Copy, Check, Terminal, Play, AlertTriangle } from 'lucide-react';
+import { Activity, Clock, ShieldCheck, Copy, Check, Terminal, Play, AlertTriangle, Pencil } from 'lucide-react';
 
 interface MonitorDetailModalProps {
   monitor: MonitorWithStats | null;
   onClose: () => void;
+  onEdit?: (monitor: MonitorWithStats) => void;
+  isViewer?: boolean;
 }
 
 export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
   monitor,
   onClose,
+  onEdit,
+  isViewer = false,
 }) => {
   const [details, setDetails] = useState<MonitorWithStats | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -45,38 +50,57 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
     <Dialog open={!!monitor} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[700px] bg-slate-900/95 backdrop-blur-2xl border border-white/10 ring-1 ring-white/5 shadow-2xl shadow-black/90 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center gap-3">
-            <span className="flex h-3.5 w-3.5 relative">
-              {isUp && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>}
-              {isDown && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>}
-              <span className={`relative inline-flex rounded-full h-3.5 w-3.5 ${isUp ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]' : isDown ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]' : 'bg-muted-foreground'}`}></span>
-            </span>
-            <div>
-              <DialogTitle className="text-xl font-bold text-white flex items-center gap-2 flex-wrap">
-                {data.name}
-                <Badge variant="outline" className="text-xs font-mono font-normal">
-                  {data.monitor_type}
-                </Badge>
-                {data.cron_expression && (
-                  <Badge variant="secondary" className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-800/50">
-                    cron: {data.cron_expression} ({data.timezone || 'UTC'})
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="flex h-3.5 w-3.5 relative">
+                {isUp && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>}
+                {isDown && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>}
+                <span className={`relative inline-flex rounded-full h-3.5 w-3.5 ${isUp ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]' : isDown ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]' : 'bg-muted-foreground'}`}></span>
+              </span>
+              <div>
+                <DialogTitle className="text-xl font-bold text-white flex items-center gap-2 flex-wrap">
+                  {data.name}
+                  <Badge variant="outline" className="text-xs font-mono font-normal">
+                    {data.monitor_type}
                   </Badge>
-                )}
-                {data.grace_seconds !== undefined && data.grace_seconds > 0 && (
-                  <Badge variant="secondary" className="text-[10px] font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-800/50">
-                    +{data.grace_seconds}s grace
-                  </Badge>
-                )}
-                {data.slug && (
-                  <Badge variant="outline" className="text-[10px] font-mono text-purple-300 bg-purple-950/40 border border-purple-800/50">
-                    /{data.slug}
-                  </Badge>
-                )}
-              </DialogTitle>
-              <DialogDescription className="text-xs font-mono text-muted-foreground mt-0.5">
-                {data.url}
-              </DialogDescription>
+                  {data.cron_expression && (
+                    <Badge variant="secondary" className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-800/50">
+                      cron: {data.cron_expression} ({data.timezone || 'UTC'})
+                    </Badge>
+                  )}
+                  {data.grace_seconds !== undefined && data.grace_seconds > 0 && (
+                    <Badge variant="secondary" className="text-[10px] font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-800/50">
+                      +{data.grace_seconds}s grace
+                    </Badge>
+                  )}
+                  {data.slug && (
+                    <Badge variant="outline" className="text-[10px] font-mono text-purple-300 bg-purple-950/40 border border-purple-800/50">
+                      /{data.slug}
+                    </Badge>
+                  )}
+                </DialogTitle>
+                <DialogDescription className="text-xs font-mono text-muted-foreground mt-0.5">
+                  {data.url}
+                </DialogDescription>
+              </div>
             </div>
+
+            {onEdit && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={isViewer}
+                onClick={() => {
+                  onClose();
+                  onEdit(data);
+                }}
+                className="h-8 px-2.5 text-xs gap-1.5 border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white flex-shrink-0"
+                title={isViewer ? 'Read-only access: requires Engineer role or higher to edit' : 'Edit monitor parameters'}
+              >
+                <Pencil className="h-3.5 w-3.5 text-emerald-400" />
+                <span className="hidden sm:inline">Edit Parameters</span>
+              </Button>
+            )}
           </div>
         </DialogHeader>
 

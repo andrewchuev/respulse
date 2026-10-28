@@ -20,6 +20,7 @@ import {
   RegisterPayload,
   TeamMember,
   UpdateIncidentPayload,
+  UpdateMonitorPayload,
   UserProfile,
   UserRole,
 } from '../types';
@@ -216,6 +217,19 @@ export async function createMonitor(payload: CreateMonitorPayload): Promise<Moni
   if (!res.ok) {
     const errorText = await res.text();
     throw new Error(errorText || 'Failed to create monitor');
+  }
+  return res.json();
+}
+
+export async function updateMonitor(id: string, payload: UpdateMonitorPayload): Promise<Monitor> {
+  const res = await fetch(`${API_BASE}/monitors/${id}`, {
+    method: 'PUT',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || 'Failed to update monitor');
   }
   return res.json();
 }

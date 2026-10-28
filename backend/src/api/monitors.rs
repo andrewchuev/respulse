@@ -12,6 +12,7 @@ use axum::Json;
 use chrono::{Duration, Utc};
 use reqwest::Client;
 use sqlx::FromRow;
+use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::broadcast::Sender;
 use uuid::Uuid;
@@ -448,17 +449,68 @@ pub async fn update_monitor(
     let timeout = payload.timeout_seconds.unwrap_or(existing.timeout_seconds);
     let method = payload.method.unwrap_or(existing.method);
     let headers = payload.headers.unwrap_or(existing.headers);
-    let body = payload.body.or(existing.body);
+    let body = match payload.body {
+        Some(s) if s.trim().is_empty() => None,
+        Some(s) => Some(s),
+        None => existing.body,
+    };
     let expected_code = payload.expected_status_code.or(existing.expected_status_code);
-    let keyword = payload.keyword.or(existing.keyword);
+    let keyword = match payload.keyword {
+        Some(s) if s.trim().is_empty() => None,
+        Some(s) => Some(s.trim().to_string()),
+        None => existing.keyword,
+    };
     let port = payload.port.or(existing.port);
-    let auth_username = payload.auth_username.or(existing.auth_username);
-    let auth_password = payload.auth_password.or(existing.auth_password);
+    let auth_username = match payload.auth_username {
+        Some(s) if s.trim().is_empty() => None,
+        Some(s) => Some(s.trim().to_string()),
+        None => existing.auth_username,
+    };
+    let auth_password = match payload.auth_password {
+        Some(s) if s.trim().is_empty() => None,
+        Some(s) => Some(s),
+        None => existing.auth_password,
+    };
     let tags = payload.tags.unwrap_or(existing.tags);
     let group_name = payload.group_name.unwrap_or(existing.group_name);
     let grace_seconds = payload.grace_seconds.unwrap_or(existing.grace_seconds);
-    let slug = payload.slug.or(existing.slug);
-    let cron_expression = payload.cron_expression.or(existing.cron_expression);
+    let slug = match payload.slug {
+        Some(s) if s.trim().is_empty() => None,
+        Some(s) => {
+            let s_clean = s.trim().to_lowercase().replace(' ', "-");
+            let exists: bool = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM monitors WHERE team_id = $1 AND slug = $2 AND id != $3)"
+            )
+            .bind(auth.user.team_id)
+            .bind(&s_clean)
+            .bind(id)
+            .fetch_one(&state.pool)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+            if exists {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    format!("Slug '{}' is already in use by another monitor in your team", s_clean),
+                ));
+            }
+            Some(s_clean)
+        }
+        None => existing.slug,
+    };
+    let cron_expression = match payload.cron_expression {
+        Some(s) if s.trim().is_empty() => None,
+        Some(s) => {
+            if croner::Cron::from_str(s.trim()).is_err() {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    format!("Invalid 5-field cron expression: '{}'", s),
+                ));
+            }
+            Some(s.trim().to_string())
+        }
+        None => existing.cron_expression,
+    };
     let timezone = payload.timezone.unwrap_or(existing.timezone);
 
     let next_expected_at = if let Some(ref cron_str) = cron_expression {

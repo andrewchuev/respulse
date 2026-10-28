@@ -161,6 +161,27 @@ export interface CreateMonitorPayload {
   timezone?: string;
 }
 
+export interface UpdateMonitorPayload {
+  name?: string;
+  url?: string;
+  interval_seconds?: number;
+  timeout_seconds?: number;
+  method?: string;
+  headers?: Record<string, string>;
+  body?: string;
+  expected_status_code?: number;
+  keyword?: string;
+  port?: number;
+  auth_username?: string;
+  auth_password?: string;
+  tags?: string[];
+  group_name?: string;
+  grace_seconds?: number;
+  slug?: string;
+  cron_expression?: string;
+  timezone?: string;
+}
+
 export interface BulkActionPayload {
   ids: string[];
   action: 'pause' | 'resume' | 'test' | 'delete' | 'set_group' | 'add_tag';

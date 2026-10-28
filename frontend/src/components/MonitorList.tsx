@@ -34,6 +34,7 @@ interface MonitorListProps {
   onDelete: (id: string) => void;
   onTest: (id: string) => void;
   onSelect: (monitor: MonitorWithStats) => void;
+  onEdit?: (monitor: MonitorWithStats) => void;
   onAddClick: () => void;
   onRefreshData?: () => void;
   isViewer?: boolean;
@@ -46,6 +47,7 @@ export const MonitorList: React.FC<MonitorListProps> = ({
   onDelete,
   onTest,
   onSelect,
+  onEdit,
   onAddClick,
   onRefreshData,
   isViewer = false,
@@ -561,6 +563,7 @@ export const MonitorList: React.FC<MonitorListProps> = ({
                           onDelete={onDelete}
                           onTest={onTest}
                           onSelect={onSelect}
+                          onEdit={onEdit}
                           compact={isCompact}
                           isViewer={isViewer}
                         />
@@ -585,6 +588,7 @@ export const MonitorList: React.FC<MonitorListProps> = ({
                 onDelete={onDelete}
                 onTest={onTest}
                 onSelect={onSelect}
+                onEdit={onEdit}
                 compact={isCompact}
                 isViewer={isViewer}
               />

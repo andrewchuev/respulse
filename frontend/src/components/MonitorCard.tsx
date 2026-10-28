@@ -11,6 +11,7 @@ import {
   Server,
   Heart,
   Folder,
+  Pencil,
 } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -24,6 +25,7 @@ interface MonitorCardProps {
   onDelete: (id: string) => void;
   onTest: (id: string) => void;
   onSelect: (monitor: MonitorWithStats) => void;
+  onEdit?: (monitor: MonitorWithStats) => void;
   compact?: boolean;
   isViewer?: boolean;
 }
@@ -37,6 +39,7 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({
   onDelete,
   onTest,
   onSelect,
+  onEdit,
   compact = false,
   isViewer = false,
 }) => {
@@ -463,6 +466,22 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({
                 onClick={() => onPause(monitor.id)}
               >
                 <Pause className="h-3.5 w-3.5" />
+              </Button>
+            )}
+
+            {onEdit && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 text-muted-foreground hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                title={isViewer ? 'Read-only access: requires Engineer role or higher to edit' : 'Edit monitor parameters'}
+                disabled={isViewer}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(monitor);
+                }}
+              >
+                <Pencil className="h-3.5 w-3.5" />
               </Button>
             )}
 
