@@ -54,6 +54,30 @@ pub async fn invite_member(
         ));
     }
 
+    // Plan validation: check member limits
+    let team_plan: String = sqlx::query_scalar("SELECT plan FROM teams WHERE id = $1")
+        .bind(auth.user.team_id)
+        .fetch_optional(&state.pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": e.to_string() })).into_response()))?
+        .unwrap_or_else(|| "FREE".to_string());
+
+    let (member_count,): (i64,) = sqlx::query_as("SELECT COUNT(*)::bigint FROM users WHERE team_id = $1")
+        .bind(auth.user.team_id)
+        .fetch_one(&state.pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": e.to_string() })).into_response()))?;
+
+    let max_members = if team_plan == "PRO" { 10 } else { 1 };
+    if member_count >= max_members {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({
+                "error": format!("Team member limit reached ({} max on {} plan). Upgrade to Pro ($8/mo) for up to 10 team members with RBAC.", max_members, team_plan)
+            })).into_response(),
+        ));
+    }
+
     let existing = sqlx::query("SELECT id FROM users WHERE email = $1")
         .bind(&payload.email)
         .fetch_optional(&state.pool)
@@ -222,4 +246,43 @@ pub async fn remove_member(
         })?;
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct UpdatePlanRequest {
+    pub plan: String,
+}
+
+pub async fn update_team_plan(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Json(payload): Json<UpdatePlanRequest>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Response)> {
+    auth.require_manage_team()?;
+
+    let plan_upper = payload.plan.trim().to_uppercase();
+    if plan_upper != "FREE" && plan_upper != "PRO" {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "Invalid plan. Valid options are 'FREE' or 'PRO'." })).into_response(),
+        ));
+    }
+
+    sqlx::query("UPDATE teams SET plan = $1 WHERE id = $2")
+        .bind(&plan_upper)
+        .bind(auth.user.team_id)
+        .execute(&state.pool)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": format!("Database error: {}", e) })).into_response(),
+            )
+        })?;
+
+    Ok(Json(json!({
+        "status": "ok",
+        "plan": plan_upper,
+        "message": format!("Organization plan updated to {}", plan_upper)
+    })))
 }

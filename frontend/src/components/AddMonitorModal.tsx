@@ -29,6 +29,11 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
   const [authPassword, setAuthPassword] = useState<string>('');
   const [groupName, setGroupName] = useState<string>('Default');
   const [tagsInput, setTagsInput] = useState<string>('');
+  const [graceSeconds, setGraceSeconds] = useState<number>(300);
+  const [slug, setSlug] = useState<string>('');
+  const [scheduleType, setScheduleType] = useState<'INTERVAL' | 'CRON'>('INTERVAL');
+  const [cronExpression, setCronExpression] = useState<string>('0 3 * * *');
+  const [timezone, setTimezone] = useState<string>('UTC');
   const [showAuth, setShowAuth] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +72,10 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
         auth_password: authPassword || undefined,
         tags,
         group_name: groupName.trim() || 'Default',
+        grace_seconds: monitorType === 'HEARTBEAT' ? Number(graceSeconds) : 0,
+        slug: monitorType === 'HEARTBEAT' && slug.trim() ? slug.trim().toLowerCase().replace(' ', '-') : undefined,
+        cron_expression: monitorType === 'HEARTBEAT' && scheduleType === 'CRON' ? cronExpression.trim() : undefined,
+        timezone: monitorType === 'HEARTBEAT' && scheduleType === 'CRON' ? timezone : 'UTC',
       });
 
       // Reset form
@@ -76,6 +85,10 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
       setAuthPassword('');
       setGroupName('Default');
       setTagsInput('');
+      setSlug('');
+      setScheduleType('INTERVAL');
+      setCronExpression('0 3 * * *');
+      setTimezone('UTC');
       setShowAuth(false);
       setMonitorType('HTTP');
       setInterval(60);
@@ -299,12 +312,136 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
           )}
 
           {monitorType === 'HEARTBEAT' && (
-            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-muted-foreground">
-              <p className="font-semibold text-emerald-400 mb-1">Push-based Monitoring (Dead Man's Switch)</p>
-              A unique webhook token will be generated. Simply call it periodically from your cron job or backup worker:
-              <code className="block mt-1 p-2 bg-slate-950 rounded-lg border border-slate-800 font-mono text-[11px] text-emerald-300">
-                curl -X POST {typeof window !== 'undefined' ? window.location.origin : 'https://respulse.online'}/api/heartbeat/&lt;TOKEN&gt;
-              </code>
+            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-muted-foreground space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="font-semibold text-emerald-400">Push-based Monitoring (Dead Man's Switch)</p>
+                <span className="text-[10px] font-mono text-emerald-300 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/60">
+                  Healthchecks.io compatible
+                </span>
+              </div>
+              <p className="text-[11px] leading-relaxed">
+                A unique webhook token will be generated. You can signal success, duration (<code className="text-emerald-300 font-mono">/start</code>), error exits (<code className="text-emerald-300 font-mono">/$?</code>), and pipe logs:
+              </p>
+              <div className="space-y-1 font-mono text-[11px] bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-slate-300">
+                <div className="text-muted-foreground text-[10px] pb-0.5">// 1. Standard success ping:</div>
+                <div className="text-emerald-300 truncate">curl -fsS -m 10 {typeof window !== 'undefined' ? window.location.origin : 'https://respulse.online'}/api/heartbeat/&lt;TOKEN&gt;</div>
+                <div className="text-muted-foreground text-[10px] pt-1 pb-0.5">// 2. Duration tracking with exit code:</div>
+                <div className="text-cyan-300 truncate">curl -fsS -m 10 .../api/heartbeat/&lt;TOKEN&gt;/start &amp;&amp; ./job.sh</div>
+                <div className="text-cyan-300 truncate">curl -fsS -m 10 .../api/heartbeat/&lt;TOKEN&gt;/$?</div>
+                <div className="text-muted-foreground text-[10px] pt-1 pb-0.5">// 3. Pipe output &amp; STDERR logs on failure:</div>
+                <div className="text-amber-300 truncate">curl -fsS -m 10 --data-binary @job.log .../api/heartbeat/&lt;TOKEN&gt;/$?</div>
+                <div className="text-muted-foreground text-[10px] pt-1 pb-0.5">// 4. Auto-provisioning by slug:</div>
+                <div className="text-emerald-400 truncate">curl -fsS -m 10 .../api/ping/&lt;PING_KEY&gt;/backup-task?create=1</div>
+              </div>
+            </div>
+          )}
+
+          {/* Slug Input for Heartbeat */}
+          {monitorType === 'HEARTBEAT' && (
+            <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+              <label className="text-xs font-medium text-slate-300 mb-1 block">
+                Human-Readable Slug (Optional)
+              </label>
+              <Input
+                placeholder="e.g. database-nightly-backup"
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+                className="h-9 text-xs font-mono bg-slate-900 border-slate-700/80 focus:border-emerald-500"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Enables clean URLs: <code className="text-emerald-400 font-mono">/api/ping/&lt;KEY&gt;/{slug || 'my-task'}</code> and auto-provisioning with <code className="text-emerald-400 font-mono">?create=1</code>.
+              </p>
+            </div>
+          )}
+
+          {/* Schedule Mode (Interval vs Cron) for Heartbeat */}
+          {monitorType === 'HEARTBEAT' && (
+            <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-slate-300">Schedule Type</label>
+                <div className="flex items-center bg-slate-900 rounded-lg p-0.5 border border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setScheduleType('INTERVAL')}
+                    className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors ${
+                      scheduleType === 'INTERVAL'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-muted-foreground hover:text-white'
+                    }`}
+                  >
+                    Simple Interval
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setScheduleType('CRON')}
+                    className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors ${
+                      scheduleType === 'CRON'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-muted-foreground hover:text-white'
+                    }`}
+                  >
+                    Cron Pattern
+                  </button>
+                </div>
+              </div>
+
+              {scheduleType === 'CRON' && (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] font-medium text-slate-400 mb-1 block">
+                        Cron Pattern (min hour dom month dow)
+                      </label>
+                      <Input
+                        placeholder="0 3 * * 1-5"
+                        value={cronExpression}
+                        onChange={(e) => setCronExpression(e.target.value)}
+                        className="h-8 text-xs font-mono bg-slate-900 border-slate-700/80 focus:border-emerald-500"
+                        required={scheduleType === 'CRON'}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-medium text-slate-400 mb-1 block">
+                        Timezone
+                      </label>
+                      <select
+                        value={timezone}
+                        onChange={(e) => setTimezone(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-700/80 rounded-md px-2.5 py-1 text-xs text-foreground h-8 focus:ring-1 focus:ring-emerald-500 font-mono"
+                      >
+                        <option value="UTC">UTC (Coordinated Universal Time)</option>
+                        <option value="Europe/Kyiv">Europe/Kyiv (UTC+2 / UTC+3)</option>
+                        <option value="Europe/Berlin">Europe/Berlin (UTC+1 / UTC+2)</option>
+                        <option value="Europe/London">Europe/London (GMT / BST)</option>
+                        <option value="America/New_York">America/New_York (EST / EDT)</option>
+                        <option value="America/Chicago">America/Chicago (CST / CDT)</option>
+                        <option value="America/Los_Angeles">America/Los_Angeles (PST / PDT)</option>
+                        <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+                      </select>
+                    </div>
+                  </div>
+                  {/* Cron Presets */}
+                  <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                    <span className="text-[10px] text-muted-foreground font-mono">Presets:</span>
+                    {[
+                      { label: 'Every 5m', expr: '*/5 * * * *' },
+                      { label: 'Hourly', expr: '0 * * * *' },
+                      { label: 'Daily (3 AM)', expr: '0 3 * * *' },
+                      { label: 'Weekdays (9 AM)', expr: '0 9 * * 1-5' },
+                      { label: 'Weekly (Sun)', expr: '0 0 * * 0' },
+                    ].map((p) => (
+                      <button
+                        key={p.label}
+                        type="button"
+                        onClick={() => setCronExpression(p.expr)}
+                        className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-slate-800 hover:border-slate-700 transition-colors"
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -330,29 +467,70 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
             </div>
           </div>
 
-          {/* Intervals & Timeout */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Intervals, Grace & Timeout */}
+          <div className={`grid ${monitorType === 'HEARTBEAT' ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-2'} gap-3`}>
             <div>
-              <label className="text-xs font-medium text-slate-300 mb-1 block">Check Frequency</label>
+              <label className="text-xs font-medium text-slate-300 mb-1 block">
+                {monitorType === 'HEARTBEAT' ? 'Expected Period' : 'Check Frequency'}
+              </label>
               <select
                 value={interval}
                 onChange={(e) => setInterval(Number(e.target.value))}
                 className="w-full bg-slate-950 border border-slate-700/80 rounded-md px-2.5 py-1 text-xs text-foreground h-9 focus:ring-1 focus:ring-emerald-500"
               >
-                <option value={10}>Every 10 seconds (Turbo)</option>
-                <option value={30}>Every 30 seconds</option>
-                <option value={60}>Every 1 minute</option>
-                <option value={300}>Every 5 minutes</option>
-                <option value={600}>Every 10 minutes</option>
+                {monitorType === 'HEARTBEAT' ? (
+                  <>
+                    <option value={60}>Every 1 minute</option>
+                    <option value={300}>Every 5 minutes</option>
+                    <option value={900}>Every 15 minutes</option>
+                    <option value={1800}>Every 30 minutes</option>
+                    <option value={3600}>Every 1 hour</option>
+                    <option value={21600}>Every 6 hours</option>
+                    <option value={43200}>Every 12 hours</option>
+                    <option value={86400}>Every 24 hours (Daily)</option>
+                    <option value={604800}>Every 7 days (Weekly)</option>
+                  </>
+                ) : (
+                  <>
+                    <option value={10}>⚡ Every 10 seconds (Turbo Pro)</option>
+                    <option value={30}>⚡ Every 30 seconds (Pro)</option>
+                    <option value={60}>Every 1 minute (Standard)</option>
+                    <option value={300}>Every 5 minutes</option>
+                    <option value={600}>Every 10 minutes</option>
+                  </>
+                )}
               </select>
             </div>
 
+            {monitorType === 'HEARTBEAT' && (
+              <div>
+                <label className="text-xs font-medium text-slate-300 mb-1 block">
+                  Grace Time (Buffer)
+                </label>
+                <select
+                  value={graceSeconds}
+                  onChange={(e) => setGraceSeconds(Number(e.target.value))}
+                  className="w-full bg-slate-950 border border-slate-700/80 rounded-md px-2.5 py-1 text-xs text-foreground h-9 focus:ring-1 focus:ring-emerald-500"
+                >
+                  <option value={0}>0s (Strict / No grace)</option>
+                  <option value={60}>1 minute (60s)</option>
+                  <option value={300}>5 minutes (300s)</option>
+                  <option value={900}>15 minutes (900s)</option>
+                  <option value={1800}>30 minutes (1800s)</option>
+                  <option value={3600}>1 hour (3600s)</option>
+                  <option value={7200}>2 hours (7200s)</option>
+                </select>
+              </div>
+            )}
+
             <div>
-              <label className="text-xs font-medium text-slate-300 mb-1 block">Timeout (seconds)</label>
+              <label className="text-xs font-medium text-slate-300 mb-1 block">
+                {monitorType === 'HEARTBEAT' ? 'Job Timeout (sec)' : 'Probe Timeout (sec)'}
+              </label>
               <Input
                 type="number"
                 min="1"
-                max="60"
+                max="86400"
                 value={timeout}
                 onChange={(e) => setTimeout(Number(e.target.value))}
                 className="h-9 text-xs bg-slate-950 border-slate-700/80 focus:border-emerald-500"

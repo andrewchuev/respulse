@@ -319,8 +319,25 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({
                   {monitor.group_name}
                 </span>
               )}
+              {monitor.slug && (
+                <span className="inline-flex items-center text-[10px] font-mono text-cyan-300 bg-cyan-950/40 border border-cyan-800/40 px-1.5 py-0.5 rounded">
+                  /{monitor.slug}
+                </span>
+              )}
               <span className="text-[11px] text-muted-foreground font-mono">
-                {monitor.interval_seconds}s
+                {monitor.monitor_type === 'HEARTBEAT' ? (
+                  <>
+                    {monitor.cron_expression ? (
+                      <span className="text-cyan-400 font-semibold">{monitor.cron_expression} ({monitor.timezone || 'UTC'})</span>
+                    ) : (
+                      `${monitor.interval_seconds}s`
+                    )}
+                    {monitor.grace_seconds ? ` (+${monitor.grace_seconds}s grace)` : ''}
+                    {monitor.last_duration_ms ? ` · ${formatMs(monitor.last_duration_ms)} run` : ''}
+                  </>
+                ) : (
+                  `${monitor.interval_seconds}s`
+                )}
               </span>
             </div>
 

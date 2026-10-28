@@ -51,6 +51,20 @@ pub async fn dispatch_alert(
     }
 
     for ch in channels {
+        // Tag-based notification routing: if channel has filter_tags, monitor must match at least one
+        if !ch.filter_tags.is_empty() {
+            let has_matching_tag = monitor.tags.iter().any(|m_tag| {
+                let clean_m = m_tag.trim().trim_start_matches('#').to_lowercase();
+                ch.filter_tags.iter().any(|f_tag| {
+                    let clean_f = f_tag.trim().trim_start_matches('#').to_lowercase();
+                    clean_m == clean_f
+                })
+            });
+            if !has_matching_tag {
+                continue;
+            }
+        }
+
         let pool = pool.clone();
         let client = client.clone();
         let m = monitor.clone();
@@ -202,6 +216,14 @@ pub async fn test_channel(client: &Client, channel: &NotificationChannel) -> Res
         auth_password: None,
         tags: vec![],
         group_name: "Default".to_string(),
+        grace_seconds: 0,
+        last_start_at: None,
+        last_duration_ms: None,
+        last_payload: None,
+        slug: None,
+        cron_expression: None,
+        timezone: "UTC".to_string(),
+        next_expected_at: None,
         created_at: Utc::now(),
         updated_at: Utc::now(),
     };

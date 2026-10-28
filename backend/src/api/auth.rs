@@ -75,13 +75,15 @@ pub async fn register(
         .trim_matches('-')
         .to_string();
     let slug = format!("{}-{}", base_slug, &team_id.to_string()[..6]);
+    let ping_key = format!("pk_{}", Uuid::new_v4().to_string().replace('-', ""));
 
     let team = sqlx::query_as::<_, Team>(
-        "INSERT INTO teams (id, name, slug) VALUES ($1, $2, $3) RETURNING *"
+        "INSERT INTO teams (id, name, slug, ping_key) VALUES ($1, $2, $3, $4) RETURNING *"
     )
     .bind(team_id)
     .bind(company_name)
     .bind(&slug)
+    .bind(&ping_key)
     .fetch_one(&state.pool)
     .await
     .map_err(|e| {
@@ -132,6 +134,8 @@ pub async fn register(
         id: user.id,
         team_id: team.id,
         team_name: team.name,
+        team_ping_key: Some(team.ping_key),
+        team_plan: team.plan,
         email: user.email,
         name: user.name,
         role: UserRole::Owner,
@@ -206,6 +210,8 @@ pub async fn login(
         id: user.team_id,
         name: "ResPulse Team".to_string(),
         slug: "respulse-team".to_string(),
+        ping_key: "pk_live_enterprise0000000000001".to_string(),
+        plan: "PRO".to_string(),
         created_at: chrono::Utc::now(),
     });
 
@@ -223,6 +229,8 @@ pub async fn login(
         id: user.id,
         team_id: user.team_id,
         team_name: team.name,
+        team_ping_key: Some(team.ping_key),
+        team_plan: team.plan,
         email: user.email,
         name: user.name,
         role: role.clone(),
@@ -257,6 +265,8 @@ pub async fn get_current_user(
         id: auth.user.team_id,
         name: "ResPulse Enterprise Team".to_string(),
         slug: "respulse-enterprise".to_string(),
+        ping_key: "pk_live_enterprise0000000000001".to_string(),
+        plan: "PRO".to_string(),
         created_at: chrono::Utc::now(),
     });
 
@@ -264,6 +274,8 @@ pub async fn get_current_user(
         id: auth.user.id,
         team_id: auth.user.team_id,
         team_name: team.name,
+        team_ping_key: Some(team.ping_key),
+        team_plan: team.plan,
         email: auth.user.email,
         name: auth.user.name,
         role: auth.role,
@@ -320,6 +332,8 @@ pub async fn switch_user(
         id: user.team_id,
         name: "ResPulse Enterprise Team".to_string(),
         slug: "respulse-enterprise".to_string(),
+        ping_key: "pk_live_enterprise0000000000001".to_string(),
+        plan: "PRO".to_string(),
         created_at: chrono::Utc::now(),
     });
 
@@ -337,6 +351,8 @@ pub async fn switch_user(
         id: user.id,
         team_id: user.team_id,
         team_name: team.name,
+        team_ping_key: Some(team.ping_key),
+        team_plan: team.plan,
         email: user.email,
         name: user.name,
         role: role.clone(),
@@ -384,6 +400,8 @@ pub async fn list_available_users(
         id: auth.user.team_id,
         name: "My Team".to_string(),
         slug: "my-team".to_string(),
+        ping_key: "pk_live_enterprise0000000000001".to_string(),
+        plan: "PRO".to_string(),
         created_at: chrono::Utc::now(),
     });
 
@@ -395,6 +413,8 @@ pub async fn list_available_users(
                 id: u.id,
                 team_id: u.team_id,
                 team_name: team.name.clone(),
+                team_ping_key: Some(team.ping_key.clone()),
+                team_plan: team.plan.clone(),
                 email: u.email,
                 name: u.name,
                 role: role.clone(),

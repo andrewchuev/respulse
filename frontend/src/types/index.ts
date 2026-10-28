@@ -27,6 +27,14 @@ export interface Monitor {
   auth_password?: string | null;
   tags?: string[];
   group_name?: string;
+  grace_seconds?: number;
+  last_start_at?: string | null;
+  last_duration_ms?: number | null;
+  last_payload?: string | null;
+  slug?: string | null;
+  cron_expression?: string | null;
+  timezone?: string;
+  next_expected_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -147,6 +155,10 @@ export interface CreateMonitorPayload {
   auth_password?: string;
   tags?: string[];
   group_name?: string;
+  grace_seconds?: number;
+  slug?: string;
+  cron_expression?: string;
+  timezone?: string;
 }
 
 export interface BulkActionPayload {
@@ -167,6 +179,7 @@ export interface NotificationChannel {
   channel_type: ChannelType;
   config: Record<string, any>;
   is_active: boolean;
+  filter_tags?: string[];
   total_alerts_24h?: number;
   last_alert_at?: string | null;
   last_status?: string | null;
@@ -178,6 +191,7 @@ export interface CreateChannelPayload {
   channel_type: ChannelType;
   config: Record<string, any>;
   is_active?: boolean;
+  filter_tags?: string[];
 }
 
 export interface AlertLogWithDetails {
@@ -203,6 +217,8 @@ export interface UserProfile {
   id: string;
   team_id: string;
   team_name: string;
+  team_ping_key?: string | null;
+  team_plan?: 'FREE' | 'PRO';
   email: string;
   name: string;
   role: UserRole;

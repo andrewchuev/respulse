@@ -32,12 +32,26 @@ pub struct Monitor {
     pub tags: Vec<String>,
     #[serde(default = "default_group_name")]
     pub group_name: String,
+    #[serde(default)]
+    pub grace_seconds: i32,
+    pub last_start_at: Option<DateTime<Utc>>,
+    pub last_duration_ms: Option<f64>,
+    pub last_payload: Option<String>,
+    pub slug: Option<String>,
+    pub cron_expression: Option<String>,
+    #[serde(default = "default_timezone")]
+    pub timezone: String,
+    pub next_expected_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
 
 fn default_group_name() -> String {
     "Default".to_string()
+}
+
+fn default_timezone() -> String {
+    "UTC".to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -61,6 +75,11 @@ pub struct CreateMonitorRequest {
     pub auth_password: Option<String>,
     pub tags: Option<Vec<String>>,
     pub group_name: Option<String>,
+    #[serde(default)]
+    pub grace_seconds: Option<i32>,
+    pub slug: Option<String>,
+    pub cron_expression: Option<String>,
+    pub timezone: Option<String>,
 }
 
 fn default_monitor_type() -> String { "HTTP".to_string() }
@@ -84,6 +103,11 @@ pub struct UpdateMonitorRequest {
     pub auth_password: Option<String>,
     pub tags: Option<Vec<String>>,
     pub group_name: Option<String>,
+    #[serde(default)]
+    pub grace_seconds: Option<i32>,
+    pub slug: Option<String>,
+    pub cron_expression: Option<String>,
+    pub timezone: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -111,6 +135,7 @@ pub struct CheckResult {
     pub connect_time_ms: Option<f64>,
     pub tls_time_ms: Option<f64>,
     pub error: Option<String>,
+    pub payload: Option<String>,
     pub checked_at: DateTime<Utc>,
 }
 
@@ -248,6 +273,8 @@ pub struct NotificationChannel {
     pub channel_type: String,
     pub config: serde_json::Value,
     pub is_active: bool,
+    #[serde(default)]
+    pub filter_tags: Vec<String>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -258,6 +285,8 @@ pub struct CreateChannelRequest {
     pub config: serde_json::Value,
     #[serde(default = "default_true")]
     pub is_active: bool,
+    #[serde(default)]
+    pub filter_tags: Option<Vec<String>>,
 }
 
 fn default_true() -> bool {
@@ -370,11 +399,19 @@ impl UserRole {
     }
 }
 
+fn default_plan() -> String {
+    "FREE".to_string()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Team {
     pub id: Uuid,
     pub name: String,
     pub slug: String,
+    #[serde(default)]
+    pub ping_key: String,
+    #[serde(default = "default_plan")]
+    pub plan: String,
     pub created_at: DateTime<Utc>,
 }
 
@@ -397,6 +434,8 @@ pub struct UserProfile {
     pub id: Uuid,
     pub team_id: Uuid,
     pub team_name: String,
+    pub team_ping_key: Option<String>,
+    pub team_plan: String,
     pub email: String,
     pub name: String,
     pub role: UserRole,

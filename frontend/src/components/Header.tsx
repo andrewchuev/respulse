@@ -184,8 +184,13 @@ export const Header: React.FC<HeaderProps> = ({
                 className="h-6 w-6 rounded-full border border-border object-cover"
               />
               <div className="hidden sm:flex flex-col">
-                <span className="text-xs font-medium text-white truncate max-w-[110px] leading-tight">
+                <span className="text-xs font-medium text-white truncate max-w-[110px] leading-tight flex items-center gap-1">
                   {currentUser?.name || 'Loading...'}
+                  <span className={`text-[8px] font-mono px-1 rounded font-bold ${
+                    currentUser?.team_plan === 'FREE' ? 'bg-slate-800 text-slate-400 border border-slate-700' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                  }`}>
+                    {currentUser?.team_plan || 'PRO'}
+                  </span>
                 </span>
                 <span className="text-[10px] leading-none text-muted-foreground">
                   {currentUser?.role}
@@ -206,8 +211,13 @@ export const Header: React.FC<HeaderProps> = ({
                   </div>
                   <div className="font-semibold text-white text-xs">{currentUser?.name}</div>
                   <div className="text-[11px] text-muted-foreground font-mono">{currentUser?.email}</div>
-                  <div className="text-[10px] text-emerald-400 font-mono mt-1">
-                    Org: {currentUser?.team_name || 'ResPulse Enterprise'}
+                  <div className="flex items-center justify-between text-[10px] font-mono mt-1 pt-1 border-t border-slate-800/60">
+                    <span className="text-emerald-400">Org: {currentUser?.team_name || 'ResPulse Enterprise'}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                      currentUser?.team_plan === 'FREE' ? 'bg-slate-800 text-slate-400 border border-slate-700' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    }`}>
+                      {currentUser?.team_plan || 'PRO'} PLAN
+                    </span>
                   </div>
                 </div>
 

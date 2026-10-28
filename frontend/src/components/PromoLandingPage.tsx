@@ -20,6 +20,8 @@ import {
   ChevronUp,
   Clock,
   SlidersHorizontal,
+  BarChart3,
+  Tag,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -47,11 +49,8 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
     }
   };
   // Playground state
-  const [activeProtocol, setActiveProtocol] = useState<'http' | 'tcp' | 'ssl' | 'heartbeat' | 'alerts'>('http');
+  const [activeProtocol, setActiveProtocol] = useState<'http' | 'tcp' | 'ssl' | 'heartbeat' | 'alerts' | 'metrics'>('http');
   const [copiedCmd, setCopiedCmd] = useState<string | null>(null);
-
-  // Pricing billing state
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
 
   // FAQ accordion state
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -203,10 +202,10 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 pt-8 max-w-4xl mx-auto text-left">
             {[
               { val: '< 10 ms', label: 'Scheduler Precision', icon: Clock, color: 'text-emerald-400' },
-              { val: '100% Rust', label: 'Systems Performance', icon: Cpu, color: 'text-cyan-400' },
-              { val: '0 ms', label: 'Garbage Collection Jitter', icon: Zap, color: 'text-purple-400' },
-              { val: '4 Channels', label: 'Telegram, Slack, Discord, Webhook', icon: Bell, color: 'text-amber-400' },
-              { val: '4-Tier RBAC', label: 'Owner, Admin, Engineer, Viewer', icon: Users, color: 'text-blue-400' },
+              { val: '100% Rust', label: 'Zero GC Observability', icon: Cpu, color: 'text-cyan-400' },
+              { val: '10s Turbo', label: 'High-Frequency Probing', icon: Zap, color: 'text-purple-400' },
+              { val: '/metrics', label: 'Prometheus Exporter', icon: BarChart3, color: 'text-amber-400' },
+              { val: '4-Tier RBAC', label: 'Enterprise Teams', icon: Users, color: 'text-blue-400' },
             ].map((stat, i) => {
               const Icon = stat.icon;
               return (
@@ -337,8 +336,9 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
               { id: 'http', label: 'HTTP / REST APIs', icon: Activity },
               { id: 'tcp', label: 'TCP Socket & DBs', icon: Server },
               { id: 'ssl', label: 'TLS / SSL Expiry', icon: ShieldCheck },
-              { id: 'heartbeat', label: "Push Heartbeat", icon: Heart },
-              { id: 'alerts', label: 'Multi-Channel Alerts', icon: Bell },
+              { id: 'heartbeat', label: "Cron & Dead Man's Switch", icon: Heart },
+              { id: 'alerts', label: 'Alerts & Tag Routing', icon: Bell },
+              { id: 'metrics', label: 'Prometheus & Badges', icon: BarChart3 },
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeProtocol === tab.id;
@@ -503,35 +503,46 @@ let latency_ms = start.elapsed().as_millis();
                 <div className="space-y-4">
                   <div className="inline-flex items-center gap-2 text-xs font-mono text-rose-400 bg-rose-950/40 border border-rose-800/40 px-2.5 py-1 rounded-md">
                     <Heart className="h-3.5 w-3.5" />
-                    Push-Based Dead Man's Switch
+                    Advanced Cron &amp; Dead Man's Switch
                   </div>
-                  <h3 className="text-2xl font-bold text-white tracking-tight">Cron & Asynchronous Worker Heartbeats</h3>
+                  <h3 className="text-2xl font-bold text-white tracking-tight">Cron Jobs, Workers &amp; Task Lifecycles</h3>
                   <p className="text-sm text-slate-300 leading-relaxed">
-                    Some background tasks can't be probed from the outside. Push-based heartbeats allow your daily database backups,
-                    Kubernetes cron jobs, and Celery queues to notify ResPulse. If a heartbeat ping is missed, an incident is immediately declared.
+                    Monitor background backups, asynchronous workers, and CI/CD pipelines with full Healthchecks.io-grade signals:
+                    track execution durations (<code className="text-rose-300">/start</code>), signal explicit failures (<code className="text-rose-300">/fail</code>),
+                    evaluate process exit codes (<code className="text-rose-300">/$?</code>), and capture up to 64KB of command output or STDERR traces.
                   </p>
                   <ul className="space-y-2 text-xs text-slate-400">
                     <li className="flex items-center gap-2">
                       <Check className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
-                      <span>Unique cryptographic token generated per worker target</span>
+                      <span>5-field Cron syntax with full IANA timezone support (<code className="text-emerald-300 font-mono">0 3 * * 1-5</code> in <code className="text-emerald-300 font-mono">Europe/Kyiv</code>)</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
-                      <span>Dead man's switch triggers outage notification on first missed expected window</span>
+                      <span>Human-readable slug URLs &amp; on-the-fly auto-provisioning with <code className="text-emerald-300 font-mono">?create=1</code></span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
+                      <span>Configurable grace periods &amp; proactive hung/stuck job detection</span>
                     </li>
                   </ul>
                 </div>
 
                 <div className="bg-slate-950 rounded-xl border border-slate-800 p-4 font-mono text-xs text-slate-300 space-y-2 shadow-inner">
                   <div className="flex items-center justify-between text-[11px] text-slate-500 border-b border-slate-800 pb-2">
-                    <span>Cron Job One-Liner</span>
+                    <span>Task Lifecycle Shell Example</span>
                     <span>Bash / CI</span>
                   </div>
                   <pre className="text-rose-400 overflow-x-auto text-[11px] leading-relaxed">
-{`# Append to your backup script or crontab:
-0 3 * * * /usr/local/bin/backup-db.sh && \\
-  curl -fsS -m 10 --retry 3 \\
-  https://respulse.online/api/heartbeat/hb_9a7fbc2`}
+{`# 1. Start execution timer
+curl -fsS -m 5 https://respulse.online/api/ping/<KEY>/nightly-backup/start
+
+# 2. Run task and capture STDERR/output
+/usr/local/bin/backup.sh > /tmp/run.log 2>&1
+CODE=$?
+
+# 3. Report exit code & attach logs (?create=1 auto-registers check)
+curl -fsS -m 10 --data-binary @/tmp/run.log \\
+  "https://respulse.online/api/ping/<KEY>/nightly-backup/\${CODE}?create=1"`}
                   </pre>
                 </div>
               </div>
@@ -542,21 +553,25 @@ let latency_ms = start.elapsed().as_millis();
                 <div className="space-y-4">
                   <div className="inline-flex items-center gap-2 text-xs font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-2.5 py-1 rounded-md">
                     <Bell className="h-3.5 w-3.5" />
-                    Zero-Latency Dispatch
+                    Zero-Latency Dispatch &amp; Tag Routing
                   </div>
-                  <h3 className="text-2xl font-bold text-white tracking-tight">Multi-Channel Instant Delivery</h3>
+                  <h3 className="text-2xl font-bold text-white tracking-tight">Multi-Channel Alerts &amp; Tag-Based Routing</h3>
                   <p className="text-sm text-slate-300 leading-relaxed">
-                    Incidents are only valuable if your on-call team wakes up. ResPulse dispatches rich notifications to
-                    Telegram Bot API, Discord Webhooks, Slack channels, and Custom Webhooks the moment a state transition occurs.
+                    Eliminate alert fatigue. Dispatch incidents to Telegram Bots, Discord Webhooks, Slack channels, and Custom Webhooks
+                    the instant a probe fails — with granular tag-based routing (<code className="text-emerald-300">filter_tags</code>) so payment outages go to the billing squad, and database issues go to SREs.
                   </p>
                   <ul className="space-y-2 text-xs text-slate-400">
                     <li className="flex items-center gap-2">
                       <Check className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
-                      <span>Rich visual cards with error reasons, duration, and target link</span>
+                      <span>Tag-based filtering: route by <code className="text-emerald-300 font-mono">#payments</code>, <code className="text-emerald-300 font-mono">#infra</code>, or <code className="text-emerald-300 font-mono">#prod</code></span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
-                      <span>Complete delivery diagnostic audit log with HTTP responses</span>
+                      <span>Rich visual cards with root causes, latency charts, and incident links</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
+                      <span>Full delivery diagnostic audit logs with response codes and timestamps</span>
                     </li>
                   </ul>
                 </div>
@@ -564,7 +579,7 @@ let latency_ms = start.elapsed().as_millis();
                 <div className="bg-slate-950 rounded-xl border border-slate-800 p-4 space-y-2.5 shadow-inner">
                   <div className="flex items-center justify-between text-[11px] text-slate-500 border-b border-slate-800 pb-2">
                     <span>Supported Notification Targets</span>
-                    <span>Immediate</span>
+                    <span>Tag Routing</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-300 flex items-center gap-2">
@@ -579,6 +594,64 @@ let latency_ms = start.elapsed().as_millis();
                     <div className="p-2.5 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-300 flex items-center gap-2">
                       <span className="font-semibold">Custom Webhook</span>
                     </div>
+                  </div>
+                  <div className="p-2 bg-slate-900/80 rounded-lg border border-slate-800 font-mono text-[11px] text-slate-300">
+                    <span className="text-slate-500"># Routing Rule:</span><br />
+                    <span className="text-emerald-400">filter_tags</span>: [&quot;payments&quot;, &quot;billing&quot;] &rarr; #fintech-alerts
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeProtocol === 'metrics' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <div className="space-y-4">
+                  <div className="inline-flex items-center gap-2 text-xs font-mono text-cyan-400 bg-cyan-950/40 border border-cyan-800/40 px-2.5 py-1 rounded-md">
+                    <BarChart3 className="h-3.5 w-3.5" />
+                    Observability &amp; Developer Tooling
+                  </div>
+                  <h3 className="text-2xl font-bold text-white tracking-tight">Prometheus Exporter &amp; Vector Status Badges</h3>
+                  <p className="text-sm text-slate-300 leading-relaxed">
+                    ResPulse seamlessly integrates into your existing DevOps stack. Scrape gauge metrics directly into Prometheus and Grafana,
+                    and embed real-time Shields.io-compatible vector SVG status badges into your public GitHub READMEs and team documentation.
+                  </p>
+                  <ul className="space-y-2 text-xs text-slate-400">
+                    <li className="flex items-center gap-2">
+                      <Check className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
+                      <span>Standard Prometheus text format on <code className="text-cyan-300 font-mono">/metrics</code> and <code className="text-cyan-300 font-mono">/api/metrics</code></span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
+                      <span>Vector SVG badges with <code className="text-emerald-300 font-mono">up</code>, <code className="text-amber-300 font-mono">late</code> (grace window), <code className="text-red-300 font-mono">down</code> states</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
+                      <span>Access badges by token (<code className="text-cyan-300 font-mono">/badge/:token.svg</code>) or slug (<code className="text-cyan-300 font-mono">/badge/:key/:slug.svg</code>)</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="bg-slate-950 rounded-xl border border-slate-800 p-4 font-mono text-xs text-slate-300 space-y-3 shadow-inner">
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 border-b border-slate-800 pb-2">
+                    <span>Prometheus &amp; Badge Snippets</span>
+                    <span>Open Metrics</span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Prometheus Scrape:</div>
+                    <pre className="text-cyan-300 text-[11px] overflow-x-auto bg-slate-900/60 p-2 rounded border border-slate-800">
+{`# GET /api/metrics
+respulse_monitors_total{status="UP"} 12
+respulse_monitor_response_time_ms{name="API Gateway"} 38.4
+respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
+                    </pre>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">GitHub README.md Badge:</div>
+                    <pre className="text-emerald-300 text-[11px] overflow-x-auto bg-slate-900/60 p-2 rounded border border-slate-800">
+{`![Status](https://respulse.online/api/badge/<KEY>/backup.svg)`}
+                    </pre>
                   </div>
                 </div>
               </div>
@@ -707,6 +780,28 @@ let latency_ms = start.elapsed().as_millis();
                 Transparent SLA status page with automatic 90-day history calculations, grouped component blocks (Websites, Core APIs, Infrastructure), live active incident notices, and expandable past 7-day post-mortem reports.
               </p>
             </div>
+
+            {/* Feature 5: Prometheus Exporter & Badges */}
+            <div className="p-6 rounded-2xl border border-white/5 bg-slate-900/40 backdrop-blur-xl hover:border-cyan-500/30 transition-all group">
+              <div className="h-10 w-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 mb-4 group-hover:scale-105 transition-all">
+                <BarChart3 className="h-5 w-5" />
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">Prometheus Metrics &amp; Vector Badges</h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                Native <span className="text-cyan-300 font-mono">/metrics</span> and <span className="text-cyan-300 font-mono">/api/metrics</span> endpoints scrape platform gauges directly into Prometheus and Grafana. Embed real-time Shields.io-compatible vector SVG status badges into GitHub READMEs.
+              </p>
+            </div>
+
+            {/* Feature 6: Tag-Based Alert Routing */}
+            <div className="p-6 rounded-2xl border border-white/5 bg-slate-900/40 backdrop-blur-xl hover:border-amber-500/30 transition-all group">
+              <div className="h-10 w-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-4 group-hover:scale-105 transition-all">
+                <Tag className="h-5 w-5" />
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">Granular Tag-Based Alert Routing</h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                Assign tags like <span className="text-emerald-300 font-mono">#payments</span>, <span className="text-cyan-300 font-mono">#db</span>, or <span className="text-purple-300 font-mono">#prod</span> and bind channels using <span className="text-amber-300 font-mono">filter_tags</span>. Alert notifications route straight to the on-call engineers responsible for that subsystem.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -715,66 +810,66 @@ let latency_ms = start.elapsed().as_millis();
       {/* 7. PRICING SECTION */}
       {/* ------------------------------------------------------------- */}
       <section id="pricing" className="py-20 border-t border-white/5 relative">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="text-center space-y-3 mb-8">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="text-center space-y-3 mb-10">
             <Badge variant="outline" className="text-xs font-mono font-normal text-emerald-400 border-emerald-500/30 bg-emerald-500/10">
-              Simple, Predictable Plans
+              Simple, Transparent Pricing
             </Badge>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-              Transparent Pricing for Teams of All Sizes
+              Two Plans. Zero Complications.
             </h2>
-            <p className="text-sm sm:text-base text-slate-400 max-w-xl mx-auto">
-              Start free with full self-hosted Docker, or scale with enterprise high-availability.
+            <p className="text-sm sm:text-base text-slate-400 max-w-lg mx-auto">
+              Get started for free forever, or upgrade to Pro for high-frequency turbo probes, team RBAC, and Prometheus metrics.
             </p>
-
-            {/* Billing Toggle */}
-            <div className="pt-2 flex items-center justify-center gap-3 text-xs">
-              <span className={billingCycle === 'monthly' ? 'text-white font-medium' : 'text-slate-400'}>Monthly</span>
-              <button
-                onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'annual' : 'monthly')}
-                className="w-12 h-6 rounded-full bg-slate-800 border border-slate-700 p-0.5 transition-colors relative"
-              >
-                <div
-                  className={`w-5 h-5 rounded-full bg-emerald-400 transition-transform ${
-                    billingCycle === 'annual' ? 'translate-x-6' : 'translate-x-0'
-                  }`}
-                />
-              </button>
-              <span className={billingCycle === 'annual' ? 'text-white font-medium' : 'text-slate-400'}>
-                Annual <span className="text-emerald-400 font-mono text-[10px] font-bold">(Save 20%)</span>
-              </span>
-            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-            {/* Plan 1: Community */}
-            <div className="rounded-2xl border border-white/10 bg-slate-900/40 p-6 flex flex-col justify-between backdrop-blur">
-              <div className="space-y-4">
-                <div className="text-xs font-mono text-slate-400 uppercase tracking-wider">Community / Self-Hosted</div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-extrabold text-white">$0</span>
-                  <span className="text-xs text-slate-400">/ forever free</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2 max-w-3xl mx-auto">
+            {/* Plan 1: Free Forever */}
+            <div className="rounded-2xl border border-white/10 bg-slate-900/40 p-7 flex flex-col justify-between backdrop-blur">
+              <div className="space-y-5">
+                <div>
+                  <div className="text-xs font-mono text-slate-400 uppercase tracking-wider">Free Tier</div>
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <span className="text-4xl font-extrabold text-white">$0</span>
+                    <span className="text-xs text-slate-400 font-mono">/ forever free</span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                    Perfect for indie developers, home labs, side projects, and pet infrastructure.
+                  </p>
                 </div>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Self-host on your own servers with zero limitations or license keys.
-                </p>
 
-                <div className="pt-4 border-t border-white/5 space-y-2.5 text-xs text-slate-300">
-                  <div className="flex items-center gap-2">
-                    <Check className="h-3.5 w-3.5 text-emerald-400" />
-                    <span>Unlimited Synthetic Monitors</span>
+                <div className="pt-4 border-t border-white/5 space-y-3 text-xs text-slate-300">
+                  <div className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    <span><strong>10 Synthetic Monitors</strong> (HTTP, SSL, TCP)</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-3.5 w-3.5 text-emerald-400" />
-                    <span>HTTP, SSL, TCP & Heartbeats</span>
+                  <div className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    <span><strong>60-Second</strong> Standard Probe Intervals</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-3.5 w-3.5 text-emerald-400" />
-                    <span>Telegram, Discord, Slack, Webhooks</span>
+                  <div className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    <span><strong>10 Heartbeat / Cron Jobs</strong> (Dead Man's Switch)</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-3.5 w-3.5 text-emerald-400" />
-                    <span>Docker Compose Ready with HTTPS</span>
+                  <div className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    <span>Telegram, Discord, Slack &amp; Webhooks</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    <span>Vector SVG Status Badges for GitHub</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    <span>14-Day Latency &amp; Incident Retention</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    <span>1 User (Solo Workspace)</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    <span>Public Status Page on standard URL</span>
                   </div>
                 </div>
               </div>
@@ -782,106 +877,79 @@ let latency_ms = start.elapsed().as_millis();
               <Button
                 onClick={onOpenDashboard}
                 variant="outline"
-                className="w-full mt-6 border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-white"
+                className="w-full mt-8 border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-white"
               >
-                Launch Self-Hosted
+                Get Started Free
               </Button>
             </div>
 
             {/* Plan 2: Pro (Highlighted) */}
-            <div className="rounded-2xl border border-emerald-500/50 bg-gradient-to-b from-slate-900/90 via-slate-900/80 to-emerald-950/20 p-6 flex flex-col justify-between backdrop-blur shadow-[0_0_30px_rgba(16,185,129,0.15)] relative">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-500 text-black">
-                Most Popular
+            <div className="rounded-2xl border border-emerald-500/50 bg-gradient-to-b from-slate-900/90 via-slate-900/80 to-emerald-950/30 p-7 flex flex-col justify-between backdrop-blur shadow-[0_0_35px_rgba(16,185,129,0.18)] relative ring-1 ring-emerald-500/30">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-500 text-black shadow-md shadow-emerald-500/20">
+                Recommended for Production
               </div>
 
-              <div className="space-y-4">
-                <div className="text-xs font-mono text-emerald-400 uppercase tracking-wider">Team / Pro</div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-extrabold text-white">
-                    {billingCycle === 'annual' ? '$39' : '$49'}
-                  </span>
-                  <span className="text-xs text-slate-400">/ month</span>
+              <div className="space-y-5">
+                <div>
+                  <div className="text-xs font-mono text-emerald-400 uppercase tracking-wider">Pro Plan</div>
+                  <div className="flex items-baseline gap-1.5 mt-1">
+                    <span className="text-4xl font-extrabold text-white">$8</span>
+                    <span className="text-xs text-slate-400 font-mono">/ month (monthly billing)</span>
+                  </div>
+                  <p className="text-xs text-slate-300 mt-2 leading-relaxed">
+                    Production monitoring for startups, engineers and squads requiring zero-latency alerts.
+                  </p>
                 </div>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Ideal for scaling startups and engineering squads needing high-frequency checks.
-                </p>
 
-                <div className="pt-4 border-t border-white/5 space-y-2.5 text-xs text-slate-300">
-                  <div className="flex items-center gap-2">
-                    <Check className="h-3.5 w-3.5 text-emerald-400" />
-                    <span>Everything in Community</span>
+                <div className="pt-4 border-t border-white/5 space-y-3 text-xs text-slate-300">
+                  <div className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    <span>Everything in Free, plus:</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-3.5 w-3.5 text-emerald-400" />
-                    <span className="text-white font-medium">Turbo 10-Second Probe Intervals</span>
+                  <div className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    <span className="text-white font-medium">Up to <strong>100 Synthetic Monitors</strong></span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-3.5 w-3.5 text-emerald-400" />
+                  <div className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    <span className="text-white font-medium"><strong>Turbo 10-Second</strong> Probe Intervals</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    <span><strong>Unlimited Cron &amp; Background Tasks</strong> with Timezones</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    <span><strong>Prometheus Metrics Exporter</strong> (<code className="text-[11px] text-cyan-300 bg-cyan-950/60 px-1 py-0.5 rounded">/api/metrics</code>)</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    <span><strong>Tag-Based Alert Routing</strong> (<code className="text-[11px] text-emerald-300 bg-emerald-950/60 px-1 py-0.5 rounded">filter_tags</code>)</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    <span>Full <strong>64KB STDERR / Execution Log</strong> Capture</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    <span>Up to <strong>10 Team Members</strong> with 4-Tier RBAC</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    <span><strong>90-Day Retention</strong> &amp; SRE Post-Mortem (RCA)</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
                     <span>Custom Domain for Public Status Page</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-3.5 w-3.5 text-emerald-400" />
-                    <span>Up to 15 Team Members with RBAC</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-3.5 w-3.5 text-emerald-400" />
-                    <span>90-Day Latency & Incident Retention</span>
-                  </div>
                 </div>
               </div>
 
               <Button
                 onClick={onOpenDashboard}
-                className="w-full mt-6 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                className="w-full mt-8 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-[0_0_20px_rgba(16,185,129,0.35)]"
               >
-                Start 14-Day Free Trial
-              </Button>
-            </div>
-
-            {/* Plan 3: Enterprise */}
-            <div className="rounded-2xl border border-white/10 bg-slate-900/40 p-6 flex flex-col justify-between backdrop-blur">
-              <div className="space-y-4">
-                <div className="text-xs font-mono text-purple-400 uppercase tracking-wider">Enterprise Scale</div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-extrabold text-white">
-                    {billingCycle === 'annual' ? '$159' : '$199'}
-                  </span>
-                  <span className="text-xs text-slate-400">/ month</span>
-                </div>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Dedicated infrastructure, compliance guarantees, and multi-region probe clusters.
-                </p>
-
-                <div className="pt-4 border-t border-white/5 space-y-2.5 text-xs text-slate-300">
-                  <div className="flex items-center gap-2">
-                    <Check className="h-3.5 w-3.5 text-emerald-400" />
-                    <span>Multi-Region Global Probing Nodes</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-3.5 w-3.5 text-emerald-400" />
-                    <span>SAML / SSO & Custom Role Matrices</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-3.5 w-3.5 text-emerald-400" />
-                    <span>99.99% Availability SLA Guarantee</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-3.5 w-3.5 text-emerald-400" />
-                    <span>Unlimited Retention & Audit Logs API</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-3.5 w-3.5 text-emerald-400" />
-                    <span>Dedicated 24/7 SRE On-Call Support</span>
-                  </div>
-                </div>
-              </div>
-
-              <Button
-                onClick={onOpenDashboard}
-                variant="outline"
-                className="w-full mt-6 border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-white"
-              >
-                Contact Enterprise Sales
+                Upgrade to Pro — $8/mo
               </Button>
             </div>
           </div>
@@ -965,11 +1033,19 @@ let latency_ms = start.elapsed().as_millis();
               },
               {
                 q: "How does push heartbeat (dead man's switch) work for cron jobs?",
-                a: "When you create a Heartbeat monitor, ResPulse generates a unique cryptographic webhook URL. You simply append a curl command to the end of your backup script, cron task, or Celery worker. If the expected ping does not arrive within the configured window, an incident is immediately dispatched to your alert channels."
+                a: "When you create a Heartbeat monitor, ResPulse generates a unique cryptographic webhook URL or clean slug URL. You can signal task start (/start) to measure runtime, pass shell exit codes (/$?), attach STDERR logs up to 64KB, and schedule with standard 5-field cron syntax in any IANA timezone. If a ping is missed or task hangs beyond the grace period, an incident is instantly declared."
               },
               {
                 q: "Which alert delivery channels are currently supported?",
-                a: "ResPulse natively supports Telegram Bot API, Discord Rich Embed Webhooks, Slack Incoming Webhooks, and Custom JSON Webhooks. Every delivery is recorded in an audit log with response codes and latency diagnostics."
+                a: "ResPulse natively supports Telegram Bot API, Discord Rich Embed Webhooks, Slack Incoming Webhooks, and Custom JSON Webhooks. With tag-based alert routing (filter_tags), you can route specific subsystem alerts directly to dedicated engineering squads."
+              },
+              {
+                q: "Can I export ResPulse metrics directly into Prometheus and Grafana?",
+                a: "Yes! ResPulse provides native /metrics and /api/metrics endpoints. Any Prometheus scraper or OpenTelemetry collector can gather platform gauges (monitor operational status, probe latencies, heartbeat durations, and active incidents) for visualization in your central Grafana dashboards."
+              },
+              {
+                q: "What is included in the $8/month Pro plan?",
+                a: "The Pro plan ($8 USD / month, cancel anytime) offers turbo 10-second probe intervals, up to 100 synthetic monitors, unlimited cron tasks with timezones, up to 10 team members with 4-tier RBAC, 90-day retention with SRE RCA post-mortems, Prometheus metric exports, tag-based alert routing, and custom domain status pages."
               },
               {
                 q: "How does Role-Based Access Control (RBAC) enforce security?",

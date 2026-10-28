@@ -18,8 +18,8 @@ respulse.online {
         -Server
     }
 
-    # REST API, WebSockets, and health checks -> backend (unbuffered)
-    @backend path /api/* /ws* /health
+    # REST API, WebSockets, health checks, metrics, badges -> backend (unbuffered)
+    @backend path /api/* /ws* /health* /metrics* /badge*
     handle @backend {
         reverse_proxy respulse-backend:8080 {
             flush_interval -1

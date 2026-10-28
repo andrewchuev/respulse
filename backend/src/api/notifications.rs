@@ -86,10 +86,12 @@ pub async fn create_channel(
         ));
     }
 
+    let filter_tags = payload.filter_tags.unwrap_or_default();
+
     let channel = sqlx::query_as::<_, NotificationChannel>(
         r#"
-        INSERT INTO notification_channels (team_id, name, channel_type, config, is_active)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO notification_channels (team_id, name, channel_type, config, is_active, filter_tags)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING *
         "#
     )
@@ -98,6 +100,7 @@ pub async fn create_channel(
     .bind(payload.channel_type.to_uppercase().trim())
     .bind(payload.config)
     .bind(payload.is_active)
+    .bind(filter_tags)
     .fetch_one(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -111,6 +114,7 @@ pub struct UpdateChannelRequest {
     pub channel_type: Option<String>,
     pub config: Option<serde_json::Value>,
     pub is_active: Option<bool>,
+    pub filter_tags: Option<Vec<String>>,
 }
 
 pub async fn update_channel(
@@ -140,12 +144,13 @@ pub async fn update_channel(
     let channel_type = payload.channel_type.unwrap_or(existing.channel_type);
     let config = payload.config.unwrap_or(existing.config);
     let is_active = payload.is_active.unwrap_or(existing.is_active);
+    let filter_tags = payload.filter_tags.unwrap_or(existing.filter_tags);
 
     let updated = sqlx::query_as::<_, NotificationChannel>(
         r#"
         UPDATE notification_channels
-        SET name = $1, channel_type = $2, config = $3, is_active = $4
-        WHERE id = $5 AND team_id = $6
+        SET name = $1, channel_type = $2, config = $3, is_active = $4, filter_tags = $5
+        WHERE id = $6 AND team_id = $7
         RETURNING *
         "#
     )
@@ -153,6 +158,7 @@ pub async fn update_channel(
     .bind(channel_type.to_uppercase())
     .bind(config)
     .bind(is_active)
+    .bind(filter_tags)
     .bind(id)
     .bind(auth.user.team_id)
     .fetch_one(&state.pool)

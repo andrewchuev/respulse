@@ -29,13 +29,26 @@
   * Monitors certificate expiration dates with advance warnings.
 * **TCP Port Checks:**
   * Validates network sockets and connectivity for databases (PostgreSQL, MySQL, Redis), mail servers (SMTP, IMAP), and custom microservice ports.
-* **Heartbeat Monitoring (Dead Man's Switch / Push Monitoring):**
-  * Push-based monitoring for cron jobs, background workers, and backup scripts.
-  * Generates unique webhook URLs:
-    ```bash
-    curl -X POST https://respulse.wsl.local/api/heartbeat/<TOKEN>
-    ```
-  * Automatically flags endpoints as **DOWN** if an expected heartbeat is missed.
+* **Advanced Heartbeat Monitoring (Healthchecks.io-grade Dead Man's Switch):**
+  * Push-based monitoring for cron jobs, background workers, CI/CD pipelines, and backup scripts.
+  * **Signals Hierarchy:**
+    * **Success (`/api/heartbeat/<TOKEN>` or `/api/ping/<PING_KEY>/<SLUG>`):** Confirms task finished successfully.
+    * **Start (`.../start`):** Initiates task execution timer; measures exact duration (`duration_ms`) upon task completion.
+    * **Fail (`.../fail`):** Immediately transitions monitor to **DOWN**, opens an active incident, and dispatches multi-channel alerts without waiting for timeout intervals.
+    * **Exit Code Evaluation (`.../<exit_code>`):** Pass shell exit codes directly (e.g. `curl .../$?`). Code `0` signals success; non-zero codes trigger immediate alerts with code attribution and captured output.
+    * **Diagnostic Logs (`.../log`):** Records informational execution logs without altering UP/DOWN states.
+  * **Cron Schedules & Timezone Support:**
+    * 5-field standard cron expressions (e.g. `0 3 * * 1-5`, `*/15 * * * *`).
+    * Full IANA timezone support (`Europe/Kyiv`, `America/New_York`, `UTC`, `Asia/Tokyo`, etc.) via `chrono-tz` and `croner`.
+    * Precomputes `next_expected_at` timestamps for fast, indexed overdue detection.
+  * **Human-Readable Slugs & Auto-Provisioning (`?create=1`):**
+    * Ping using team-scoped Ping Keys and clean readable slugs: `https://respulse.online/api/ping/pk_live_enterprise.../nightly-backup`.
+    * Dynamic on-the-fly provisioning: pinging any unregistered slug with `?create=1` automatically provisions and initializes the monitor in one request.
+  * **Payload & STDERR Capture:** Attach command outputs, crash logs, or stack traces (up to 64KB via POST body). Logs are stored and displayed directly in the dashboard and incident post-mortems.
+  * **Configurable Grace Period (`grace_seconds`):** Define allowed execution buffers (e.g. 5m, 15m, 1h) beyond base intervals or scheduled cron deadlines to eliminate false alerts during heavy workloads.
+  * **Hung / Stuck Job Detection:** Proactively flags and alerts on background jobs that started but exceeded their execution timeout window.
+  * **Public SVG Status Badges:** Shields.io-compatible vector status badges (`/api/badge/<TOKEN>.svg` or `/api/badge/<PING_KEY>/<SLUG>.svg`) with real-time `up`, `late` (within grace window), `down`, and `paused` indicators for embedding in GitHub READMEs and dashboards.
+  * **Prometheus Metrics Exporter:** Dedicated `/metrics` (and `/api/metrics`) endpoint exporting standard Prometheus gauge metrics for monitor statuses, latencies, heartbeat durations, and active incident counts.
 
 ### 2. Interactive Real-Time Dashboard
 * **Live WebSocket Streaming:**
@@ -90,6 +103,9 @@
 * **Incident Lifecycle Automation:**
   * Probe scheduler automatically dispatches alerts on state transitions (`UP → DOWN` and `DOWN → UP / RESOLVED`).
   * Calculates and delivers total downtime duration upon service recovery.
+* **Tag-Based Alert Routing (`filter_tags`):**
+  * Route alerts specifically to teams or channels subscribed to particular tags (e.g. send `#payments` alerts to a dedicated billing webhook/Slack channel).
+  * Channels configured with empty `filter_tags` act as catch-all notification sinks for the entire organization.
 * **Delivery Diagnostics & Audit Trail:**
   * Real-time test dispatch button for any channel with immediate network/API diagnostics.
   * Detailed delivery history table logging timestamps, event types (`DOWN`, `RESOLVED`, `TEST`), target monitors, HTTP status codes, and error responses.
@@ -135,7 +151,9 @@
   * **Hero Section:** Systems-grade synthetic monitoring value proposition, 1-click Docker launch snippet, and animated real-time browser console mockup with simulated probes.
   * **Interactive Multi-Protocol Playground:** Tabbed live explorer covering HTTP/REST APIs, TCP sockets & databases, TLS certificate tracking, asynchronous worker heartbeats, and multi-channel alerts with executable curl examples.
   * **Architectural Deep Dive (Why Rust?):** Benchmark comparison matrix comparing ResPulse (Rust Axum + Tokio) against legacy NodeJS/Python engines (memory, zero GC jitter, thread concurrency, rustls memory safety).
-  * **Transparent Tiered Pricing:** Interactive monthly/annual billing toggle across Community ($0), Pro ($39/mo), and Enterprise ($159/mo) plans.
+  * **Two-Tier Transparent Pricing (Free & Pro $8/mo):** Simple, developer-friendly pricing:
+    * **Free Tier ($0 / forever):** 10 synthetic monitors, 60s standard intervals, 10 cron jobs, multi-channel alerts, 14-day history, SVG status badges, solo workspace.
+    * **Pro Tier ($8 / month, monthly subscription):** Up to 100 synthetic monitors, **turbo 10-second probe intervals**, unlimited cron & background tasks with timezones, **Prometheus metrics exporter (`/api/metrics`)**, **tag-based alert routing (`filter_tags`)**, full 64KB execution/STDERR capture, up to 10 team members with 4-tier RBAC, 90-day retention with SRE post-mortems (RCA), and custom domain status pages.
   * **Interactive FAQ & Social Proof:** Expandable accordions answering technical architecture, VPC self-hosting, heartbeat monitoring, and role permissions.
 
 ### 9. Production Server Deployment (respulse.online)
@@ -186,7 +204,12 @@ respulse/
 │   │   ├── 0003_alert_logs.sql  # Alert delivery logs table
 │   │   ├── 0004_tags_and_groups.sql # Tags and folders schema extension
 │   │   ├── 0005_incident_management.sql # Incident details, timeline & post-mortem schema
-│   │   └── 0006_rbac_teams.sql  # Multi-user teams, users & seeded enterprise accounts
+│   │   ├── 0006_rbac_teams.sql  # Multi-user teams, users & seeded enterprise accounts
+│   │   ├── 0007_tenant_isolation.sql # Tenant isolation across monitors, incidents & channels
+│   │   ├── 0008_update_public_status_monitors.sql # Clean public status monitor seeds
+│   │   ├── 0009_heartbeat_enhancements.sql # Grace period, start timer & payload logging schema
+│   │   ├── 0010_cron_slugs_and_tag_routing.sql # Cron expressions, ping keys, slugs & tag routing schema
+│   │   └── 0011_team_plans.sql      # Team subscription plans (Free vs Pro) & limits schema
 │   └── src/
 │       ├── main.rs              # App entrypoint, state & router setup
 │       ├── db.rs                # Database connection & migration runner
@@ -197,7 +220,9 @@ respulse/
 │       │   ├── auth.rs          # Current user, demo user switcher & available personas
 │       │   ├── team.rs          # Multi-user team management & member invitations
 │       │   ├── monitors.rs      # Monitor CRUD, pause/resume, test (RBAC-guarded)
-│       │   ├── heartbeat.rs     # Push heartbeat endpoint
+│       │   ├── heartbeat.rs     # Push heartbeat endpoint, slug routing & auto-provisioning
+│       │   ├── badge.rs         # Dynamic SVG status badges (Shields.io-compatible)
+│       │   ├── metrics.rs       # Prometheus /metrics exporter
 │       │   ├── incidents.rs     # Incident management, timeline updates & post-mortems (RBAC-guarded)
 │       │   ├── notifications.rs # Channels CRUD, test alert & audit logs (RBAC-guarded)
 │       │   ├── stats.rs         # Global metrics & status page data
@@ -329,6 +354,7 @@ All API routes are served under the `/api` prefix. Authenticated requests accept
 | `POST` | `/api/team/members` | Invite a new team member with role (`OWNER`/`ADMIN` required) |
 | `PUT` | `/api/team/members/:id/role` | Update a team member's role (`OWNER`/`ADMIN` required) |
 | `DELETE` | `/api/team/members/:id` | Remove a member from the team (`OWNER`/`ADMIN` required) |
+| `POST`/`PUT` | `/api/team/plan` | Update organization subscription plan (`FREE` or `PRO`, `OWNER`/`ADMIN` required) |
 | `GET` | `/api/monitors` | List all monitors with 24h/7d/30d uptime & history bars |
 | `POST` | `/api/monitors` | Create a new monitor (HTTP, PORT, SSL, HEARTBEAT) |
 | `POST` | `/api/monitors/bulk` | Bulk operations (pause, resume, test, delete, set_group, add_tag) |
@@ -338,9 +364,9 @@ All API routes are served under the `/api` prefix. Authenticated requests accept
 | `POST` | `/api/monitors/:id/pause` | Pause active probing for a monitor |
 | `POST` | `/api/monitors/:id/resume` | Resume active probing |
 | `POST` | `/api/monitors/:id/test` | Trigger an immediate test probe |
-| `GET` | `/api/notifications` | List all configured notification channels |
-| `POST` | `/api/notifications` | Register a new notification channel (Telegram, Discord, Slack, Webhook) |
-| `PUT` | `/api/notifications/:id` | Update notification channel configuration or active status |
+| `GET` | `/api/notifications` | List all configured notification channels (with `filter_tags`) |
+| `POST` | `/api/notifications` | Register a new notification channel (Telegram, Discord, Slack, Webhook, with optional `filter_tags`) |
+| `PUT` | `/api/notifications/:id` | Update notification channel configuration, tags or active status |
 | `DELETE` | `/api/notifications/:id` | Delete a notification channel |
 | `POST` | `/api/notifications/:id/test` | Trigger an immediate test alert to verify channel connectivity |
 | `GET` | `/api/notifications/logs` | Fetch audit logs and diagnostics of alert deliveries |
@@ -351,7 +377,16 @@ All API routes are served under the `/api` prefix. Authenticated requests accept
 | `POST` | `/api/incidents/:id/updates` | Append a new live status update to the incident timeline |
 | `GET` | `/api/stats` | Global metrics (total, operational, down, average latency) |
 | `GET` | `/api/status-page` | Public status page data |
-| `POST` | `/api/heartbeat/:token` | Push endpoint for cron jobs / dead man's switch |
+| `GET` | `/api/metrics` / `/metrics` | Prometheus metrics scrape endpoint (`respulse_monitors_total`, statuses, latencies, incidents) |
+| `GET` | `/api/badge/:token[.svg]` | Vector SVG status badge by monitor UUID or heartbeat token |
+| `GET` | `/api/badge/:ping_key/:slug[.svg]` | Vector SVG status badge by team Ping Key and monitor slug (supports `?label=...`) |
+| `GET`/`POST` | `/api/heartbeat/:token` | Push endpoint: signal task success / heartbeat ping |
+| `GET`/`POST` | `/api/heartbeat/:token/start` | Push endpoint: signal task start; activates duration measurement |
+| `GET`/`POST` | `/api/heartbeat/:token/fail` | Push endpoint: explicitly signal task failure; triggers instant DOWN & alerts |
+| `GET`/`POST` | `/api/heartbeat/:token/:code` | Push endpoint: exit code ping (`0` = OK, `>0` = DOWN with code & payload) |
+| `GET`/`POST` | `/api/heartbeat/:token/log` | Push endpoint: record diagnostic log without changing UP/DOWN state |
+| `GET`/`POST` | `/api/ping/:ping_key/:slug` | Slug push endpoint: human-readable ping (append `?create=1` to auto-provision) |
+| `GET`/`POST` | `/api/ping/:ping_key/:slug/:action` | Slug push endpoint: lifecycle actions (`start`, `fail`, `0`, `1`, `log`) |
 | `GET` | `/ws` | WebSocket stream for live events and status updates |
 
 ---

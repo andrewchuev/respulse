@@ -5,7 +5,7 @@ import { formatMs, timeAgo } from '../lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Badge } from './ui/badge';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { Activity, Clock, ShieldCheck, Copy, Check } from 'lucide-react';
+import { Activity, Clock, ShieldCheck, Copy, Check, Terminal, Play, AlertTriangle } from 'lucide-react';
 
 interface MonitorDetailModalProps {
   monitor: MonitorWithStats | null;
@@ -17,7 +17,7 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
   onClose,
 }) => {
   const [details, setDetails] = useState<MonitorWithStats | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (!monitor) return;
@@ -33,14 +33,13 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
 
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://respulse.online';
 
-  const copyToken = () => {
-    if (data.heartbeat_token) {
-      const url = `${origin}/api/heartbeat/${data.heartbeat_token}`;
-      navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
+  const copyText = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
   };
+
+  const heartbeatBase = data.heartbeat_token ? `${origin}/api/heartbeat/${data.heartbeat_token}` : '';
 
   return (
     <Dialog open={!!monitor} onOpenChange={onClose}>
@@ -53,11 +52,26 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
               <span className={`relative inline-flex rounded-full h-3.5 w-3.5 ${isUp ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]' : isDown ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]' : 'bg-muted-foreground'}`}></span>
             </span>
             <div>
-              <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
+              <DialogTitle className="text-xl font-bold text-white flex items-center gap-2 flex-wrap">
                 {data.name}
                 <Badge variant="outline" className="text-xs font-mono font-normal">
                   {data.monitor_type}
                 </Badge>
+                {data.cron_expression && (
+                  <Badge variant="secondary" className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-800/50">
+                    cron: {data.cron_expression} ({data.timezone || 'UTC'})
+                  </Badge>
+                )}
+                {data.grace_seconds !== undefined && data.grace_seconds > 0 && (
+                  <Badge variant="secondary" className="text-[10px] font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-800/50">
+                    +{data.grace_seconds}s grace
+                  </Badge>
+                )}
+                {data.slug && (
+                  <Badge variant="outline" className="text-[10px] font-mono text-purple-300 bg-purple-950/40 border border-purple-800/50">
+                    /{data.slug}
+                  </Badge>
+                )}
               </DialogTitle>
               <DialogDescription className="text-xs font-mono text-muted-foreground mt-0.5">
                 {data.url}
@@ -67,27 +81,187 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-6 pt-2">
-          {/* Heartbeat Token snippet if Heartbeat */}
+          {/* Heartbeat Signals & Webhooks (Healthchecks.io compatible) */}
           {data.heartbeat_token && (
-            <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl">
-              <div className="flex items-center justify-between mb-1.5">
+            <div className="bg-emerald-500/10 border border-emerald-500/20 p-3.5 rounded-xl space-y-3">
+              <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
                   <Activity className="h-3.5 w-3.5" />
-                  Heartbeat Webhook URL
+                  Heartbeat Signal Endpoints
                 </span>
-                <button
-                  onClick={copyToken}
-                  className="flex items-center gap-1 text-[11px] text-emerald-400 hover:text-emerald-300 font-medium"
-                >
-                  {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                  {copied ? 'Copied!' : 'Copy'}
-                </button>
+                <span className="text-[10px] font-mono text-emerald-300 bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-800/80">
+                  Healthchecks.io compatible
+                </span>
               </div>
-              <code className="block p-2 bg-slate-950 rounded-lg border border-slate-800 font-mono text-xs text-emerald-300 select-all break-all">
-                curl -X POST {origin}/api/heartbeat/{data.heartbeat_token}
-              </code>
+
+              {/* Signals Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-mono">
+                {/* 1. Success */}
+                <div className="p-2 bg-slate-950/80 rounded-lg border border-slate-800 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className="text-emerald-400 block text-[10px] uppercase font-bold tracking-wider">Success (UP)</span>
+                    <span className="text-slate-300 truncate block text-[10px]">{heartbeatBase}</span>
+                  </div>
+                  <button
+                    onClick={() => copyText(`curl -fsS -m 10 ${heartbeatBase}`, 'success')}
+                    className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white flex-shrink-0"
+                    title="Copy curl command"
+                  >
+                    {copiedKey === 'success' ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+
+                {/* 2. Start (Duration) */}
+                <div className="p-2 bg-slate-950/80 rounded-lg border border-slate-800 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className="text-cyan-400 block text-[10px] uppercase font-bold tracking-wider flex items-center gap-1">
+                      <Play className="h-2.5 w-2.5" /> Start Timer
+                    </span>
+                    <span className="text-slate-300 truncate block text-[10px]">{heartbeatBase}/start</span>
+                  </div>
+                  <button
+                    onClick={() => copyText(`curl -fsS -m 10 ${heartbeatBase}/start`, 'start')}
+                    className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white flex-shrink-0"
+                    title="Copy start signal"
+                  >
+                    {copiedKey === 'start' ? <Check className="h-3.5 w-3.5 text-cyan-400" /> : <Copy className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+
+                {/* 3. Fail Signal */}
+                <div className="p-2 bg-slate-950/80 rounded-lg border border-slate-800 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className="text-red-400 block text-[10px] uppercase font-bold tracking-wider flex items-center gap-1">
+                      <AlertTriangle className="h-2.5 w-2.5" /> Fail (DOWN)
+                    </span>
+                    <span className="text-slate-300 truncate block text-[10px]">{heartbeatBase}/fail</span>
+                  </div>
+                  <button
+                    onClick={() => copyText(`curl -fsS -m 10 -d "Error details" ${heartbeatBase}/fail`, 'fail')}
+                    className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white flex-shrink-0"
+                    title="Copy fail signal"
+                  >
+                    {copiedKey === 'fail' ? <Check className="h-3.5 w-3.5 text-red-400" /> : <Copy className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+
+                {/* 4. Exit Code */}
+                <div className="p-2 bg-slate-950/80 rounded-lg border border-slate-800 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className="text-amber-400 block text-[10px] uppercase font-bold tracking-wider">Exit Code ($?)</span>
+                    <span className="text-slate-300 truncate block text-[10px]">{heartbeatBase}/$?</span>
+                  </div>
+                  <button
+                    onClick={() => copyText(`curl -fsS -m 10 --data-binary @output.log ${heartbeatBase}/$?`, 'code')}
+                    className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white flex-shrink-0"
+                    title="Copy exit code with log pipe snippet"
+                  >
+                    {copiedKey === 'code' ? <Check className="h-3.5 w-3.5 text-amber-400" /> : <Copy className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Human-Readable Slug Ping Endpoint */}
+              {data.slug && (
+                <div className="p-2.5 bg-slate-950/90 rounded-lg border border-cyan-500/30 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className="text-cyan-400 block text-[10px] uppercase font-bold tracking-wider">
+                      Human-Readable Slug Endpoint
+                    </span>
+                    <span className="text-slate-200 truncate block text-[10px] font-mono">
+                      {origin}/api/ping/&lt;PING_KEY&gt;/{data.slug}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => copyText(`curl -fsS -m 10 ${origin}/api/ping/<PING_KEY>/${data.slug}`, 'slug_url')}
+                    className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white flex-shrink-0"
+                    title="Copy slug URL"
+                  >
+                    {copiedKey === 'slug_url' ? <Check className="h-3.5 w-3.5 text-cyan-400" /> : <Copy className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+              )}
             </div>
           )}
+
+          {/* Next Expected Cron Ping Banner */}
+          {data.next_expected_at && (
+            <div className="bg-slate-950/60 border border-slate-800/80 p-3 rounded-xl flex items-center justify-between text-xs font-mono">
+              <span className="text-muted-foreground flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 text-emerald-400" />
+                Next Expected Cron Ping:
+              </span>
+              <span className="text-emerald-400 font-semibold">
+                {new Date(data.next_expected_at).toLocaleString()}
+              </span>
+            </div>
+          )}
+
+          {/* Captured Payload / Execution Output Logs */}
+          {data.last_payload && (
+            <div className="bg-slate-950/80 border border-slate-800 p-3.5 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-amber-400 flex items-center gap-1.5 font-mono">
+                  <Terminal className="h-3.5 w-3.5" />
+                  Captured Execution Output / STDERR
+                </span>
+                <button
+                  onClick={() => copyText(data.last_payload || '', 'payload')}
+                  className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-white font-mono"
+                >
+                  {copiedKey === 'payload' ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                  {copiedKey === 'payload' ? 'Copied!' : 'Copy Output'}
+                </button>
+              </div>
+              <pre className="p-2.5 bg-black/60 rounded-lg border border-slate-800/80 font-mono text-[11px] text-slate-200 overflow-x-auto max-h-48 whitespace-pre-wrap select-all">
+                {data.last_payload}
+              </pre>
+            </div>
+          )}
+
+          {/* Public SVG Status Badge */}
+          <div className="bg-slate-950/80 border border-slate-800 p-3.5 rounded-xl space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-white flex items-center gap-1.5 font-mono">
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                Live Status Badge (SVG)
+              </span>
+              <span className="text-[10px] font-mono text-muted-foreground">
+                Embeddable in GitHub READMEs &amp; Dashboards
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-2.5 bg-black/40 rounded-lg border border-slate-800">
+              <div className="flex items-center gap-3 min-w-0">
+                <img
+                  src={`${origin}/api/badge/${data.heartbeat_token || data.id}.svg`}
+                  alt={`${data.name} Status Badge`}
+                  className="h-5 flex-shrink-0"
+                />
+                <span className="text-[10px] font-mono text-slate-400 truncate">
+                  {`${origin}/api/badge/${data.heartbeat_token || data.id}.svg`}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <button
+                  onClick={() => copyText(`![${data.name}](${origin}/api/badge/${data.heartbeat_token || data.id}.svg)`, 'badge_md')}
+                  className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-slate-200 hover:text-white flex items-center gap-1 transition"
+                  title="Copy Markdown embed snippet"
+                >
+                  {copiedKey === 'badge_md' ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                  {copiedKey === 'badge_md' ? 'Copied MD' : 'Copy MD'}
+                </button>
+                <button
+                  onClick={() => copyText(`${origin}/api/badge/${data.heartbeat_token || data.id}.svg`, 'badge_url')}
+                  className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-slate-300 hover:text-white flex items-center gap-1 transition"
+                  title="Copy direct SVG URL"
+                >
+                  {copiedKey === 'badge_url' ? <Check className="h-3 w-3 text-cyan-400" /> : <Copy className="h-3 w-3" />}
+                  {copiedKey === 'badge_url' ? 'Copied' : 'URL'}
+                </button>
+              </div>
+            </div>
+          </div>
 
           {/* Stats Bar */}
           <div className="grid grid-cols-3 gap-3">

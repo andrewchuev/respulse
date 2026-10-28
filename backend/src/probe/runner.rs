@@ -5,6 +5,7 @@ use crate::probe::ssl::check_ssl;
 use crate::probe::tcp::check_tcp;
 use chrono::Utc;
 use reqwest::Client;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::broadcast::Sender;
@@ -50,8 +51,30 @@ async fn check_due_monitors(
         SELECT * FROM monitors
         WHERE is_paused = FALSE
           AND (
-              last_checked_at IS NULL
-              OR last_checked_at + (interval_seconds * INTERVAL '1 second') <= NOW()
+              (
+                  monitor_type = 'HEARTBEAT' AND status != 'DOWN' AND (
+                      (
+                          cron_expression IS NOT NULL
+                          AND next_expected_at IS NOT NULL
+                          AND next_expected_at + (grace_seconds * INTERVAL '1 second') <= NOW()
+                      )
+                      OR (
+                          cron_expression IS NULL
+                          AND COALESCE(last_checked_at, created_at) + ((interval_seconds + grace_seconds) * INTERVAL '1 second') <= NOW()
+                      )
+                      OR (
+                          last_start_at IS NOT NULL
+                          AND last_start_at > COALESCE(last_checked_at, '1970-01-01'::timestamptz)
+                          AND last_start_at + (timeout_seconds * INTERVAL '1 second') <= NOW()
+                      )
+                  )
+              )
+              OR (
+                  monitor_type != 'HEARTBEAT' AND (
+                      last_checked_at IS NULL
+                      OR last_checked_at + (interval_seconds * INTERVAL '1 second') <= NOW()
+                  )
+              )
           )
         LIMIT 50
         "#,
@@ -84,20 +107,78 @@ pub async fn execute_single_probe(
         "PORT" | "TCP" => check_tcp(&monitor).await,
         "SSL" => check_ssl(&monitor).await,
         "HEARTBEAT" => {
-            let is_up = if let Some(last_checked) = monitor.last_checked_at {
-                let diff_secs = (Utc::now() - last_checked).num_seconds();
-                diff_secs <= (monitor.interval_seconds as i64 * 2)
+            // Heartbeat monitors only transition from DOWN to UP via incoming ping signals.
+            if monitor.status == "DOWN" {
+                return;
+            }
+
+            let now = Utc::now();
+            let is_hung = if let Some(started_at) = monitor.last_start_at {
+                let is_after_checked = monitor.last_checked_at.map_or(true, |c| started_at > c);
+                if is_after_checked {
+                    let running_secs = (now - started_at).num_seconds();
+                    let max_run_secs = if monitor.timeout_seconds > 0 {
+                        monitor.timeout_seconds as i64
+                    } else if monitor.grace_seconds > 0 {
+                        monitor.grace_seconds as i64
+                    } else {
+                        monitor.interval_seconds as i64
+                    };
+                    running_secs > max_run_secs
+                } else {
+                    false
+                }
             } else {
                 false
             };
+
+            let overdue_msg = if is_hung {
+                let dur = (now - monitor.last_start_at.unwrap()).num_seconds();
+                Some(format!("Job execution exceeded time limit (hung/stuck after {}s)", dur))
+            } else if let Some(ref cron_expr) = monitor.cron_expression {
+                let tz: chrono_tz::Tz = monitor.timezone.parse().unwrap_or(chrono_tz::UTC);
+                if let Ok(cron) = croner::Cron::from_str(cron_expr) {
+                    let last_ts = monitor.last_checked_at.unwrap_or(monitor.created_at);
+                    let last_ts_tz = last_ts.with_timezone(&tz);
+                    let now_tz = now.with_timezone(&tz);
+                    if let Ok(next_run) = cron.find_next_occurrence(&last_ts_tz, false) {
+                        let deadline = next_run + chrono::Duration::seconds(monitor.grace_seconds as i64);
+                        if now_tz > deadline {
+                            Some(format!("Missed scheduled cron ping (cron: '{}', expected: {}, grace: {}s)", cron_expr, next_run.format("%Y-%m-%d %H:%M:%S"), monitor.grace_seconds))
+                        } else {
+                            return; // Not overdue yet
+                        }
+                    } else {
+                        let diff_secs = (now - last_ts).num_seconds();
+                        let allowed_secs = (monitor.interval_seconds as i64) + (monitor.grace_seconds as i64);
+                        if diff_secs > allowed_secs {
+                            Some("Missed expected heartbeat ping".to_string())
+                        } else {
+                            return; // Not overdue yet
+                        }
+                    }
+                } else {
+                    Some("Invalid cron expression configured".to_string())
+                }
+            } else {
+                let last_ts = monitor.last_checked_at.unwrap_or(monitor.created_at);
+                let diff_secs = (now - last_ts).num_seconds();
+                let allowed_secs = (monitor.interval_seconds as i64) + (monitor.grace_seconds as i64);
+                if diff_secs > allowed_secs {
+                    Some(format!("Missed expected heartbeat ping (interval: {}s, grace: {}s)", monitor.interval_seconds, monitor.grace_seconds))
+                } else {
+                    return; // Not overdue yet
+                }
+            };
+
             ProbeResult {
-                is_up,
+                is_up: false,
                 status_code: None,
-                response_time_ms: 1.0,
+                response_time_ms: monitor.last_duration_ms.unwrap_or(1.0),
                 dns_time_ms: None,
                 connect_time_ms: None,
                 tls_time_ms: None,
-                error: if is_up { None } else { Some("Missed expected heartbeat ping".to_string()) },
+                error: overdue_msg,
             }
         }
         _ => check_http(&client, &monitor).await,

@@ -262,6 +262,25 @@ export const NotificationChannels: React.FC<NotificationChannelsProps> = ({ curr
                       <p className="text-xs text-muted-foreground font-mono mt-0.5 truncate max-w-[260px]">
                         {maskValue(channel.channel_type, channel.config)}
                       </p>
+
+                      {/* Tag Routing Filter Badges */}
+                      {channel.filter_tags && channel.filter_tags.length > 0 ? (
+                        <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                          <span className="text-[10px] text-muted-foreground font-mono">Routing:</span>
+                          {channel.filter_tags.map(t => (
+                            <span key={t} className="inline-flex items-center text-[9px] font-mono font-medium text-emerald-400 bg-emerald-950/50 border border-emerald-800/40 px-1.5 py-0.2 rounded">
+                              #{t}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 mt-1.5">
+                          <span className="text-[10px] text-muted-foreground font-mono">Routing:</span>
+                          <span className="text-[9px] font-mono text-slate-400 bg-slate-800/50 px-1.5 py-0.2 rounded">
+                            All Monitors
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
 

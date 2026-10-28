@@ -24,3 +24,5 @@ x509-parser = "0.16"
 tokio-rustls = "0.26"
 bcrypt = "0.15"
 jsonwebtoken = "9.3"
+croner = { version = "4.0.2", features = ["chrono"] }
+chrono-tz = { version = "0.10.4", features = ["serde"] }

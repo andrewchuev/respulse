@@ -68,6 +68,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .nest("/api", api_router)
         .route("/ws", axum::routing::get(api::ws::ws_handler))
         .route("/health", axum::routing::get(|| async { "ResPulse Backend OK" }))
+        .route("/metrics", axum::routing::get(api::metrics::get_prometheus_metrics))
+        .route("/badge/:token", axum::routing::get(api::badge::get_badge_by_token))
+        .route("/badge/:ping_key/:slug", axum::routing::get(api::badge::get_badge_by_slug))
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state);

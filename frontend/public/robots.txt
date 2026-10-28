@@ -2,6 +2,10 @@ User-agent: *
 Allow: /
 Allow: /app
 Allow: /status
+Allow: /badge/
+Allow: /api/badge/
+Allow: /metrics
+Allow: /api/metrics
 Disallow: /api/
 
 Sitemap: https://respulse.online/sitemap.xml

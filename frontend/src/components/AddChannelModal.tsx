@@ -24,6 +24,7 @@ export const AddChannelModal: React.FC<AddChannelModalProps> = ({
   const [slackWebhookUrl, setSlackWebhookUrl] = useState('');
   const [genericWebhookUrl, setGenericWebhookUrl] = useState('');
   const [webhookSecret, setWebhookSecret] = useState('');
+  const [filterTagsInput, setFilterTagsInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,12 +72,18 @@ export const AddChannelModal: React.FC<AddChannelModalProps> = ({
     }
 
     setLoading(true);
+    const filter_tags = filterTagsInput
+      .split(',')
+      .map((t) => t.trim().toLowerCase().replace('#', ''))
+      .filter(Boolean);
+
     try {
       await onSubmit({
         name: name.trim(),
         channel_type: channelType,
         config,
         is_active: true,
+        filter_tags: filter_tags.length > 0 ? filter_tags : undefined,
       });
 
       // Reset
@@ -87,6 +94,7 @@ export const AddChannelModal: React.FC<AddChannelModalProps> = ({
       setSlackWebhookUrl('');
       setGenericWebhookUrl('');
       setWebhookSecret('');
+      setFilterTagsInput('');
       onClose();
     } catch (err: any) {
       setError(err.message || 'Failed to create notification channel');
@@ -267,6 +275,22 @@ export const AddChannelModal: React.FC<AddChannelModalProps> = ({
               </p>
             </div>
           )}
+
+          {/* Tag Routing Filter */}
+          <div className="space-y-1.5 bg-slate-950/60 p-3 rounded-lg border border-slate-800/80">
+            <label className="text-xs font-medium text-slate-300 block">
+              Filter by Tags (Optional)
+            </label>
+            <Input
+              placeholder="e.g. prod, database, critical"
+              value={filterTagsInput}
+              onChange={(e) => setFilterTagsInput(e.target.value)}
+              className="h-8 text-xs font-mono bg-slate-900 border-slate-700/80 focus:border-emerald-500"
+            />
+            <p className="text-[10px] text-muted-foreground">
+              Leave blank to receive alerts for all monitors. If tags are specified, this channel only receives alerts for matching monitors.
+            </p>
+          </div>
 
           <DialogFooter className="pt-2">
             <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={loading}>

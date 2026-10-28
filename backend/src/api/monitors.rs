@@ -286,6 +286,43 @@ pub async fn create_monitor(
         ));
     }
 
+    // Plan limits validation
+    let team_plan: String = sqlx::query_scalar("SELECT plan FROM teams WHERE id = $1")
+        .bind(auth.user.team_id)
+        .fetch_optional(&state.pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+        .unwrap_or_else(|| "FREE".to_string());
+
+    let (monitor_count,): (i64,) = sqlx::query_as("SELECT COUNT(*)::bigint FROM monitors WHERE team_id = $1")
+        .bind(auth.user.team_id)
+        .fetch_one(&state.pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    let max_monitors = if team_plan == "PRO" { 100 } else { 10 };
+    if monitor_count >= max_monitors {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            format!(
+                "Monitor limit reached ({} max on {} plan). Upgrade to Pro for up to 100 monitors.",
+                max_monitors, team_plan
+            ),
+        ));
+    }
+
+    let interval = payload.interval_seconds;
+    let min_interval = if team_plan == "PRO" { 10 } else { 60 };
+    if interval < min_interval {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            format!(
+                "Minimum probe interval on {} plan is {}s. Turbo 10s intervals require Pro plan.",
+                team_plan, min_interval
+            ),
+        ));
+    }
+
     let headers_json = payload.headers.unwrap_or_else(|| serde_json::json!({}));
     let heartbeat_token = if payload.monitor_type.to_uppercase() == "HEARTBEAT" {
         Some(Uuid::new_v4().to_string().replace('-', ""))
@@ -294,14 +331,32 @@ pub async fn create_monitor(
     };
     let tags = payload.tags.unwrap_or_default();
     let group_name = payload.group_name.unwrap_or_else(|| "Default".to_string());
+    let grace_seconds = payload.grace_seconds.unwrap_or(0);
+    let slug = payload.slug.map(|s| s.trim().to_lowercase().replace(' ', "-")).filter(|s| !s.is_empty());
+    let cron_expression = payload.cron_expression.map(|c| c.trim().to_string()).filter(|c| !c.is_empty());
+    let timezone = payload.timezone.unwrap_or_else(|| "UTC".to_string());
+
+    let next_expected_at = if let Some(ref cron_str) = cron_expression {
+        if let Ok(cron) = std::str::FromStr::from_str(cron_str) {
+            let tz: chrono_tz::Tz = timezone.parse().unwrap_or(chrono_tz::UTC);
+            let now_tz = Utc::now().with_timezone(&tz);
+            let c: croner::Cron = cron;
+            c.find_next_occurrence(&now_tz, false).ok().map(|dt| dt.with_timezone(&Utc))
+        } else {
+            None
+        }
+    } else {
+        None
+    };
 
     let monitor = sqlx::query_as::<_, Monitor>(
         r#"
         INSERT INTO monitors (
             team_id, name, url, monitor_type, interval_seconds, timeout_seconds,
             method, headers, body, expected_status_code, keyword, port, heartbeat_token,
-            auth_username, auth_password, tags, group_name
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+            auth_username, auth_password, tags, group_name, grace_seconds,
+            slug, cron_expression, timezone, next_expected_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
         RETURNING *
         "#
     )
@@ -322,6 +377,11 @@ pub async fn create_monitor(
     .bind(payload.auth_password)
     .bind(tags)
     .bind(group_name)
+    .bind(grace_seconds)
+    .bind(slug)
+    .bind(cron_expression)
+    .bind(timezone)
+    .bind(next_expected_at)
     .fetch_one(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -330,9 +390,11 @@ pub async fn create_monitor(
     let client = state.http_client.clone();
     let m_clone = monitor.clone();
     let tx = state.tx.clone();
-    tokio::spawn(async move {
-        execute_single_probe(pool, client, m_clone, tx).await;
-    });
+    if monitor.monitor_type.to_uppercase() != "HEARTBEAT" {
+        tokio::spawn(async move {
+            execute_single_probe(pool, client, m_clone, tx).await;
+        });
+    }
 
     Ok(Json(monitor))
 }
@@ -363,6 +425,26 @@ pub async fn update_monitor(
     let name = payload.name.unwrap_or(existing.name);
     let url = payload.url.unwrap_or(existing.url);
     let interval = payload.interval_seconds.unwrap_or(existing.interval_seconds);
+
+    if let Some(req_interval) = payload.interval_seconds {
+        let team_plan: String = sqlx::query_scalar("SELECT plan FROM teams WHERE id = $1")
+            .bind(auth.user.team_id)
+            .fetch_optional(&state.pool)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+            .unwrap_or_else(|| "FREE".to_string());
+
+        let min_interval = if team_plan == "PRO" { 10 } else { 60 };
+        if req_interval < min_interval {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "Minimum probe interval on {} plan is {}s. Turbo 10s intervals require Pro plan.",
+                    team_plan, min_interval
+                ),
+            ));
+        }
+    }
     let timeout = payload.timeout_seconds.unwrap_or(existing.timeout_seconds);
     let method = payload.method.unwrap_or(existing.method);
     let headers = payload.headers.unwrap_or(existing.headers);
@@ -374,6 +456,23 @@ pub async fn update_monitor(
     let auth_password = payload.auth_password.or(existing.auth_password);
     let tags = payload.tags.unwrap_or(existing.tags);
     let group_name = payload.group_name.unwrap_or(existing.group_name);
+    let grace_seconds = payload.grace_seconds.unwrap_or(existing.grace_seconds);
+    let slug = payload.slug.or(existing.slug);
+    let cron_expression = payload.cron_expression.or(existing.cron_expression);
+    let timezone = payload.timezone.unwrap_or(existing.timezone);
+
+    let next_expected_at = if let Some(ref cron_str) = cron_expression {
+        if let Ok(cron) = std::str::FromStr::from_str(cron_str) {
+            let tz: chrono_tz::Tz = timezone.parse().unwrap_or(chrono_tz::UTC);
+            let now_tz = Utc::now().with_timezone(&tz);
+            let c: croner::Cron = cron;
+            c.find_next_occurrence(&now_tz, false).ok().map(|dt| dt.with_timezone(&Utc))
+        } else {
+            None
+        }
+    } else {
+        None
+    };
 
     let updated = sqlx::query_as::<_, Monitor>(
         r#"
@@ -381,8 +480,9 @@ pub async fn update_monitor(
         SET name = $1, url = $2, interval_seconds = $3, timeout_seconds = $4,
             method = $5, headers = $6, body = $7, expected_status_code = $8,
             keyword = $9, port = $10, auth_username = $11, auth_password = $12,
-            tags = $13, group_name = $14, updated_at = NOW()
-        WHERE id = $15 AND team_id = $16
+            tags = $13, group_name = $14, grace_seconds = $15, slug = $16,
+            cron_expression = $17, timezone = $18, next_expected_at = $19, updated_at = NOW()
+        WHERE id = $20 AND team_id = $21
         RETURNING *
         "#
     )
@@ -400,6 +500,11 @@ pub async fn update_monitor(
     .bind(auth_password)
     .bind(tags)
     .bind(group_name)
+    .bind(grace_seconds)
+    .bind(slug)
+    .bind(cron_expression)
+    .bind(timezone)
+    .bind(next_expected_at)
     .bind(id)
     .bind(auth.user.team_id)
     .fetch_one(&state.pool)

@@ -1,6 +1,8 @@
 pub mod auth;
+pub mod badge;
 pub mod heartbeat;
 pub mod incidents;
+pub mod metrics;
 pub mod monitors;
 pub mod notifications;
 pub mod stats;
@@ -24,6 +26,7 @@ pub fn create_router() -> Router<AppState> {
         .route("/team/members", get(team::list_team_members).post(team::invite_member))
         .route("/team/members/:id/role", axum::routing::put(team::update_member_role))
         .route("/team/members/:id", axum::routing::delete(team::remove_member))
+        .route("/team/plan", axum::routing::put(team::update_team_plan).post(team::update_team_plan))
         // Monitors
         .route("/monitors", get(monitors::list_monitors).post(monitors::create_monitor))
         .route("/monitors/bulk", axum::routing::post(monitors::bulk_action))
@@ -43,5 +46,13 @@ pub fn create_router() -> Router<AppState> {
         // Metrics & Status Page
         .route("/stats", get(stats::get_stats))
         .route("/status-page", get(stats::get_status_page))
+        .route("/metrics", get(metrics::get_prometheus_metrics))
+        // Badges (Shields.io / Healthchecks style SVG badges)
+        .route("/badge/:token", get(badge::get_badge_by_token))
+        .route("/badge/:ping_key/:slug", get(badge::get_badge_by_slug))
         .route("/heartbeat/:token", axum::routing::post(heartbeat::ping_heartbeat).get(heartbeat::ping_heartbeat))
+        .route("/heartbeat/:token/:action", axum::routing::post(heartbeat::ping_heartbeat_action).get(heartbeat::ping_heartbeat_action))
+        // Slug-based pinging & auto-provisioning (?create=1)
+        .route("/ping/:ping_key/:slug", axum::routing::post(heartbeat::ping_by_slug).get(heartbeat::ping_by_slug))
+        .route("/ping/:ping_key/:slug/:action", axum::routing::post(heartbeat::ping_by_slug_action).get(heartbeat::ping_by_slug_action))
 }
