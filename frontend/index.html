@@ -2,9 +2,139 @@
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2322c55e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M22 12h-4l-3 9L9 3l-3 9H2'/></svg>" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ResPulse — Modern Uptime & Synthetic Monitoring</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M22 12h-4l-3 9L9 3l-3 9H2'/></svg>" />
+    <link rel="canonical" href="https://respulse.online/" />
+    <link rel="sitemap" type="application/xml" title="Sitemap" href="https://respulse.online/sitemap.xml" />
+
+    <!-- Primary SEO Meta Tags -->
+    <title>ResPulse — High-Performance Synthetic Monitoring &amp; Uptime Observability</title>
+    <meta name="title" content="ResPulse — High-Performance Synthetic Monitoring &amp; Uptime Observability" />
+    <meta name="description" content="Systems-grade synthetic uptime monitoring and observability engine built in Rust. Sub-10ms precision scheduler, SSL expiry tracking, multi-channel alerts (Telegram, Slack, Discord), and real-time public status pages." />
+    <meta name="keywords" content="uptime monitoring, synthetic monitoring, api monitoring, status page, ssl cert monitoring, website monitoring, heartbeat monitoring, cron job monitor, rust observability, devops monitoring, ping monitor, response time tracker, multi-tenant rbac" />
+    <meta name="author" content="ResPulse" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="revisit-after" content="7 days" />
+    <meta name="rating" content="General" />
+    <meta name="theme-color" content="#030712" />
+
+    <!-- GEO Optimization Tags -->
+    <meta name="geo.region" content="DE-BY" />
+    <meta name="geo.placename" content="Nuremberg" />
+    <meta name="geo.position" content="49.4542;11.0775" />
+    <meta name="ICBM" content="49.4542, 11.0775" />
+    <meta name="coverage" content="Worldwide" />
+    <meta name="distribution" content="Global" />
+    <meta name="target" content="all" />
+
+    <!-- Open Graph / Facebook / LinkedIn -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://respulse.online/" />
+    <meta property="og:site_name" content="ResPulse" />
+    <meta property="og:title" content="ResPulse — High-Performance Synthetic Monitoring &amp; Observability" />
+    <meta property="og:description" content="Systems-grade synthetic uptime monitoring and observability in Rust. Sub-10ms precision scheduler, SSL expiry tracking, multi-channel alerts, and real-time public status pages." />
+    <meta property="og:image" content="https://respulse.online/og-image.jpg" />
+    <meta property="og:image:secure_url" content="https://respulse.online/og-image.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1376" />
+    <meta property="og:image:height" content="768" />
+    <meta property="og:image:alt" content="ResPulse Synthetic Monitoring &amp; Observability Platform" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://respulse.online/" />
+    <meta name="twitter:title" content="ResPulse — High-Performance Synthetic Monitoring &amp; Observability" />
+    <meta name="twitter:description" content="Systems-grade synthetic uptime monitoring and observability in Rust. Sub-10ms precision scheduler, SSL expiry tracking, multi-channel alerts, and real-time public status pages." />
+    <meta name="twitter:image" content="https://respulse.online/og-image.jpg" />
+    <meta name="twitter:image:alt" content="ResPulse Synthetic Monitoring &amp; Observability Platform" />
+
+    <!-- Structured Data (JSON-LD Schema.org) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "@id": "https://respulse.online/#webapp",
+          "name": "ResPulse",
+          "url": "https://respulse.online",
+          "applicationCategory": "DevOpsApplication",
+          "operatingSystem": "All",
+          "description": "High-performance synthetic monitoring, real-time uptime checks, SSL/TLS expiry tracking, automated incident management, and public status pages built in Rust.",
+          "offers": {
+            "@type": "AggregateOffer",
+            "priceCurrency": "USD",
+            "lowPrice": "0",
+            "highPrice": "49",
+            "offerCount": "3"
+          },
+          "featureList": [
+            "Sub-10ms precision synthetic probes",
+            "HTTP, TCP/Port, SSL/TLS, Keyword, and Heartbeat monitoring",
+            "Automated incident management with live timeline & post-mortems",
+            "Instant alerts via Telegram, Discord, Slack, and Webhooks",
+            "Public status pages with real-time WebSocket updates",
+            "Multi-tenant Role-Based Access Control (RBAC)"
+          ],
+          "screenshot": "https://respulse.online/og-image.jpg"
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://respulse.online/#organization",
+          "name": "ResPulse",
+          "url": "https://respulse.online",
+          "logo": "https://respulse.online/og-image.jpg"
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://respulse.online/#faq",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "How does ResPulse achieve zero garbage collection pauses?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Unlike NodeJS or Python-based monitoring tools that suffer from periodic garbage collection (GC) freezes causing false latency spikes, ResPulse is built in 100% safe Rust. Rust uses deterministic compile-time memory management (RAII), ensuring ultra-consistent sub-millisecond scheduling precision."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Can I self-host ResPulse completely inside an isolated private VPC?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes! ResPulse is 100% containerized with Docker Compose. It requires only PostgreSQL and a reverse proxy (like the included Caddy 2 setup). It can run entirely within your private subnet to monitor internal databases, Kubernetes pods, and VPC endpoints without egress access."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How does push heartbeat (dead man's switch) work for cron jobs?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "When you create a Heartbeat monitor, ResPulse generates a unique cryptographic webhook URL. You simply append a curl command to the end of your backup script, cron task, or Celery worker. If the expected ping does not arrive within the configured window, an incident is immediately dispatched to your alert channels."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Which alert delivery channels are currently supported?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "ResPulse natively supports Telegram Bot API, Discord Rich Embed Webhooks, Slack Incoming Webhooks, and Custom JSON Webhooks. Every delivery is recorded in an audit log with response codes and latency diagnostics."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How does Role-Based Access Control (RBAC) enforce security?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "ResPulse implements a 4-tier security model: Owner (full control & org deletion), Admin (monitor & team management), Engineer (monitor CRUD, test probes & post-mortems), and Viewer (read-only dashboards). All mutations are strictly validated on the Axum backend and return 403 Forbidden for unauthorized roles."
+              }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
   </head>
   <body class="bg-background text-foreground antialiased min-h-screen">
     <div id="root"></div>

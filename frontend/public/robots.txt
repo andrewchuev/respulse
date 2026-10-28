@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Allow: /app
+Allow: /status
+Disallow: /api/
+
+Sitemap: https://respulse.online/sitemap.xml
+Host: https://respulse.online
