@@ -19,7 +19,22 @@ pub enum Kind {
     Canceled,
     /// Subscription ended: the team drops back to Free.
     Deactivated,
+    /// A refund was issued for an earlier order.
+    Return,
     Other,
+}
+
+/// What a `return.created` event says about the refund.
+#[derive(Debug, Default)]
+pub struct Refund {
+    pub return_id: Option<String>,
+    pub original_order_id: Option<String>,
+    pub original_reference: Option<String>,
+    pub total: Option<f64>,
+    /// Every returned item is marked "Full Refund".
+    pub all_items_full: bool,
+    /// The refund is still being processed; it is applied once FastSpring reports it completed.
+    pub completed: bool,
 }
 
 #[derive(Debug)]
@@ -37,6 +52,7 @@ pub struct FsEvent {
     pub currency: Option<String>,
     /// Events that carry a charge and belong in the payment history.
     pub records_payment: bool,
+    pub refund: Option<Refund>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -108,6 +124,7 @@ pub fn parse_event(event: &Value) -> FsEvent {
         "order.completed" | "subscription.activated" | "subscription.charge.completed" => Kind::Upgrade,
         "subscription.canceled" => Kind::Canceled,
         "subscription.deactivated" => Kind::Deactivated,
+        "return.created" => Kind::Return,
         _ => Kind::Other,
     };
 
@@ -150,6 +167,8 @@ pub fn parse_event(event: &Value) -> FsEvent {
         .or_else(|| str_at(data, &["order", "currency"]))
         .map(str::to_string);
 
+    let refund = (kind == Kind::Return).then(|| parse_refund(data));
+
     FsEvent {
         id: event.get("id").and_then(|v| v.as_str()).map(str::to_string),
         records_payment: matches!(event_type.as_str(), "order.completed" | "subscription.charge.completed"),
@@ -163,6 +182,32 @@ pub fn parse_event(event: &Value) -> FsEvent {
         team_hint: team_hint(data),
         amount,
         currency,
+        refund,
+    }
+}
+
+fn parse_refund(data: &Value) -> Refund {
+    let items = data.get("items").and_then(|i| i.as_array());
+    let all_items_full = items.is_some_and(|items| {
+        !items.is_empty()
+            && items.iter().all(|item| {
+                item.get("refundType")
+                    .and_then(|t| t.as_str())
+                    .is_some_and(|t| t.eq_ignore_ascii_case("Full Refund"))
+            })
+    });
+
+    Refund {
+        return_id: str_at(data, &["return"]).map(str::to_string),
+        // `original.order` duplicates `original.id` for backward compatibility.
+        original_order_id: str_at(data, &["original", "id"])
+            .or_else(|| str_at(data, &["original", "order"]))
+            .map(str::to_string),
+        original_reference: str_at(data, &["original", "reference"]).map(str::to_string),
+        total: data.get("totalReturn").and_then(|v| v.as_f64()),
+        all_items_full,
+        // Absent means a payload shape we have not seen; only an explicit false is held back.
+        completed: data.get("completed").and_then(|v| v.as_bool()).unwrap_or(true),
     }
 }
 
@@ -217,6 +262,9 @@ pub async fn process_event(
     // A test-store order must never grant Pro on a live deployment.
     if live_mode && ev.live == Some(false) {
         return Ok(Outcome::Ignored("test event in live mode"));
+    }
+    if ev.kind == Kind::Return {
+        return process_return(pool, ev).await;
     }
     if !ev.products.iter().any(|p| p == PRODUCT_PATH) {
         return Ok(Outcome::Ignored("event is not for the Pro product"));
@@ -301,8 +349,73 @@ pub async fn process_event(
                 Ok(Outcome::Applied(team_id))
             }
         }
-        Kind::Other => Ok(Outcome::Ignored("unhandled event type")),
+        Kind::Return | Kind::Other => Ok(Outcome::Ignored("unhandled event type")),
     }
+}
+
+/// Marks the original payment as (partially) refunded. The plan is untouched on purpose: a refund
+/// that also ends the subscription is followed by `subscription.deactivated`.
+async fn process_return(pool: &DbPool, ev: &FsEvent) -> Result<Outcome, sqlx::Error> {
+    let Some(refund) = ev.refund.as_ref() else {
+        return Ok(Outcome::Ignored("return without details"));
+    };
+    if !refund.completed {
+        return Ok(Outcome::Ignored("return is not completed yet"));
+    }
+    let Some(total) = refund.total.filter(|t| *t > 0.0) else {
+        return Ok(Outcome::Ignored("return without an amount"));
+    };
+    if refund.original_order_id.is_none() && refund.original_reference.is_none() {
+        return Ok(Outcome::Ignored("return does not reference an order"));
+    }
+
+    // The original order is stored under its id; its customer-facing reference sits in the raw payload.
+    let tx: Option<(Uuid, Uuid, f64, Vec<String>)> = sqlx::query_as(
+        r#"
+        SELECT id, team_id, amount, refund_ids FROM payment_transactions
+        WHERE provider = 'FASTSPRING'
+          AND (transaction_id = $1
+               OR payload->'data'->>'reference' = $2
+               OR payload->'data'->'order'->>'reference' = $2)
+        ORDER BY created_at DESC
+        LIMIT 1
+        "#,
+    )
+    .bind(refund.original_order_id.as_deref())
+    .bind(refund.original_reference.as_deref())
+    .fetch_optional(pool)
+    .await?;
+
+    let Some((tx_id, team_id, amount, refund_ids)) = tx else {
+        return Ok(Outcome::Ignored("no matching payment for the return"));
+    };
+
+    // A manual resend carries a new event id but the same return id.
+    if let Some(return_id) = refund.return_id.as_deref() {
+        if refund_ids.iter().any(|id| id == return_id) {
+            return Ok(Outcome::Ignored("return already recorded"));
+        }
+    }
+
+    let fully_refunded = refund.all_items_full || total >= amount - 0.01;
+    sqlx::query(
+        r#"
+        UPDATE payment_transactions
+        SET refunded_amount = LEAST(amount, refunded_amount + $2),
+            refunded_at = NOW(),
+            refund_ids = CASE WHEN $3::text IS NULL THEN refund_ids ELSE array_append(refund_ids, $3) END,
+            status = CASE WHEN $4 OR refunded_amount + $2 >= amount - 0.01 THEN 'REFUNDED' ELSE 'PARTIALLY_REFUNDED' END
+        WHERE id = $1
+        "#,
+    )
+    .bind(tx_id)
+    .bind(if fully_refunded { amount.max(total) } else { total })
+    .bind(refund.return_id.as_deref())
+    .bind(fully_refunded)
+    .execute(pool)
+    .await?;
+
+    Ok(Outcome::Applied(team_id))
 }
 
 #[cfg(test)]
@@ -402,5 +515,43 @@ mod tests {
         assert_eq!(ev.team_hint, Some(Uuid::parse_str(TEAM).unwrap()));
         let ev = parse_event(&json!({"type": "order.completed", "data": {"referrer": "not-a-uuid"}}));
         assert_eq!(ev.team_hint, None);
+    }
+
+    #[test]
+    fn parses_return_created() {
+        let ev = parse_event(&json!({
+            "id": "evr1", "live": false, "type": "return.created",
+            "data": {
+                "return": "ret_1", "reference": "ABC-1", "completed": true, "currency": "USD",
+                "totalReturn": 9.6, "type": "RETURN",
+                "original": {"id": "ord_1", "order": "ord_1", "reference": "ABC-1"},
+                "items": [{"product": "respulse-pro-plan", "refundType": "Full Refund"}]
+            }
+        }));
+        assert_eq!(ev.kind, Kind::Return);
+        let r = ev.refund.expect("refund details");
+        assert_eq!(r.return_id.as_deref(), Some("ret_1"));
+        assert_eq!(r.original_order_id.as_deref(), Some("ord_1"));
+        assert_eq!(r.original_reference.as_deref(), Some("ABC-1"));
+        assert_eq!(r.total, Some(9.6));
+        assert!(r.all_items_full && r.completed);
+    }
+
+    #[test]
+    fn return_defaults_and_partial_detection() {
+        let ev = parse_event(&json!({
+            "type": "return.created",
+            "data": {
+                "return": "ret_2", "totalReturn": 3.0, "original": {"order": "ord_2"},
+                "items": [{"refundType": "Full Refund"}, {"refundType": "Partial Refund"}]
+            }
+        }));
+        let r = ev.refund.unwrap();
+        assert_eq!(r.original_order_id.as_deref(), Some("ord_2"));
+        assert!(!r.all_items_full);
+        assert!(r.completed, "a missing completed flag is not held back");
+
+        let held = parse_event(&json!({"type": "return.created", "data": {"completed": false}}));
+        assert!(!held.refund.unwrap().completed);
     }
 }

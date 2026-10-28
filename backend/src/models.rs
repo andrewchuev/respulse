@@ -522,6 +522,8 @@ pub struct PaymentTransaction {
     pub billing_cycle: String,
     pub payload: serde_json::Value,
     pub created_at: DateTime<Utc>,
+    pub refunded_amount: f64,
+    pub refunded_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

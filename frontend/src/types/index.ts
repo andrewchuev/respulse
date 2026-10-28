@@ -276,6 +276,8 @@ export interface PaymentTransaction {
   billing_cycle: string;
   payload?: any;
   created_at: string;
+  refunded_amount?: number;
+  refunded_at?: string | null;
 }
 
 export interface ConfirmFastSpringPaymentPayload {

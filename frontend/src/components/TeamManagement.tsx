@@ -481,9 +481,20 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({ currentUser, onU
                       <td className="p-2 text-slate-300 truncate max-w-[150px]">{p.transaction_id || p.id}</td>
                       <td className="p-2 text-emerald-400 font-semibold">${p.amount.toFixed(2)} {p.currency}</td>
                       <td className="p-2">
-                        <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-bold">
-                          {p.status}
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                            p.status === 'REFUNDED' || p.status === 'PARTIALLY_REFUNDED'
+                              ? 'bg-amber-500/10 text-amber-400'
+                              : 'bg-emerald-500/10 text-emerald-400'
+                          }`}
+                        >
+                          {p.status.replace('_', ' ')}
                         </span>
+                        {!!p.refunded_amount && p.refunded_amount > 0 && (
+                          <span className="ml-1.5 text-[10px] text-amber-400/80">
+                            -${p.refunded_amount.toFixed(2)}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}
