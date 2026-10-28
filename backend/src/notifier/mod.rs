@@ -178,7 +178,7 @@ pub async fn test_channel(client: &Client, channel: &NotificationChannel) -> Res
     let dummy_monitor = Monitor {
         id: Uuid::new_v4(),
         name: "Test System Service".to_string(),
-        url: "https://respulse.wsl.local".to_string(),
+        url: std::env::var("APP_URL").unwrap_or_else(|_| "https://respulse.online".to_string()),
         monitor_type: "HTTP".to_string(),
         interval_seconds: 60,
         timeout_seconds: 10,

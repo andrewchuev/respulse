@@ -311,7 +311,7 @@ Immediate actions taken by the response team to restore normal operations.
                     {isPublished ? 'Visible on Public Status Page' : 'Private (Internal Team Only)'}
                   </span>
                   <span className="text-[11px] text-muted-foreground">
-                    Control whether end-users see this incident at https://respulse.wsl.local/status-page
+                    Control whether end-users see this incident on the Public Status Page
                   </span>
                 </div>
               </div>

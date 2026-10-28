@@ -234,7 +234,7 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
                 <div className="h-3 w-3 rounded-full bg-red-500/80" />
                 <div className="h-3 w-3 rounded-full bg-amber-500/80" />
                 <div className="h-3 w-3 rounded-full bg-emerald-500/80" />
-                <span className="ml-2 text-xs font-mono text-slate-400">https://respulse.wsl.local/dashboard</span>
+                <span className="ml-2 text-xs font-mono text-slate-400">https://respulse.online/dashboard</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="flex h-2 w-2 relative">
@@ -393,7 +393,7 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
                     <span>REST / JSON</span>
                   </div>
                   <pre className="text-emerald-400 overflow-x-auto text-[11px] leading-relaxed">
-{`curl -X POST https://respulse.wsl.local/api/monitors \\
+{`curl -X POST https://respulse.online/api/monitors \\
   -H "Content-Type: application/json" \\
   -d '{
     "name": "Checkout API",
@@ -529,7 +529,7 @@ let latency_ms = start.elapsed().as_millis();
 {`# Append to your backup script or crontab:
 0 3 * * * /usr/local/bin/backup-db.sh && \\
   curl -fsS -m 10 --retry 3 \\
-  https://respulse.wsl.local/api/heartbeat/hb_9a7fbc2`}
+  https://respulse.online/api/heartbeat/hb_9a7fbc2`}
                   </pre>
                 </div>
               </div>

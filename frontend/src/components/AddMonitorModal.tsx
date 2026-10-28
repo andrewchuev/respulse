@@ -303,7 +303,7 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
               <p className="font-semibold text-emerald-400 mb-1">Push-based Monitoring (Dead Man's Switch)</p>
               A unique webhook token will be generated. Simply call it periodically from your cron job or backup worker:
               <code className="block mt-1 p-2 bg-slate-950 rounded-lg border border-slate-800 font-mono text-[11px] text-emerald-300">
-                curl -X POST https://respulse.wsl.local/api/heartbeat/&lt;TOKEN&gt;
+                curl -X POST {typeof window !== 'undefined' ? window.location.origin : 'https://respulse.online'}/api/heartbeat/&lt;TOKEN&gt;
               </code>
             </div>
           )}

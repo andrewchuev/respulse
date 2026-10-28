@@ -12,8 +12,11 @@ use tracing::{error, info};
 use uuid::Uuid;
 
 pub async fn run_probe_scheduler(pool: DbPool, tx: Sender<WsMessage>) {
+    let user_agent = std::env::var("APP_USER_AGENT")
+        .unwrap_or_else(|_| "ResPulse/1.0 (+https://respulse.online)".to_string());
+
     let client = Client::builder()
-        .user_agent("ResPulse/1.0 (+https://respulse.wsl.local)")
+        .user_agent(user_agent)
         .danger_accept_invalid_certs(true)
         .build()
         .expect("Failed to build reqwest client");
