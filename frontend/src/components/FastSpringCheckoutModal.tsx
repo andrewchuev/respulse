@@ -153,9 +153,6 @@ export const FastSpringCheckoutModal: React.FC<FastSpringCheckoutModalProps> = (
       });
       setSuccess(true);
       onPlanUpgraded();
-      setTimeout(() => {
-        onClose();
-      }, 2500);
     } catch (err: any) {
       setError(err.message || 'Payment confirmation failed');
     } finally {
@@ -219,9 +216,6 @@ export const FastSpringCheckoutModal: React.FC<FastSpringCheckoutModalProps> = (
       });
       setSuccess(true);
       onPlanUpgraded();
-      setTimeout(() => {
-        onClose();
-      }, 2500);
     } catch (err: any) {
       setError(err.message || 'Payment confirmation failed');
     } finally {
@@ -274,11 +268,20 @@ export const FastSpringCheckoutModal: React.FC<FastSpringCheckoutModalProps> = (
               </p>
             </div>
             <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs font-mono text-emerald-400">
-              Active: 100 monitors &bull; 10s intervals &bull; 30-day retention &bull; 10 team seats &bull; Prometheus exporter
+              Active: 100 monitors &bull; 10s intervals &bull; 90-day retention &bull; 10 team seats &bull; Prometheus exporter
             </div>
+            {orderReference && (
+              <p className="text-[10px] font-mono text-slate-500">Order reference: {orderReference}</p>
+            )}
           </div>
         ) : (
           <div className="space-y-4 py-1">
+            {loading && (
+              <div className="p-3 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-xs text-emerald-200 flex items-start gap-2">
+                <Sparkles className="h-4 w-4 text-emerald-400 flex-shrink-0 mt-0.5 animate-pulse" />
+                <span>Payment received. Waiting for FastSpring to confirm the order, this can take up to a minute…</span>
+              </div>
+            )}
             {error && (
               <div className="p-3 rounded-lg bg-red-950/50 border border-red-500/30 text-xs text-red-200 flex items-start gap-2">
                 <AlertCircle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
@@ -312,7 +315,7 @@ export const FastSpringCheckoutModal: React.FC<FastSpringCheckoutModalProps> = (
                 </div>
                 <div className="flex items-center gap-1.5">
                   <BarChart3 className="h-3 w-3 text-emerald-400 flex-shrink-0" />
-                  <span><strong>30 days</strong> metrics &amp; latency history</span>
+                  <span><strong>90 days</strong> metrics &amp; latency history</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Users className="h-3 w-3 text-emerald-400 flex-shrink-0" />
