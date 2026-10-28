@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
-import { CreateMonitorPayload, GlobalStats, MonitorWithStats } from './types';
+import { CreateMonitorPayload, GlobalStats, MonitorWithStats, UserProfile } from './types';
 import {
   createMonitor,
   createWebSocketConnection,
   deleteMonitor,
+  fetchAvailableUsers,
+  fetchCurrentUser,
   fetchMonitors,
   fetchStats,
   pauseMonitor,
   resumeMonitor,
+  switchUser,
   triggerTest,
 } from './api/client';
 import { Header } from './components/Header';
@@ -18,14 +21,32 @@ import { MonitorDetailModal } from './components/MonitorDetailModal';
 import { StatusPage } from './components/StatusPage';
 import { NotificationChannels } from './components/NotificationChannels';
 import { IncidentManagement } from './components/IncidentManagement';
+import { TeamManagement } from './components/TeamManagement';
 
 export function App() {
   const [monitors, setMonitors] = useState<MonitorWithStats[]>([]);
   const [stats, setStats] = useState<GlobalStats | null>(null);
   const [selectedMonitor, setSelectedMonitor] = useState<MonitorWithStats | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'channels' | 'incidents' | 'status-page'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page'>('dashboard');
   const [loading, setLoading] = useState(true);
+
+  // RBAC State
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [availableUsers, setAvailableUsers] = useState<UserProfile[]>([]);
+
+  const loadUserData = async () => {
+    try {
+      const [user, users] = await Promise.all([
+        fetchCurrentUser(),
+        fetchAvailableUsers(),
+      ]);
+      setCurrentUser(user);
+      setAvailableUsers(users);
+    } catch (e) {
+      console.error('Failed to load user info', e);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -40,6 +61,7 @@ export function App() {
   };
 
   useEffect(() => {
+    loadUserData();
     loadData();
 
     // Setup live WebSocket stream
@@ -86,6 +108,16 @@ export function App() {
 
     return () => unsubscribe();
   }, []);
+
+  const handleSwitchUser = async (email: string) => {
+    try {
+      const switched = await switchUser(email);
+      setCurrentUser(switched);
+      await loadData();
+    } catch (e) {
+      console.error('Failed to switch user:', e);
+    }
+  };
 
   const handlePause = async (id: string) => {
     try {
@@ -142,6 +174,8 @@ export function App() {
     return <StatusPage onBack={() => setCurrentView('dashboard')} />;
   }
 
+  const isViewer = currentUser?.role === 'VIEWER';
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
       <Header
@@ -149,7 +183,18 @@ export function App() {
         setCurrentView={setCurrentView}
         onOpenAddModal={() => setIsAddModalOpen(true)}
         totalActive={monitors.filter((m) => !m.is_paused).length}
+        currentUser={currentUser}
+        availableUsers={availableUsers}
+        onSwitchUser={handleSwitchUser}
       />
+
+      {/* Viewer Mode Banner */}
+      {isViewer && (
+        <div className="bg-amber-500/10 border-b border-amber-500/20 py-2 px-4 text-center text-xs text-amber-300 flex items-center justify-center gap-2">
+          <span className="font-semibold font-mono">👁️ VIEWER MODE (READ-ONLY):</span>
+          <span>You have stakeholder audit access. Modifying targets, running probes, altering alerts, and declaring outages are restricted.</span>
+        </div>
+      )}
 
       <main className="flex-1 container mx-auto px-4 py-8">
         {loading ? (
@@ -158,9 +203,11 @@ export function App() {
             <p className="text-xs text-muted-foreground font-mono">Connecting to probe engine...</p>
           </div>
         ) : currentView === 'channels' ? (
-          <NotificationChannels />
+          <NotificationChannels currentUser={currentUser} />
         ) : currentView === 'incidents' ? (
-          <IncidentManagement />
+          <IncidentManagement currentUser={currentUser} />
+        ) : currentView === 'team' ? (
+          <TeamManagement currentUser={currentUser} onUserRefreshed={loadUserData} />
         ) : (
           <>
             <StatsOverview stats={stats} />
@@ -174,6 +221,7 @@ export function App() {
               onSelect={setSelectedMonitor}
               onAddClick={() => setIsAddModalOpen(true)}
               onRefreshData={loadData}
+              isViewer={isViewer}
             />
           </>
         )}

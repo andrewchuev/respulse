@@ -286,3 +286,148 @@ pub struct AlertLogWithDetails {
     pub error_message: Option<String>,
     pub sent_at: DateTime<Utc>,
 }
+
+// -----------------------------------------------------------------------------
+// Role-Based Access Control (RBAC) & Multi-User Teams
+// -----------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum UserRole {
+    Owner,
+    Admin,
+    Engineer,
+    Viewer,
+}
+
+impl UserRole {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            UserRole::Owner => "OWNER",
+            UserRole::Admin => "ADMIN",
+            UserRole::Engineer => "ENGINEER",
+            UserRole::Viewer => "VIEWER",
+        }
+    }
+
+    pub fn from_str(s: &str) -> Self {
+        match s.to_uppercase().as_str() {
+            "OWNER" => UserRole::Owner,
+            "ADMIN" => UserRole::Admin,
+            "VIEWER" => UserRole::Viewer,
+            _ => UserRole::Engineer,
+        }
+    }
+
+    pub fn can_mutate_monitors(&self) -> bool {
+        matches!(self, UserRole::Owner | UserRole::Admin | UserRole::Engineer)
+    }
+
+    pub fn can_manage_incidents(&self) -> bool {
+        matches!(self, UserRole::Owner | UserRole::Admin | UserRole::Engineer)
+    }
+
+    pub fn can_manage_channels(&self) -> bool {
+        matches!(self, UserRole::Owner | UserRole::Admin | UserRole::Engineer)
+    }
+
+    pub fn can_manage_team(&self) -> bool {
+        matches!(self, UserRole::Owner | UserRole::Admin)
+    }
+
+    pub fn can_manage_billing(&self) -> bool {
+        matches!(self, UserRole::Owner)
+    }
+
+    pub fn permissions(&self) -> Vec<String> {
+        let mut perms = vec![
+            "view_dashboard".to_string(),
+            "view_monitors".to_string(),
+            "view_incidents".to_string(),
+            "view_channels".to_string(),
+        ];
+        if self.can_mutate_monitors() {
+            perms.push("mutate_monitors".to_string());
+            perms.push("probe_monitors".to_string());
+        }
+        if self.can_manage_incidents() {
+            perms.push("manage_incidents".to_string());
+            perms.push("publish_rca".to_string());
+        }
+        if self.can_manage_channels() {
+            perms.push("manage_channels".to_string());
+        }
+        if self.can_manage_team() {
+            perms.push("manage_team".to_string());
+        }
+        if self.can_manage_billing() {
+            perms.push("manage_billing".to_string());
+        }
+        perms
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct Team {
+    pub id: Uuid,
+    pub name: String,
+    pub slug: String,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct User {
+    pub id: Uuid,
+    pub team_id: Uuid,
+    pub email: String,
+    pub name: String,
+    pub password_hash: String,
+    pub role: String,
+    pub avatar_url: Option<String>,
+    pub is_active: bool,
+    pub created_at: DateTime<Utc>,
+    pub last_login_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserProfile {
+    pub id: Uuid,
+    pub team_id: Uuid,
+    pub team_name: String,
+    pub email: String,
+    pub name: String,
+    pub role: UserRole,
+    pub avatar_url: Option<String>,
+    pub is_active: bool,
+    pub permissions: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct TeamMember {
+    pub id: Uuid,
+    pub team_id: Uuid,
+    pub email: String,
+    pub name: String,
+    pub role: String,
+    pub avatar_url: Option<String>,
+    pub is_active: bool,
+    pub created_at: DateTime<Utc>,
+    pub last_login_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InviteMemberRequest {
+    pub email: String,
+    pub name: String,
+    pub role: UserRole,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateMemberRoleRequest {
+    pub role: UserRole,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SwitchUserRequest {
+    pub email: String,
+}

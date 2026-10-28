@@ -10,23 +10,135 @@ import {
   Incident,
   IncidentUpdate,
   IncidentWithDetails,
+  InviteMemberPayload,
   Monitor,
   MonitorWithStats,
   NotificationChannel,
   PublicStatusPage,
+  TeamMember,
   UpdateIncidentPayload,
+  UserProfile,
+  UserRole,
 } from '../types';
 
 const API_BASE = '/api';
 
+// RBAC user context stored in localStorage (defaults to Alice Vance - Owner)
+let activeUserEmail: string = localStorage.getItem('respulse_active_email') || 'alice@respulse.internal';
+
+export function getActiveUserEmail(): string {
+  return activeUserEmail;
+}
+
+export function setActiveUserEmail(email: string) {
+  activeUserEmail = email;
+  localStorage.setItem('respulse_active_email', email);
+}
+
+function authHeaders(custom: Record<string, string> = {}): Record<string, string> {
+  return {
+    'x-user-email': activeUserEmail,
+    ...custom,
+  };
+}
+
+// -----------------------------------------------------------------------------
+// Auth & Identity API
+// -----------------------------------------------------------------------------
+
+export async function fetchCurrentUser(): Promise<UserProfile> {
+  const res = await fetch(`${API_BASE}/auth/me`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to fetch current user profile');
+  return res.json();
+}
+
+export async function fetchAvailableUsers(): Promise<UserProfile[]> {
+  const res = await fetch(`${API_BASE}/auth/users`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to fetch available demo users');
+  return res.json();
+}
+
+export async function switchUser(email: string): Promise<UserProfile> {
+  const res = await fetch(`${API_BASE}/auth/switch-user`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) throw new Error('Failed to switch user');
+  const user: UserProfile = await res.json();
+  setActiveUserEmail(user.email);
+  return user;
+}
+
+// -----------------------------------------------------------------------------
+// Team Management API
+// -----------------------------------------------------------------------------
+
+export async function fetchTeamMembers(): Promise<TeamMember[]> {
+  const res = await fetch(`${API_BASE}/team/members`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to fetch team members');
+  return res.json();
+}
+
+export async function inviteTeamMember(payload: InviteMemberPayload): Promise<TeamMember> {
+  const res = await fetch(`${API_BASE}/team/members`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => ({}));
+    throw new Error(errorJson.error || 'Failed to invite team member');
+  }
+  return res.json();
+}
+
+export async function updateMemberRole(memberId: string, role: UserRole): Promise<TeamMember> {
+  const res = await fetch(`${API_BASE}/team/members/${memberId}/role`, {
+    method: 'PUT',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ role }),
+  });
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => ({}));
+    throw new Error(errorJson.error || 'Failed to update member role');
+  }
+  return res.json();
+}
+
+export async function deleteTeamMember(memberId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/team/members/${memberId}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => ({}));
+    throw new Error(errorJson.error || 'Failed to remove team member');
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Monitors API
+// -----------------------------------------------------------------------------
+
 export async function fetchMonitors(): Promise<MonitorWithStats[]> {
-  const res = await fetch(`${API_BASE}/monitors`);
+  const res = await fetch(`${API_BASE}/monitors`, {
+    headers: authHeaders(),
+  });
   if (!res.ok) throw new Error('Failed to fetch monitors');
   return res.json();
 }
 
 export async function fetchMonitor(id: string): Promise<MonitorWithStats> {
-  const res = await fetch(`${API_BASE}/monitors/${id}`);
+  const res = await fetch(`${API_BASE}/monitors/${id}`, {
+    headers: authHeaders(),
+  });
   if (!res.ok) throw new Error('Failed to fetch monitor details');
   return res.json();
 }
@@ -34,7 +146,7 @@ export async function fetchMonitor(id: string): Promise<MonitorWithStats> {
 export async function createMonitor(payload: CreateMonitorPayload): Promise<Monitor> {
   const res = await fetch(`${API_BASE}/monitors`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
@@ -45,52 +157,89 @@ export async function createMonitor(payload: CreateMonitorPayload): Promise<Moni
 }
 
 export async function deleteMonitor(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/monitors/${id}`, { method: 'DELETE' });
-  if (!res.ok) throw new Error('Failed to delete monitor');
+  const res = await fetch(`${API_BASE}/monitors/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || 'Failed to delete monitor');
+  }
 }
 
 export async function pauseMonitor(id: string): Promise<Monitor> {
-  const res = await fetch(`${API_BASE}/monitors/${id}/pause`, { method: 'POST' });
-  if (!res.ok) throw new Error('Failed to pause monitor');
+  const res = await fetch(`${API_BASE}/monitors/${id}/pause`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || 'Failed to pause monitor');
+  }
   return res.json();
 }
 
 export async function resumeMonitor(id: string): Promise<Monitor> {
-  const res = await fetch(`${API_BASE}/monitors/${id}/resume`, { method: 'POST' });
-  if (!res.ok) throw new Error('Failed to resume monitor');
+  const res = await fetch(`${API_BASE}/monitors/${id}/resume`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || 'Failed to resume monitor');
+  }
   return res.json();
 }
 
 export async function triggerTest(id: string): Promise<Monitor> {
-  const res = await fetch(`${API_BASE}/monitors/${id}/test`, { method: 'POST' });
-  if (!res.ok) throw new Error('Failed to trigger monitor test');
+  const res = await fetch(`${API_BASE}/monitors/${id}/test`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || 'Failed to trigger monitor test');
+  }
   return res.json();
 }
 
 export async function bulkAction(payload: BulkActionPayload): Promise<BulkActionResponse> {
   const res = await fetch(`${API_BASE}/monitors/bulk`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error('Bulk action failed');
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || 'Bulk action failed');
+  }
   return res.json();
 }
 
 export async function fetchStats(): Promise<GlobalStats> {
-  const res = await fetch(`${API_BASE}/stats`);
+  const res = await fetch(`${API_BASE}/stats`, {
+    headers: authHeaders(),
+  });
   if (!res.ok) throw new Error('Failed to fetch stats');
   return res.json();
 }
 
+// -----------------------------------------------------------------------------
+// Incidents API
+// -----------------------------------------------------------------------------
+
 export async function fetchIncidents(): Promise<IncidentWithDetails[]> {
-  const res = await fetch(`${API_BASE}/incidents`);
+  const res = await fetch(`${API_BASE}/incidents`, {
+    headers: authHeaders(),
+  });
   if (!res.ok) throw new Error('Failed to fetch incidents');
   return res.json();
 }
 
 export async function fetchIncident(id: string): Promise<IncidentWithDetails> {
-  const res = await fetch(`${API_BASE}/incidents/${id}`);
+  const res = await fetch(`${API_BASE}/incidents/${id}`, {
+    headers: authHeaders(),
+  });
   if (!res.ok) throw new Error('Failed to fetch incident details');
   return res.json();
 }
@@ -98,30 +247,39 @@ export async function fetchIncident(id: string): Promise<IncidentWithDetails> {
 export async function updateIncident(id: string, payload: UpdateIncidentPayload): Promise<Incident> {
   const res = await fetch(`${API_BASE}/incidents/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error('Failed to update incident');
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || 'Failed to update incident');
+  }
   return res.json();
 }
 
 export async function addIncidentUpdate(id: string, payload: AddIncidentUpdatePayload): Promise<IncidentUpdate> {
   const res = await fetch(`${API_BASE}/incidents/${id}/updates`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error('Failed to post incident update');
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || 'Failed to post incident update');
+  }
   return res.json();
 }
 
 export async function createManualIncident(payload: CreateManualIncidentPayload): Promise<IncidentWithDetails> {
   const res = await fetch(`${API_BASE}/incidents`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error('Failed to create manual incident');
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || 'Failed to create manual incident');
+  }
   return res.json();
 }
 
@@ -131,9 +289,14 @@ export async function fetchStatusPage(): Promise<PublicStatusPage> {
   return res.json();
 }
 
+// -----------------------------------------------------------------------------
 // Notification Channels API
+// -----------------------------------------------------------------------------
+
 export async function fetchChannels(): Promise<NotificationChannel[]> {
-  const res = await fetch(`${API_BASE}/notifications`);
+  const res = await fetch(`${API_BASE}/notifications`, {
+    headers: authHeaders(),
+  });
   if (!res.ok) throw new Error('Failed to fetch notification channels');
   return res.json();
 }
@@ -141,7 +304,7 @@ export async function fetchChannels(): Promise<NotificationChannel[]> {
 export async function createChannel(payload: CreateChannelPayload): Promise<NotificationChannel> {
   const res = await fetch(`${API_BASE}/notifications`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
@@ -157,25 +320,39 @@ export async function updateChannel(
 ): Promise<NotificationChannel> {
   const res = await fetch(`${API_BASE}/notifications/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error('Failed to update notification channel');
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || 'Failed to update notification channel');
+  }
   return res.json();
 }
 
 export async function deleteChannel(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/notifications/${id}`, { method: 'DELETE' });
-  if (!res.ok) throw new Error('Failed to delete notification channel');
+  const res = await fetch(`${API_BASE}/notifications/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || 'Failed to delete notification channel');
+  }
 }
 
 export async function testChannel(id: string): Promise<{ success: boolean; message: string; error?: string }> {
-  const res = await fetch(`${API_BASE}/notifications/${id}/test`, { method: 'POST' });
+  const res = await fetch(`${API_BASE}/notifications/${id}/test`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
   return res.json();
 }
 
 export async function fetchAlertLogs(): Promise<AlertLogWithDetails[]> {
-  const res = await fetch(`${API_BASE}/notifications/logs`);
+  const res = await fetch(`${API_BASE}/notifications/logs`, {
+    headers: authHeaders(),
+  });
   if (!res.ok) throw new Error('Failed to fetch alert delivery logs');
   return res.json();
 }

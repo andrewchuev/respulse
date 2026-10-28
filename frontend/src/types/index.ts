@@ -192,3 +192,39 @@ export interface AlertLogWithDetails {
   error_message?: string | null;
   sent_at: string;
 }
+
+// -----------------------------------------------------------------------------
+// Role-Based Access Control (RBAC) & Team Management
+// -----------------------------------------------------------------------------
+
+export type UserRole = 'OWNER' | 'ADMIN' | 'ENGINEER' | 'VIEWER';
+
+export interface UserProfile {
+  id: string;
+  team_id: string;
+  team_name: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  avatar_url?: string | null;
+  is_active: boolean;
+  permissions: string[];
+}
+
+export interface TeamMember {
+  id: string;
+  team_id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  avatar_url?: string | null;
+  is_active: boolean;
+  created_at: string;
+  last_login_at?: string | null;
+}
+
+export interface InviteMemberPayload {
+  email: string;
+  name: string;
+  role: UserRole;
+}

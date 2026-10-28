@@ -1,4 +1,5 @@
 use crate::api::monitors::AppState;
+use crate::auth::AuthUser;
 use crate::models::{
     AddIncidentUpdateRequest, CreateManualIncidentRequest, Incident, IncidentUpdate,
     IncidentWithDetails, UpdateIncidentRequest, WsMessage,
@@ -169,10 +170,18 @@ pub async fn get_incident(
 }
 
 pub async fn update_incident(
+    auth: AuthUser,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
     Json(payload): Json<UpdateIncidentRequest>,
 ) -> Result<Json<Incident>, (StatusCode, String)> {
+    if !auth.role.can_manage_incidents() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            format!("Forbidden: role {} does not have permission to manage incidents", auth.role.as_str()),
+        ));
+    }
+
     let existing: Incident = sqlx::query_as::<_, Incident>(
         "SELECT * FROM incidents WHERE id = $1"
     )
@@ -231,10 +240,18 @@ pub async fn update_incident(
 }
 
 pub async fn add_incident_update(
+    auth: AuthUser,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
     Json(payload): Json<AddIncidentUpdateRequest>,
 ) -> Result<Json<IncidentUpdate>, (StatusCode, String)> {
+    if !auth.role.can_manage_incidents() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            format!("Forbidden: role {} does not have permission to post incident updates", auth.role.as_str()),
+        ));
+    }
+
     let stage_upper = payload.stage.to_uppercase();
     let author = payload.author.unwrap_or_else(|| "On-Call Engineer".to_string());
 
@@ -279,9 +296,17 @@ pub async fn add_incident_update(
 }
 
 pub async fn create_manual_incident(
+    auth: AuthUser,
     State(state): State<AppState>,
     Json(payload): Json<CreateManualIncidentRequest>,
 ) -> Result<Json<IncidentWithDetails>, (StatusCode, String)> {
+    if !auth.role.can_manage_incidents() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            format!("Forbidden: role {} does not have permission to declare incidents", auth.role.as_str()),
+        ));
+    }
+
     let monitor = sqlx::query_as::<_, crate::models::Monitor>(
         "SELECT * FROM monitors WHERE id = $1"
     )

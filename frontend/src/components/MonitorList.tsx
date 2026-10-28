@@ -36,6 +36,7 @@ interface MonitorListProps {
   onSelect: (monitor: MonitorWithStats) => void;
   onAddClick: () => void;
   onRefreshData?: () => void;
+  isViewer?: boolean;
 }
 
 export const MonitorList: React.FC<MonitorListProps> = ({
@@ -47,6 +48,7 @@ export const MonitorList: React.FC<MonitorListProps> = ({
   onSelect,
   onAddClick,
   onRefreshData,
+  isViewer = false,
 }) => {
   // Search & Filter state
   const [search, setSearch] = useState('');
@@ -541,6 +543,7 @@ export const MonitorList: React.FC<MonitorListProps> = ({
                           onTest={onTest}
                           onSelect={onSelect}
                           compact={isCompact}
+                          isViewer={isViewer}
                         />
                       ))}
                     </div>
@@ -564,6 +567,7 @@ export const MonitorList: React.FC<MonitorListProps> = ({
                 onTest={onTest}
                 onSelect={onSelect}
                 compact={isCompact}
+                isViewer={isViewer}
               />
             ))}
           </div>
@@ -663,8 +667,8 @@ export const MonitorList: React.FC<MonitorListProps> = ({
         </div>
       )}
 
-      {/* Floating Bulk Actions Bar */}
-      {selectedIds.size > 0 && (
+      {/* Floating Bulk Actions Bar (Disabled for Viewer role) */}
+      {selectedIds.size > 0 && !isViewer && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-4 animate-in fade-in slide-in-from-bottom-4 duration-200">
           <div className="bg-slate-900/95 backdrop-blur-md border border-emerald-500/50 rounded-2xl shadow-2xl p-3 flex flex-wrap items-center justify-between gap-3 text-white ring-1 ring-emerald-500/20">
             {/* Left Counter & Deselect */}

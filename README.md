@@ -109,6 +109,22 @@
 * **Incident Management Dashboard:**
   * Dedicated "Incidents & RCA" workspace view with MTTR (Mean Time to Resolution) tracking, active outage banners, and comprehensive incident history table.
 
+### 7. Multi-User Teams & Role-Based Access Control (RBAC)
+* **Enterprise 4-Tier Role Model:**
+  * 👑 **OWNER:** Full administrative control, organization management, member invitations, role promotions/demotions, organization deletion.
+  * 🛡️ **ADMIN:** Monitor & channel management, incident management, member invitations and role management (except Owner role).
+  * 🛠️ **ENGINEER:** Synthetic monitoring CRUD, on-demand probes (*Test Now*), pause/resume, bulk actions, declare incidents, publish RCA post-mortems, configure alert channels. Cannot manage team members.
+  * 👁️ **VIEWER:** Read-only access to dashboards, latency analytics, incident history, and delivery audit logs. Strict server-side `403 Forbidden` defense-in-depth on all mutations.
+* **Interactive Permissions Matrix:**
+  * Transparent visual matrix displaying exact capabilities across 11 granular permissions (monitors, bulk actions, alerts, incidents, post-mortems, team management).
+* **Team & Organization Workspace:**
+  * Dedicated **Team & RBAC** management view with member rosters, role dropdown selectors, member deletion, and *Invite Member* modal dialogs.
+* **Instant B2B Demo Persona Switcher:**
+  * Profile dropdown in the top header allows instant switching between pre-seeded enterprise accounts (Owner, Admin, Engineer, Viewer) for live stakeholder demonstrations.
+* **Context-Aware UI Safeguards:**
+  * Prominent yellow *"Viewer Mode (Read-Only)"* banner automatically alerts non-privileged users.
+  * Interactive action buttons (Add Monitor, Declare Incident, Add Channel, Pause/Resume, Delete) are gracefully disabled with informative tooltips explaining role requirements.
+
 ---
 
 ## 🛠 Tech Stack
@@ -139,17 +155,21 @@ respulse/
 │   │   ├── 0002_basic_auth.sql  # Basic auth schema extension
 │   │   ├── 0003_alert_logs.sql  # Alert delivery logs table
 │   │   ├── 0004_tags_and_groups.sql # Tags and folders schema extension
-│   │   └── 0005_incident_management.sql # Incident details, timeline & post-mortem schema
+│   │   ├── 0005_incident_management.sql # Incident details, timeline & post-mortem schema
+│   │   └── 0006_rbac_teams.sql  # Multi-user teams, users & seeded enterprise accounts
 │   └── src/
 │       ├── main.rs              # App entrypoint, state & router setup
 │       ├── db.rs                # Database connection & migration runner
-│       ├── models.rs            # Core data types & DTOs
+│       ├── auth.rs              # Axum authentication extractor & role permission guards
+│       ├── models.rs            # Core data types, DTOs & permission models
 │       ├── api/                 # REST & WebSocket handlers
 │       │   ├── mod.rs
-│       │   ├── monitors.rs      # Monitor CRUD, pause/resume, test
+│       │   ├── auth.rs          # Current user, demo user switcher & available personas
+│       │   ├── team.rs          # Multi-user team management & member invitations
+│       │   ├── monitors.rs      # Monitor CRUD, pause/resume, test (RBAC-guarded)
 │       │   ├── heartbeat.rs     # Push heartbeat endpoint
-│       │   ├── incidents.rs     # Incident management, timeline updates & post-mortems
-│       │   ├── notifications.rs # Channels CRUD, test alert & audit logs
+│       │   ├── incidents.rs     # Incident management, timeline updates & post-mortems (RBAC-guarded)
+│       │   ├── notifications.rs # Channels CRUD, test alert & audit logs (RBAC-guarded)
 │       │   ├── stats.rs         # Global metrics & status page data
 │       │   └── ws.rs            # Real-time WebSocket hub
 │       ├── notifier/            # Alert dispatch engine
@@ -174,10 +194,10 @@ respulse/
 │       ├── App.tsx              # Root component & WebSocket listener
 │       ├── api/client.ts        # Fetch client & WebSocket connection
 │       ├── components/          # UI components
-│       │   ├── Header.tsx
+│       │   ├── Header.tsx       # Navigation, user profile & persona switcher dropdown
 │       │   ├── StatsOverview.tsx
-│       │   ├── MonitorList.tsx
-│       │   ├── MonitorCard.tsx
+│       │   ├── MonitorList.tsx  # Multi-select, bulk operations & high-density view
+│       │   ├── MonitorCard.tsx  # Live status, uptime bars, latency charts & actions
 │       │   ├── MonitorDetailModal.tsx
 │       │   ├── AddMonitorModal.tsx
 │       │   ├── NotificationChannels.tsx # Channels dashboard & delivery logs
@@ -185,9 +205,10 @@ respulse/
 │       │   ├── IncidentManagement.tsx   # Incidents & RCA dashboard
 │       │   ├── EditIncidentModal.tsx    # Modal for timeline updates & Post-Mortem editor
 │       │   ├── DeclareIncidentModal.tsx # Proactive incident/maintenance declaration
+│       │   ├── TeamManagement.tsx       # Team roster, roles matrix & member invitations
 │       │   ├── StatusPage.tsx           # Public status page with live incidents & RCA
 │       │   └── ui/              # shadcn/ui components (button, dialog, input, card, badge)
-│       └── types/index.ts       # TypeScript definitions
+│       └── types/index.ts       # TypeScript definitions & RBAC models
 ├── docker-compose.yml           # Compose specification for Postgres, API & Web
 ├── Makefile                     # Shortcut commands for operations
 └── README.md                    # Project documentation
@@ -227,6 +248,19 @@ Access the application locally via HTTPS:
 
 *(TLS certificates are automatically provisioned and managed by Caddy's internal local CA).*
 
+### 4. Pre-Seeded Enterprise Demo Personas
+ResPulse comes pre-configured with a default enterprise organization (`Acme Global Operations`) and four seeded demo accounts to showcase the RBAC engine without setup overhead:
+
+| Avatar | Name | Email | Role | Capabilities |
+| :---: | :--- | :--- | :---: | :--- |
+| 👑 | **Alice Vance** | `alice@respulse.internal` | `OWNER` | Full enterprise control, team invitations, role changes, organization deletion |
+| 🛡️ | **Bob Chen** | `bob@respulse.internal` | `ADMIN` | Infrastructure, alert channels, incident management & member invitations |
+| 🛠️ | **Charlie Davis** | `charlie@respulse.internal` | `ENGINEER` | Synthetic monitoring, on-demand probes, RCA post-mortems, bulk actions |
+| 👁️ | **Dana Scully** | `dana@respulse.internal` | `VIEWER` | Read-only dashboards, latency charts, incident history (mutations return `403`) |
+
+> [!TIP]
+> Use the profile dropdown in the top-right header to switch between personas instantly in one click and observe the dynamic UI changes and server permission enforcement.
+
 ---
 
 ## 🛠 Makefile Commands
@@ -245,11 +279,18 @@ Access the application locally via HTTPS:
 
 ## 📡 REST API Reference
 
-All API routes are served under the `/api` prefix.
+All API routes are served under the `/api` prefix. Authenticated requests accept the user identity via `x-user-email` header or Bearer token (defaults to `alice@respulse.internal` if omitted).
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `GET` | `/api/health` | Healthcheck endpoint (`OK`) |
+| `GET` | `/api/auth/me` | Current authenticated user profile, team details & permissions |
+| `GET` | `/api/auth/users` | List available demo enterprise user personas for switching |
+| `POST` | `/api/auth/switch-user` | Switch current active persona identity |
+| `GET` | `/api/team/members` | List all team members of the active enterprise organization |
+| `POST` | `/api/team/members` | Invite a new team member with role (`OWNER`/`ADMIN` required) |
+| `PUT` | `/api/team/members/:id/role` | Update a team member's role (`OWNER`/`ADMIN` required) |
+| `DELETE` | `/api/team/members/:id` | Remove a member from the team (`OWNER`/`ADMIN` required) |
 | `GET` | `/api/monitors` | List all monitors with 24h/7d/30d uptime & history bars |
 | `POST` | `/api/monitors` | Create a new monitor (HTTP, PORT, SSL, HEARTBEAT) |
 | `POST` | `/api/monitors/bulk` | Bulk operations (pause, resume, test, delete, set_group, add_tag) |

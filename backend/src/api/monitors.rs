@@ -1,3 +1,4 @@
+use crate::auth::AuthUser;
 use crate::db::DbPool;
 use crate::models::{
     CheckResult, CreateMonitorRequest, LatencyPoint, Monitor, MonitorWithStats,
@@ -268,9 +269,17 @@ pub async fn get_monitor(
 }
 
 pub async fn create_monitor(
+    auth: AuthUser,
     State(state): State<AppState>,
     Json(payload): Json<CreateMonitorRequest>,
 ) -> Result<Json<Monitor>, (StatusCode, String)> {
+    if !auth.role.can_mutate_monitors() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            format!("Forbidden: role {} does not have permission to create monitors", auth.role.as_str()),
+        ));
+    }
+
     let headers_json = payload.headers.unwrap_or_else(|| serde_json::json!({}));
     let heartbeat_token = if payload.monitor_type.to_uppercase() == "HEARTBEAT" {
         Some(Uuid::new_v4().to_string().replace('-', ""))
@@ -322,10 +331,18 @@ pub async fn create_monitor(
 }
 
 pub async fn update_monitor(
+    auth: AuthUser,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
     Json(payload): Json<UpdateMonitorRequest>,
 ) -> Result<Json<Monitor>, (StatusCode, String)> {
+    if !auth.role.can_mutate_monitors() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            format!("Forbidden: role {} does not have permission to update monitors", auth.role.as_str()),
+        ));
+    }
+
     let existing: Monitor = sqlx::query_as::<_, Monitor>(
         "SELECT * FROM monitors WHERE id = $1"
     )
@@ -385,9 +402,17 @@ pub async fn update_monitor(
 }
 
 pub async fn delete_monitor(
+    auth: AuthUser,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
+    if !auth.role.can_mutate_monitors() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            format!("Forbidden: role {} does not have permission to delete monitors", auth.role.as_str()),
+        ));
+    }
+
     sqlx::query("DELETE FROM monitors WHERE id = $1")
         .bind(id)
         .execute(&state.pool)
@@ -398,9 +423,17 @@ pub async fn delete_monitor(
 }
 
 pub async fn pause_monitor(
+    auth: AuthUser,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Monitor>, (StatusCode, String)> {
+    if !auth.role.can_mutate_monitors() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            format!("Forbidden: role {} does not have permission to pause monitors", auth.role.as_str()),
+        ));
+    }
+
     let monitor = sqlx::query_as::<_, Monitor>(
         r#"
         UPDATE monitors
@@ -419,9 +452,17 @@ pub async fn pause_monitor(
 }
 
 pub async fn resume_monitor(
+    auth: AuthUser,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Monitor>, (StatusCode, String)> {
+    if !auth.role.can_mutate_monitors() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            format!("Forbidden: role {} does not have permission to resume monitors", auth.role.as_str()),
+        ));
+    }
+
     let monitor = sqlx::query_as::<_, Monitor>(
         r#"
         UPDATE monitors
@@ -448,9 +489,17 @@ pub async fn resume_monitor(
 }
 
 pub async fn trigger_test(
+    auth: AuthUser,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Monitor>, (StatusCode, String)> {
+    if !auth.role.can_mutate_monitors() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            format!("Forbidden: role {} does not have permission to test monitors", auth.role.as_str()),
+        ));
+    }
+
     let monitor: Monitor = sqlx::query_as::<_, Monitor>(
         "SELECT * FROM monitors WHERE id = $1"
     )
@@ -474,9 +523,17 @@ pub async fn trigger_test(
 }
 
 pub async fn bulk_action(
+    auth: AuthUser,
     State(state): State<AppState>,
     Json(payload): Json<crate::models::BulkActionRequest>,
 ) -> Result<Json<crate::models::BulkActionResponse>, (StatusCode, String)> {
+    if !auth.role.can_mutate_monitors() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            format!("Forbidden: role {} does not have permission to perform bulk actions", auth.role.as_str()),
+        ));
+    }
+
     if payload.ids.is_empty() {
         return Ok(Json(crate::models::BulkActionResponse {
             success: true,

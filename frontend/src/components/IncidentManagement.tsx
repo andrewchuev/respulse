@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { IncidentWithDetails, MonitorWithStats } from '../types';
+import { IncidentWithDetails, MonitorWithStats, UserProfile } from '../types';
 import { fetchIncidents, fetchMonitors } from '../api/client';
 import { timeAgo } from '../lib/utils';
 import {
@@ -18,12 +18,18 @@ import { Input } from './ui/input';
 import { EditIncidentModal } from './EditIncidentModal';
 import { DeclareIncidentModal } from './DeclareIncidentModal';
 
-export const IncidentManagement: React.FC = () => {
+interface IncidentManagementProps {
+  currentUser?: UserProfile | null;
+}
+
+export const IncidentManagement: React.FC<IncidentManagementProps> = ({ currentUser }) => {
   const [incidents, setIncidents] = useState<IncidentWithDetails[]>([]);
   const [monitors, setMonitors] = useState<MonitorWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ONGOING' | 'RESOLVED'>('ALL');
+
+  const isViewer = currentUser?.role === 'VIEWER';
 
   // Modals state
   const [selectedIncident, setSelectedIncident] = useState<IncidentWithDetails | null>(null);
@@ -234,7 +240,13 @@ export const IncidentManagement: React.FC = () => {
           <Button
             size="sm"
             onClick={() => setIsDeclareModalOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium h-9 text-xs gap-1.5"
+            disabled={isViewer}
+            className={`font-medium h-9 text-xs gap-1.5 ${
+              isViewer
+                ? 'opacity-40 cursor-not-allowed bg-secondary text-muted-foreground'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+            }`}
+            title={isViewer ? 'Requires Engineer role or higher to declare incidents' : 'Declare Incident'}
           >
             <Plus className="h-4 w-4" />
             Declare Incident

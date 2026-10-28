@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AlertLogWithDetails, CreateChannelPayload, NotificationChannel } from '../types';
+import { AlertLogWithDetails, CreateChannelPayload, NotificationChannel, UserProfile } from '../types';
 import {
   createChannel,
   deleteChannel,
@@ -28,13 +28,19 @@ import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { AddChannelModal } from './AddChannelModal';
 
-export const NotificationChannels: React.FC = () => {
+interface NotificationChannelsProps {
+  currentUser?: UserProfile | null;
+}
+
+export const NotificationChannels: React.FC<NotificationChannelsProps> = ({ currentUser }) => {
   const [channels, setChannels] = useState<NotificationChannel[]>([]);
   const [logs, setLogs] = useState<AlertLogWithDetails[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [testingId, setTestingId] = useState<string | null>(null);
   const [testFeedback, setTestFeedback] = useState<{ id: string; success: boolean; message: string } | null>(null);
+
+  const isViewer = currentUser?.role === 'VIEWER';
 
   const loadData = async () => {
     try {
@@ -215,7 +221,13 @@ export const NotificationChannels: React.FC = () => {
           <Button
             size="sm"
             onClick={() => setIsAddModalOpen(true)}
-            className="h-9 bg-emerald-600 hover:bg-emerald-500 text-white font-medium shadow-lg shadow-emerald-950/40 gap-1.5 text-xs"
+            disabled={isViewer}
+            className={`h-9 font-medium shadow-lg gap-1.5 text-xs ${
+              isViewer
+                ? 'opacity-40 cursor-not-allowed bg-secondary text-muted-foreground'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/40'
+            }`}
+            title={isViewer ? 'Requires Engineer role or higher to add notification channels' : 'Add Channel'}
           >
             <Plus className="h-4 w-4" />
             Add Channel
@@ -295,8 +307,9 @@ export const NotificationChannels: React.FC = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-7 text-xs px-2.5 gap-1.5 hover:text-white"
-                      disabled={isTesting}
+                      className="h-7 text-xs px-2.5 gap-1.5 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                      disabled={isTesting || isViewer}
+                      title={isViewer ? 'Requires Engineer role or higher to test alerts' : 'Send test alert'}
                       onClick={() => handleTest(channel.id)}
                     >
                       <Play className={`h-3 w-3 ${isTesting ? 'animate-spin text-emerald-400' : ''}`} />
@@ -305,7 +318,9 @@ export const NotificationChannels: React.FC = () => {
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="h-7 w-7 text-muted-foreground hover:text-red-400"
+                      className="h-7 w-7 text-muted-foreground hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed"
+                      disabled={isViewer}
+                      title={isViewer ? 'Requires Engineer role or higher to delete channels' : 'Delete channel'}
                       onClick={() => handleDelete(channel.id)}
                     >
                       <Trash2 className="h-3.5 w-3.5" />

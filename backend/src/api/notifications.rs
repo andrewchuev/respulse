@@ -1,4 +1,5 @@
 use crate::api::monitors::AppState;
+use crate::auth::AuthUser;
 use crate::models::{AlertLogWithDetails, CreateChannelRequest, NotificationChannel};
 use crate::notifier;
 use axum::extract::{Path, State};
@@ -72,9 +73,17 @@ pub async fn list_channels(
 }
 
 pub async fn create_channel(
+    auth: AuthUser,
     State(state): State<AppState>,
     Json(payload): Json<CreateChannelRequest>,
 ) -> Result<Json<NotificationChannel>, (StatusCode, String)> {
+    if !auth.role.can_manage_channels() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            format!("Forbidden: role {} does not have permission to create channels", auth.role.as_str()),
+        ));
+    }
+
     let channel = sqlx::query_as::<_, NotificationChannel>(
         r#"
         INSERT INTO notification_channels (name, channel_type, config, is_active)
@@ -102,10 +111,18 @@ pub struct UpdateChannelRequest {
 }
 
 pub async fn update_channel(
+    auth: AuthUser,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
     Json(payload): Json<UpdateChannelRequest>,
 ) -> Result<Json<NotificationChannel>, (StatusCode, String)> {
+    if !auth.role.can_manage_channels() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            format!("Forbidden: role {} does not have permission to update channels", auth.role.as_str()),
+        ));
+    }
+
     let existing: NotificationChannel = sqlx::query_as::<_, NotificationChannel>(
         "SELECT * FROM notification_channels WHERE id = $1"
     )
@@ -141,9 +158,17 @@ pub async fn update_channel(
 }
 
 pub async fn delete_channel(
+    auth: AuthUser,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
+    if !auth.role.can_manage_channels() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            format!("Forbidden: role {} does not have permission to delete channels", auth.role.as_str()),
+        ));
+    }
+
     sqlx::query("DELETE FROM notification_channels WHERE id = $1")
         .bind(id)
         .execute(&state.pool)
@@ -161,9 +186,17 @@ pub struct TestChannelResponse {
 }
 
 pub async fn test_channel(
+    auth: AuthUser,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<TestChannelResponse>, (StatusCode, String)> {
+    if !auth.role.can_manage_channels() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            format!("Forbidden: role {} does not have permission to test alert channels", auth.role.as_str()),
+        ));
+    }
+
     let channel: NotificationChannel = sqlx::query_as::<_, NotificationChannel>(
         "SELECT * FROM notification_channels WHERE id = $1"
     )

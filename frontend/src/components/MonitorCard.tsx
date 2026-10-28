@@ -25,6 +25,7 @@ interface MonitorCardProps {
   onTest: (id: string) => void;
   onSelect: (monitor: MonitorWithStats) => void;
   compact?: boolean;
+  isViewer?: boolean;
 }
 
 export const MonitorCard: React.FC<MonitorCardProps> = ({
@@ -37,6 +38,7 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({
   onTest,
   onSelect,
   compact = false,
+  isViewer = false,
 }) => {
   const [testing, setTesting] = useState(false);
 
@@ -227,9 +229,9 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({
             <Button
               size="icon"
               variant="ghost"
-              className="h-8 w-8 text-muted-foreground hover:text-white"
-              title="Test now"
-              disabled={testing || isPaused}
+              className="h-8 w-8 text-muted-foreground hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+              title={isViewer ? 'Read-only access: requires Engineer role or higher to test' : 'Test now'}
+              disabled={testing || isPaused || isViewer}
               onClick={handleTest}
             >
               <Play className={`h-3.5 w-3.5 ${testing ? 'animate-spin text-emerald-400' : ''}`} />
@@ -239,8 +241,9 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-8 w-8 text-muted-foreground hover:text-emerald-400"
-                title="Resume monitor"
+                className="h-8 w-8 text-muted-foreground hover:text-emerald-400 disabled:opacity-30 disabled:cursor-not-allowed"
+                title={isViewer ? 'Read-only access: requires Engineer role or higher to resume' : 'Resume monitor'}
+                disabled={isViewer}
                 onClick={() => onResume(monitor.id)}
               >
                 <Play className="h-3.5 w-3.5" />
@@ -249,8 +252,9 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-8 w-8 text-muted-foreground hover:text-amber-400"
-                title="Pause monitor"
+                className="h-8 w-8 text-muted-foreground hover:text-amber-400 disabled:opacity-30 disabled:cursor-not-allowed"
+                title={isViewer ? 'Read-only access: requires Engineer role or higher to pause' : 'Pause monitor'}
+                disabled={isViewer}
                 onClick={() => onPause(monitor.id)}
               >
                 <Pause className="h-3.5 w-3.5" />
@@ -260,8 +264,9 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({
             <Button
               size="icon"
               variant="ghost"
-              className="h-8 w-8 text-muted-foreground hover:text-red-400"
-              title="Delete monitor"
+              className="h-8 w-8 text-muted-foreground hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed"
+              title={isViewer ? 'Read-only access: requires Engineer role or higher to delete' : 'Delete monitor'}
+              disabled={isViewer}
               onClick={() => onDelete(monitor.id)}
             >
               <Trash2 className="h-3.5 w-3.5" />
