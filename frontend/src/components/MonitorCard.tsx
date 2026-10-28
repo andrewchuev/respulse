@@ -1,26 +1,42 @@
 import React, { useState } from 'react';
 import { MonitorWithStats } from '../types';
 import { formatMs, timeAgo } from '../lib/utils';
-import { Play, Pause, Trash2, ExternalLink, Activity, ShieldCheck, Server, Heart } from 'lucide-react';
+import {
+  Play,
+  Pause,
+  Trash2,
+  ExternalLink,
+  Activity,
+  ShieldCheck,
+  Server,
+  Heart,
+  Folder,
+} from 'lucide-react';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 
 interface MonitorCardProps {
   monitor: MonitorWithStats;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string, e: React.MouseEvent) => void;
   onPause: (id: string) => void;
   onResume: (id: string) => void;
   onDelete: (id: string) => void;
   onTest: (id: string) => void;
   onSelect: (monitor: MonitorWithStats) => void;
+  compact?: boolean;
 }
 
 export const MonitorCard: React.FC<MonitorCardProps> = ({
   monitor,
+  isSelected = false,
+  onToggleSelect,
   onPause,
   onResume,
   onDelete,
   onTest,
   onSelect,
+  compact = false,
 }) => {
   const [testing, setTesting] = useState(false);
 
@@ -65,58 +81,99 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({
   return (
     <div
       onClick={() => onSelect(monitor)}
-      className="group relative bg-card/60 hover:bg-card/90 border border-border/80 hover:border-emerald-500/30 rounded-xl p-5 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
+      className={`group relative bg-card/60 hover:bg-card/90 border transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md rounded-xl ${
+        isSelected
+          ? 'border-emerald-500 bg-emerald-950/20 ring-1 ring-emerald-500/50'
+          : 'border-border/80 hover:border-emerald-500/30'
+      } ${compact ? 'p-3' : 'p-4 sm:p-5'}`}
     >
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Left: Status & Identity */}
-        <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        {/* Left: Checkbox + Status & Identity */}
+        <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+          {/* Bulk Selection Checkbox */}
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleSelect?.(monitor.id, e);
+            }}
+            className="mt-0.5 sm:mt-0 flex-shrink-0 flex items-center justify-center p-1 rounded hover:bg-white/10 transition-colors"
+            title={isSelected ? 'Deselect monitor' : 'Select monitor'}
+          >
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={() => {}}
+              className="h-4 w-4 rounded border-border/80 text-emerald-500 focus:ring-emerald-500 bg-background/80 cursor-pointer accent-emerald-500"
+            />
+          </div>
+
           {/* Status Indicator */}
           <div className="relative mt-1 sm:mt-0 flex-shrink-0">
             {isUp && (
-              <span className="flex h-3.5 w-3.5 relative">
+              <span className="flex h-3 w-3 sm:h-3.5 sm:w-3.5 relative">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
+                <span className="relative inline-flex rounded-full h-full w-full bg-emerald-500"></span>
               </span>
             )}
             {isDown && (
-              <span className="flex h-3.5 w-3.5 relative">
+              <span className="flex h-3 w-3 sm:h-3.5 sm:w-3.5 relative">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-red-500"></span>
+                <span className="relative inline-flex rounded-full h-full w-full bg-red-500"></span>
               </span>
             )}
             {isPaused && (
-              <span className="inline-flex rounded-full h-3.5 w-3.5 bg-muted-foreground/60"></span>
+              <span className="inline-flex rounded-full h-3 w-3 sm:h-3.5 sm:w-3.5 bg-muted-foreground/60"></span>
             )}
             {!isUp && !isDown && !isPaused && (
-              <span className="inline-flex rounded-full h-3.5 w-3.5 bg-amber-400 animate-pulse"></span>
+              <span className="inline-flex rounded-full h-3 w-3 sm:h-3.5 sm:w-3.5 bg-amber-400 animate-pulse"></span>
             )}
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-semibold text-white tracking-tight truncate group-hover:text-emerald-400 transition-colors">
+              <h3 className="font-semibold text-white tracking-tight truncate group-hover:text-emerald-400 transition-colors text-sm sm:text-base">
                 {monitor.name}
               </h3>
               <Badge variant="outline" className="text-[10px] py-0 px-1.5 gap-1 bg-muted/40 font-mono">
                 {getTypeIcon()}
                 {monitor.monitor_type}
               </Badge>
+              {monitor.group_name && monitor.group_name !== 'Default' && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-300 bg-slate-800/70 border border-slate-700/60 px-1.5 py-0.5 rounded">
+                  <Folder className="h-3 w-3 text-amber-400" />
+                  {monitor.group_name}
+                </span>
+              )}
               <span className="text-[11px] text-muted-foreground font-mono">
                 {monitor.interval_seconds}s
               </span>
             </div>
 
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-0.5 sm:mt-1 flex-wrap">
               <a
                 href={monitor.url.startsWith('http') ? monitor.url : `http://${monitor.url}`}
                 target="_blank"
                 rel="noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="text-xs text-muted-foreground hover:text-white truncate flex items-center gap-1 transition-colors font-mono max-w-[280px] sm:max-w-[420px]"
+                className="text-xs text-muted-foreground hover:text-white truncate flex items-center gap-1 transition-colors font-mono max-w-[260px] sm:max-w-[380px]"
               >
                 <span className="truncate">{monitor.url}</span>
                 <ExternalLink className="h-3 w-3 flex-shrink-0 opacity-60" />
               </a>
+
+              {/* Tags */}
+              {monitor.tags && monitor.tags.length > 0 && (
+                <div className="flex items-center gap-1 flex-wrap">
+                  {monitor.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center text-[10px] font-mono font-medium text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-1.5 py-0.2 rounded"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -131,7 +188,7 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({
           </div>
 
           {/* Bar timeline */}
-          <div className="flex items-center gap-[2.5px] mt-1.5 h-6 px-1 py-0.5 bg-background/50 rounded border border-border/40">
+          <div className="flex items-center gap-[2px] mt-1 h-5 sm:h-6 px-1 py-0.5 bg-background/50 rounded border border-border/40">
             {historyBars.map((bar, idx) => {
               const hasData = bar.timestamp !== '';
               const barColor = !hasData
@@ -148,7 +205,7 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({
                       ? `${bar.is_up ? 'UP' : 'DOWN'} | ${formatMs(bar.response_time_ms)} | ${new Date(bar.timestamp).toLocaleTimeString()}`
                       : 'No data'
                   }
-                  className={`w-1.5 h-4 rounded-sm transition-all ${barColor}`}
+                  className={`w-1.5 h-3.5 sm:h-4 rounded-sm transition-all ${barColor}`}
                 />
               );
             })}
@@ -156,7 +213,7 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({
         </div>
 
         {/* Right: Latency & Quick Actions */}
-        <div className="flex items-center justify-between md:justify-end gap-3 border-t md:border-t-0 border-border/40 pt-3 md:pt-0">
+        <div className="flex items-center justify-between md:justify-end gap-3 border-t md:border-t-0 border-border/40 pt-2.5 md:pt-0">
           <div className="text-right">
             <div className="text-sm font-mono font-medium text-white">
               {formatMs(monitor.last_response_time_ms)}

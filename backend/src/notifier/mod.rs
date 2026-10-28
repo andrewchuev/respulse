@@ -198,6 +198,8 @@ pub async fn test_channel(client: &Client, channel: &NotificationChannel) -> Res
         heartbeat_token: None,
         auth_username: None,
         auth_password: None,
+        tags: vec![],
+        group_name: "Default".to_string(),
         created_at: Utc::now(),
         updated_at: Utc::now(),
     };

@@ -25,6 +25,8 @@ export interface Monitor {
   heartbeat_token: string | null;
   auth_username?: string | null;
   auth_password?: string | null;
+  tags?: string[];
+  group_name?: string;
   created_at: string;
   updated_at: string;
 }
@@ -94,6 +96,20 @@ export interface CreateMonitorPayload {
   port?: number;
   auth_username?: string;
   auth_password?: string;
+  tags?: string[];
+  group_name?: string;
+}
+
+export interface BulkActionPayload {
+  ids: string[];
+  action: 'pause' | 'resume' | 'test' | 'delete' | 'set_group' | 'add_tag';
+  value?: string;
+}
+
+export interface BulkActionResponse {
+  success: boolean;
+  affected: number;
+  message: string;
 }
 
 export interface NotificationChannel {

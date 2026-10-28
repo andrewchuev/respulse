@@ -170,6 +170,7 @@ export function App() {
               onTest={handleTest}
               onSelect={setSelectedMonitor}
               onAddClick={() => setIsAddModalOpen(true)}
+              onRefreshData={loadData}
             />
           </>
         )}

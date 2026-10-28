@@ -277,14 +277,16 @@ pub async fn create_monitor(
     } else {
         None
     };
+    let tags = payload.tags.unwrap_or_default();
+    let group_name = payload.group_name.unwrap_or_else(|| "Default".to_string());
 
     let monitor = sqlx::query_as::<_, Monitor>(
         r#"
         INSERT INTO monitors (
             name, url, monitor_type, interval_seconds, timeout_seconds,
             method, headers, body, expected_status_code, keyword, port, heartbeat_token,
-            auth_username, auth_password
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+            auth_username, auth_password, tags, group_name
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         RETURNING *
         "#
     )
@@ -302,6 +304,8 @@ pub async fn create_monitor(
     .bind(heartbeat_token)
     .bind(payload.auth_username)
     .bind(payload.auth_password)
+    .bind(tags)
+    .bind(group_name)
     .fetch_one(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -343,14 +347,17 @@ pub async fn update_monitor(
     let port = payload.port.or(existing.port);
     let auth_username = payload.auth_username.or(existing.auth_username);
     let auth_password = payload.auth_password.or(existing.auth_password);
+    let tags = payload.tags.unwrap_or(existing.tags);
+    let group_name = payload.group_name.unwrap_or(existing.group_name);
 
     let updated = sqlx::query_as::<_, Monitor>(
         r#"
         UPDATE monitors
         SET name = $1, url = $2, interval_seconds = $3, timeout_seconds = $4,
             method = $5, headers = $6, body = $7, expected_status_code = $8,
-            keyword = $9, port = $10, auth_username = $11, auth_password = $12, updated_at = NOW()
-        WHERE id = $13
+            keyword = $9, port = $10, auth_username = $11, auth_password = $12,
+            tags = $13, group_name = $14, updated_at = NOW()
+        WHERE id = $15
         RETURNING *
         "#
     )
@@ -366,6 +373,8 @@ pub async fn update_monitor(
     .bind(port)
     .bind(auth_username)
     .bind(auth_password)
+    .bind(tags)
+    .bind(group_name)
     .bind(id)
     .fetch_one(&state.pool)
     .await
@@ -462,4 +471,177 @@ pub async fn trigger_test(
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     Ok(Json(updated))
+}
+
+pub async fn bulk_action(
+    State(state): State<AppState>,
+    Json(payload): Json<crate::models::BulkActionRequest>,
+) -> Result<Json<crate::models::BulkActionResponse>, (StatusCode, String)> {
+    if payload.ids.is_empty() {
+        return Ok(Json(crate::models::BulkActionResponse {
+            success: true,
+            affected: 0,
+            message: "No monitors selected".to_string(),
+        }));
+    }
+
+    match payload.action.as_str() {
+        "pause" => {
+            let res = sqlx::query(
+                "UPDATE monitors SET is_paused = TRUE, status = 'PAUSED', updated_at = NOW() WHERE id = ANY($1)"
+            )
+            .bind(&payload.ids)
+            .execute(&state.pool)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+            let affected = res.rows_affected() as usize;
+
+            if let Ok(updated) = sqlx::query_as::<_, Monitor>("SELECT * FROM monitors WHERE id = ANY($1)")
+                .bind(&payload.ids)
+                .fetch_all(&state.pool)
+                .await
+            {
+                for m in updated {
+                    let _ = state.tx.send(WsMessage::MonitorUpdated(m));
+                }
+            }
+
+            Ok(Json(crate::models::BulkActionResponse {
+                success: true,
+                affected,
+                message: format!("Successfully paused {} monitor(s)", affected),
+            }))
+        }
+        "resume" => {
+            let res = sqlx::query(
+                "UPDATE monitors SET is_paused = FALSE, status = 'PENDING', updated_at = NOW() WHERE id = ANY($1)"
+            )
+            .bind(&payload.ids)
+            .execute(&state.pool)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+            let affected = res.rows_affected() as usize;
+
+            if let Ok(updated) = sqlx::query_as::<_, Monitor>("SELECT * FROM monitors WHERE id = ANY($1)")
+                .bind(&payload.ids)
+                .fetch_all(&state.pool)
+                .await
+            {
+                for m in updated {
+                    let pool = state.pool.clone();
+                    let client = state.http_client.clone();
+                    let tx = state.tx.clone();
+                    let m_clone = m.clone();
+                    tokio::spawn(async move {
+                        execute_single_probe(pool, client, m_clone, tx).await;
+                    });
+                    let _ = state.tx.send(WsMessage::MonitorUpdated(m));
+                }
+            }
+
+            Ok(Json(crate::models::BulkActionResponse {
+                success: true,
+                affected,
+                message: format!("Successfully resumed {} monitor(s)", affected),
+            }))
+        }
+        "delete" => {
+            let res = sqlx::query("DELETE FROM monitors WHERE id = ANY($1)")
+                .bind(&payload.ids)
+                .execute(&state.pool)
+                .await
+                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+            let affected = res.rows_affected() as usize;
+
+            Ok(Json(crate::models::BulkActionResponse {
+                success: true,
+                affected,
+                message: format!("Successfully deleted {} monitor(s)", affected),
+            }))
+        }
+        "test" => {
+            let selected = sqlx::query_as::<_, Monitor>("SELECT * FROM monitors WHERE id = ANY($1)")
+                .bind(&payload.ids)
+                .fetch_all(&state.pool)
+                .await
+                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+            let affected = selected.len();
+            for m in selected {
+                let pool = state.pool.clone();
+                let client = state.http_client.clone();
+                let tx = state.tx.clone();
+                tokio::spawn(async move {
+                    execute_single_probe(pool, client, m, tx).await;
+                });
+            }
+
+            Ok(Json(crate::models::BulkActionResponse {
+                success: true,
+                affected,
+                message: format!("Triggered probes for {} monitor(s)", affected),
+            }))
+        }
+        "set_group" => {
+            let group = payload.value.unwrap_or_else(|| "Default".to_string());
+            let res = sqlx::query(
+                "UPDATE monitors SET group_name = $1, updated_at = NOW() WHERE id = ANY($2)"
+            )
+            .bind(&group)
+            .bind(&payload.ids)
+            .execute(&state.pool)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+            let affected = res.rows_affected() as usize;
+            if let Ok(updated) = sqlx::query_as::<_, Monitor>("SELECT * FROM monitors WHERE id = ANY($1)")
+                .bind(&payload.ids)
+                .fetch_all(&state.pool)
+                .await
+            {
+                for m in updated {
+                    let _ = state.tx.send(WsMessage::MonitorUpdated(m));
+                }
+            }
+
+            Ok(Json(crate::models::BulkActionResponse {
+                success: true,
+                affected,
+                message: format!("Moved {} monitor(s) to folder '{}'", affected, group),
+            }))
+        }
+        "add_tag" => {
+            let tag = payload.value.ok_or((StatusCode::BAD_REQUEST, "Tag value required".to_string()))?;
+            let tag_trimmed = tag.trim().to_lowercase().replace('#', "");
+            let res = sqlx::query(
+                "UPDATE monitors SET tags = array_append(tags, $1), updated_at = NOW() WHERE id = ANY($2) AND NOT ($1 = ANY(tags))"
+            )
+            .bind(&tag_trimmed)
+            .bind(&payload.ids)
+            .execute(&state.pool)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+            let affected = res.rows_affected() as usize;
+            if let Ok(updated) = sqlx::query_as::<_, Monitor>("SELECT * FROM monitors WHERE id = ANY($1)")
+                .bind(&payload.ids)
+                .fetch_all(&state.pool)
+                .await
+            {
+                for m in updated {
+                    let _ = state.tx.send(WsMessage::MonitorUpdated(m));
+                }
+            }
+
+            Ok(Json(crate::models::BulkActionResponse {
+                success: true,
+                affected,
+                message: format!("Added tag '#{}' to {} monitor(s)", tag_trimmed, affected),
+            }))
+        }
+        _ => Err((StatusCode::BAD_REQUEST, format!("Unknown action '{}'", payload.action))),
+    }
 }

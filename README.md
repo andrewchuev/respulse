@@ -51,12 +51,33 @@
   * **Pause / Resume:** Suspend monitoring during maintenance.
   * **Search & Filters:** Instant search by name or target URL, with filters for status and monitor type.
 
-### 3. Public Status Page
+### 3. Enterprise Scalability: Bulk Actions, Folders & Tags
+* **Multi-Select & Bulk Actions Toolbar:**
+  * Multi-select checkboxes on every monitor card with "Select Page" and "Select All Matching" helpers.
+  * Floating quick action bar for mass operations:
+    * ⏸ **Bulk Pause / ▶ Bulk Resume**
+    * ⚡ **Bulk Test Now** (simultaneous async probes)
+    * 📁 **Bulk Move to Folder / Group**
+    * 🏷 **Bulk Tag Assignment**
+    * 🗑 **Bulk Delete** with confirmation safeguard
+* **Hierarchical Folders & Groups:**
+  * Group monitors into logical departments (e.g., *Websites*, *Core APIs*, *Infrastructure*, *Background Workers*).
+  * **Folder View mode:** Collapsible accordion sections displaying folder-level health counters (e.g. `2/2 Operational`) and 1-click select for the entire folder.
+* **Tagging System & Dynamic Tag Cloud:**
+  * Assign multiple tags (`#prod`, `#ecommerce`, `#api`, `#dns`) to each monitor.
+  * Horizontal scrollable tag filter bar showing count badges for instant 1-click filtering.
+* **Pagination & High-Density Display:**
+  * Configurable page sizes (`5`, `10`, `25`, `50`, `100` targets per page).
+  * Page jump navigation (`<<`, `<`, numbered buttons with ellipsis, `>`, `>>`).
+  * **Compact Density Mode toggle:** tightens padding and heights, allowing engineers to supervise 100+ endpoints simultaneously.
+
+### 4. Public Status Page
 * Built-in public status page accessible via the header navigation or directly.
 * Displays system-wide operational banners (*"All Systems Fully Operational"* or *"Experiencing Service Disruptions"*).
 * Shows 90-day SLA calculations, active incident notices, and individual component history.
+* **Categorized Component Blocks:** Organizes public status items into distinct category sections with group health badges (*Websites*, *Core APIs*, *Infrastructure*).
 
-### 4. Alerting & Notification Delivery System
+### 5. Alerting & Notification Delivery System
 * **Supported Channels:**
   * **Telegram Bot API:** Instant direct messages or alerts to group chats and channels via Bot Token and Chat ID.
   * **Discord Webhooks:** Rich visual embeds with color-coded severity (Red for DOWN, Green for RECOVERY) and incident details.
@@ -103,7 +124,8 @@ alivemon/
 │   ├── migrations/              # SQLx database migrations
 │   │   ├── 0001_initial.sql     # Monitors, results, incidents, channels
 │   │   ├── 0002_basic_auth.sql  # Basic auth schema extension
-│   │   └── 0003_alert_logs.sql  # Alert delivery logs table
+│   │   ├── 0003_alert_logs.sql  # Alert delivery logs table
+│   │   └── 0004_tags_and_groups.sql # Tags and folders schema extension
 │   └── src/
 │       ├── main.rs              # App entrypoint, state & router setup
 │       ├── db.rs                # Database connection & migration runner
@@ -213,6 +235,7 @@ All API routes are served under the `/api` prefix.
 | `GET` | `/api/health` | Healthcheck endpoint (`OK`) |
 | `GET` | `/api/monitors` | List all monitors with 24h/7d/30d uptime & history bars |
 | `POST` | `/api/monitors` | Create a new monitor (HTTP, PORT, SSL, HEARTBEAT) |
+| `POST` | `/api/monitors/bulk` | Bulk operations (pause, resume, test, delete, set_group, add_tag) |
 | `GET` | `/api/monitors/:id` | Get detailed monitor statistics & latency history |
 | `PUT` | `/api/monitors/:id` | Update an existing monitor configuration |
 | `DELETE` | `/api/monitors/:id` | Delete a monitor and its history |

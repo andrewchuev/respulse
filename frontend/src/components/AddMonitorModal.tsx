@@ -27,6 +27,8 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
   const [port, setPort] = useState<string>('80');
   const [authUsername, setAuthUsername] = useState<string>('');
   const [authPassword, setAuthPassword] = useState<string>('');
+  const [groupName, setGroupName] = useState<string>('Default');
+  const [tagsInput, setTagsInput] = useState<string>('');
   const [showAuth, setShowAuth] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +46,11 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
       return;
     }
 
+    const tags = tagsInput
+      .split(',')
+      .map((t) => t.trim().toLowerCase().replace('#', ''))
+      .filter(Boolean);
+
     setLoading(true);
     try {
       await onSubmit({
@@ -58,6 +65,8 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
         port: port ? parseInt(port, 10) : undefined,
         auth_username: authUsername.trim() || undefined,
         auth_password: authPassword || undefined,
+        tags,
+        group_name: groupName.trim() || 'Default',
       });
 
       // Reset form
@@ -65,6 +74,8 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
       setUrl('');
       setAuthUsername('');
       setAuthPassword('');
+      setGroupName('Default');
+      setTagsInput('');
       setShowAuth(false);
       setMonitorType('HTTP');
       setInterval(60);
@@ -282,6 +293,28 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
               </code>
             </div>
           )}
+
+          {/* Folder / Group & Tags */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-secondary/15 p-3 rounded-lg border border-border/40">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Folder / Group</label>
+              <Input
+                placeholder="e.g. Websites, Core APIs, Infrastructure"
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                className="h-9 text-xs"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Tags (comma-separated)</label>
+              <Input
+                placeholder="prod, api, critical"
+                value={tagsInput}
+                onChange={(e) => setTagsInput(e.target.value)}
+                className="h-9 text-xs font-mono"
+              />
+            </div>
+          </div>
 
           {/* Intervals & Timeout */}
           <div className="grid grid-cols-2 gap-3">

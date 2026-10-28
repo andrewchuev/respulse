@@ -13,6 +13,7 @@ pub fn create_router() -> Router<AppState> {
     Router::new()
         .route("/health", get(|| async { "OK" }))
         .route("/monitors", get(monitors::list_monitors).post(monitors::create_monitor))
+        .route("/monitors/bulk", axum::routing::post(monitors::bulk_action))
         .route("/monitors/:id", get(monitors::get_monitor).put(monitors::update_monitor).delete(monitors::delete_monitor))
         .route("/monitors/:id/pause", axum::routing::post(monitors::pause_monitor))
         .route("/monitors/:id/resume", axum::routing::post(monitors::resume_monitor))

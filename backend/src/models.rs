@@ -27,8 +27,16 @@ pub struct Monitor {
     pub heartbeat_token: Option<String>,
     pub auth_username: Option<String>,
     pub auth_password: Option<String>,
+    #[serde(default)]
+    pub tags: Vec<String>,
+    #[serde(default = "default_group_name")]
+    pub group_name: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+}
+
+fn default_group_name() -> String {
+    "Default".to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -50,6 +58,8 @@ pub struct CreateMonitorRequest {
     pub port: Option<i32>,
     pub auth_username: Option<String>,
     pub auth_password: Option<String>,
+    pub tags: Option<Vec<String>>,
+    pub group_name: Option<String>,
 }
 
 fn default_monitor_type() -> String { "HTTP".to_string() }
@@ -71,6 +81,22 @@ pub struct UpdateMonitorRequest {
     pub port: Option<i32>,
     pub auth_username: Option<String>,
     pub auth_password: Option<String>,
+    pub tags: Option<Vec<String>>,
+    pub group_name: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BulkActionRequest {
+    pub ids: Vec<Uuid>,
+    pub action: String, // "pause", "resume", "test", "delete", "set_group", "add_tag", "remove_tag"
+    pub value: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BulkActionResponse {
+    pub success: bool,
+    pub affected: usize,
+    pub message: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]

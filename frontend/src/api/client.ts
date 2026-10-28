@@ -1,5 +1,7 @@
 import {
   AlertLogWithDetails,
+  BulkActionPayload,
+  BulkActionResponse,
   CreateChannelPayload,
   CreateMonitorPayload,
   GlobalStats,
@@ -57,6 +59,16 @@ export async function resumeMonitor(id: string): Promise<Monitor> {
 export async function triggerTest(id: string): Promise<Monitor> {
   const res = await fetch(`${API_BASE}/monitors/${id}/test`, { method: 'POST' });
   if (!res.ok) throw new Error('Failed to trigger monitor test');
+  return res.json();
+}
+
+export async function bulkAction(payload: BulkActionPayload): Promise<BulkActionResponse> {
+  const res = await fetch(`${API_BASE}/monitors/bulk`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error('Bulk action failed');
   return res.json();
 }
 
