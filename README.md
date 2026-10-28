@@ -165,7 +165,7 @@
 ### 9. Production Server Deployment (respulse.online)
 * **Cloud Architecture & Security Hardening:**
   * Hosted at `/opt/respulse` on Debian 13 (Trixie) x86_64 (`respulse.online`, `46.225.23.41`).
-  * **Reverse Proxy:** Dockerized Caddy (`caddy:2-alpine`) orchestrating automated Let's Encrypt / ZeroSSL TLS certificates with HTTP/2, HTTP/3 (QUIC), and canonical `www` to apex domain 301 redirects.
+  * **Reverse Proxy:** Dockerized Caddy (`caddy:2-alpine`) orchestrating automated Let's Encrypt / ZeroSSL TLS certificates with HTTP/2, HTTP/3 (QUIC), and canonical `www` to apex domain 301 redirects. Responses carry HSTS and a strict `Content-Security-Policy` (same-origin only, plus FastSpring's checkout script/iframe and the avatar hosts); the policy was verified against the real app including the Recharts views and the FastSpring popup.
   * **Zero Direct Exposure:** PostgreSQL, Rust API, and Nginx containers reside on an isolated internal Docker bridge network (`respulse-net`). Only ports `80` (HTTP) and `443` (HTTPS TCP/UDP) are published to the host.
   * **Strict Permissions:** `/opt/respulse` is locked down to `dev:docker` with `0750` permissions, and `.env` credentials are restricted to `0600`.
   * **Host Hardening:** UFW firewall configured (`deny incoming`, allow `22`, `80`, `443`), SSH accepts public keys only (`PasswordAuthentication no`), `fail2ban` guards it against brute-force attacks, and `docker.service` enabled on boot with automatic restart policies (`restart: unless-stopped`).

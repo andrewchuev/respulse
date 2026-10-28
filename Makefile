@@ -60,6 +60,7 @@ rollout = scp deploy/docker-compose.yml deploy/Caddyfile deploy/backup.sh $(PROD
 	&& ssh $(PROD_HOST) 'cd $(PROD_DIR) \
 		&& { grep -q "^IMAGE_TAG=" .env && sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$(TAG)/" .env || echo "IMAGE_TAG=$(TAG)" >> .env; } \
 		&& $(1) docker compose up -d --remove-orphans \
+		&& docker compose exec -T respulse-caddy caddy reload --config /etc/caddy/Caddyfile \
 		&& docker compose ps'
 
 # Rolls the server to TAG (default: current commit); use an older TAG to roll back.
