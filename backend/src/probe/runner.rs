@@ -149,6 +149,20 @@ pub async fn execute_single_probe(
                 root_cause: probe_result.error.clone(),
             };
             let _ = tx.send(WsMessage::IncidentCreated(inc));
+
+            // Dispatch alert to configured channels (Telegram, Discord, Slack, Webhook)
+            let err_msg = probe_result.error.as_deref().unwrap_or("Endpoint check failed").to_string();
+            crate::notifier::dispatch_alert(
+                &pool,
+                &client,
+                &monitor,
+                crate::notifier::AlertEvent::Down {
+                    error: err_msg,
+                    incident_id: Some(incident_id),
+                },
+                Some(&tx),
+            )
+            .await;
         } else if new_status == "UP" && prev_status == "DOWN" {
             if let Ok(Some(inc)) = sqlx::query_as::<_, Incident>(
                 r#"
@@ -182,6 +196,19 @@ pub async fn execute_single_probe(
                 resolved.resolved_at = Some(now);
                 resolved.duration_seconds = Some(duration);
                 let _ = tx.send(WsMessage::IncidentResolved(resolved));
+
+                // Dispatch recovery alert to configured channels
+                crate::notifier::dispatch_alert(
+                    &pool,
+                    &client,
+                    &monitor,
+                    crate::notifier::AlertEvent::Resolved {
+                        duration_seconds: duration,
+                        incident_id: Some(inc.id),
+                    },
+                    Some(&tx),
+                )
+                .await;
             }
         }
     }

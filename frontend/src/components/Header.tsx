@@ -1,10 +1,10 @@
 import React from 'react';
-import { Activity, Plus, Radio, Globe } from 'lucide-react';
+import { Activity, Plus, Radio, Globe, Bell } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface HeaderProps {
-  currentView: 'dashboard' | 'status-page';
-  setCurrentView: (view: 'dashboard' | 'status-page') => void;
+  currentView: 'dashboard' | 'channels' | 'status-page';
+  setCurrentView: (view: 'dashboard' | 'channels' | 'status-page') => void;
   onOpenAddModal: () => void;
   totalActive: number;
 }
@@ -45,6 +45,17 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               Dashboard
+            </button>
+            <button
+              onClick={() => setCurrentView('channels')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                currentView === 'channels'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Bell className="h-3.5 w-3.5" />
+              Alerts & Channels
             </button>
             <button
               onClick={() => setCurrentView('status-page')}

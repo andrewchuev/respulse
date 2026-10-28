@@ -1,6 +1,7 @@
 mod api;
 mod db;
 mod models;
+mod notifier;
 mod probe;
 
 use api::monitors::AppState;

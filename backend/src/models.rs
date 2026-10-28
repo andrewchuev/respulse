@@ -147,4 +147,58 @@ pub enum WsMessage {
     },
     IncidentCreated(Incident),
     IncidentResolved(Incident),
+    AlertDispatched {
+        channel_name: String,
+        status: String,
+        event_type: String,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct NotificationChannel {
+    pub id: Uuid,
+    pub name: String,
+    pub channel_type: String,
+    pub config: serde_json::Value,
+    pub is_active: bool,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateChannelRequest {
+    pub name: String,
+    pub channel_type: String,
+    pub config: serde_json::Value,
+    #[serde(default = "default_true")]
+    pub is_active: bool,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct AlertLog {
+    pub id: i64,
+    pub channel_id: Uuid,
+    pub incident_id: Option<Uuid>,
+    pub monitor_id: Option<Uuid>,
+    pub event_type: String,
+    pub status: String,
+    pub error_message: Option<String>,
+    pub sent_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AlertLogWithDetails {
+    pub id: i64,
+    pub channel_id: Uuid,
+    pub channel_name: String,
+    pub channel_type: String,
+    pub monitor_id: Option<Uuid>,
+    pub monitor_name: Option<String>,
+    pub event_type: String,
+    pub status: String,
+    pub error_message: Option<String>,
+    pub sent_at: DateTime<Utc>,
 }

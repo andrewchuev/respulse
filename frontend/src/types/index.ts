@@ -1,5 +1,6 @@
 export type MonitorType = 'HTTP' | 'KEYWORD' | 'PORT' | 'SSL' | 'HEARTBEAT';
 export type MonitorStatus = 'UP' | 'DOWN' | 'PENDING' | 'PAUSED';
+export type ChannelType = 'TELEGRAM' | 'DISCORD' | 'SLACK' | 'WEBHOOK';
 
 export interface Monitor {
   id: string;
@@ -93,4 +94,36 @@ export interface CreateMonitorPayload {
   port?: number;
   auth_username?: string;
   auth_password?: string;
+}
+
+export interface NotificationChannel {
+  id: string;
+  name: string;
+  channel_type: ChannelType;
+  config: Record<string, any>;
+  is_active: boolean;
+  total_alerts_24h?: number;
+  last_alert_at?: string | null;
+  last_status?: string | null;
+  created_at: string;
+}
+
+export interface CreateChannelPayload {
+  name: string;
+  channel_type: ChannelType;
+  config: Record<string, any>;
+  is_active?: boolean;
+}
+
+export interface AlertLogWithDetails {
+  id: number;
+  channel_id: string;
+  channel_name: string;
+  channel_type: string;
+  monitor_id?: string | null;
+  monitor_name?: string | null;
+  event_type: string;
+  status: string;
+  error_message?: string | null;
+  sent_at: string;
 }

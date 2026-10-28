@@ -16,13 +16,14 @@ import { MonitorList } from './components/MonitorList';
 import { AddMonitorModal } from './components/AddMonitorModal';
 import { MonitorDetailModal } from './components/MonitorDetailModal';
 import { StatusPage } from './components/StatusPage';
+import { NotificationChannels } from './components/NotificationChannels';
 
 export function App() {
   const [monitors, setMonitors] = useState<MonitorWithStats[]>([]);
   const [stats, setStats] = useState<GlobalStats | null>(null);
   const [selectedMonitor, setSelectedMonitor] = useState<MonitorWithStats | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'status-page'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'channels' | 'status-page'>('dashboard');
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
@@ -155,6 +156,8 @@ export function App() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
             <p className="text-xs text-muted-foreground font-mono">Connecting to probe engine...</p>
           </div>
+        ) : currentView === 'channels' ? (
+          <NotificationChannels />
         ) : (
           <>
             <StatsOverview stats={stats} />

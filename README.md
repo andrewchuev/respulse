@@ -56,9 +56,24 @@
 * Displays system-wide operational banners (*"All Systems Fully Operational"* or *"Experiencing Service Disruptions"*).
 * Shows 90-day SLA calculations, active incident notices, and individual component history.
 
-### 4. Automated Incident Lifecycle
+### 4. Alerting & Notification Delivery System
+* **Supported Channels:**
+  * **Telegram Bot API:** Instant direct messages or alerts to group chats and channels via Bot Token and Chat ID.
+  * **Discord Webhooks:** Rich visual embeds with color-coded severity (Red for DOWN, Green for RECOVERY) and incident details.
+  * **Slack Incoming Webhooks:** Formatted incident notifications posted directly to dedicated `#incidents` or `#sre` channels.
+  * **Custom Webhooks:** JSON payloads dispatched to internal webhooks, PagerDuty, Opsgenie, or custom automation endpoints.
+* **Incident Lifecycle Automation:**
+  * Probe scheduler automatically dispatches alerts on state transitions (`UP → DOWN` and `DOWN → UP / RESOLVED`).
+  * Calculates and delivers total downtime duration upon service recovery.
+* **Delivery Diagnostics & Audit Trail:**
+  * Real-time test dispatch button for any channel with immediate network/API diagnostics.
+  * Detailed delivery history table logging timestamps, event types (`DOWN`, `RESOLVED`, `TEST`), target monitors, HTTP status codes, and error responses.
+  * Aggregated delivery metrics (total configured, alerts dispatched, success delivery rate).
+
+### 5. Automated Incident Lifecycle
 * Detects state transitions (`UP → DOWN`) and registers active incidents with root-cause diagnostic error messages.
 * Automatically resolves incidents upon recovery (`DOWN → UP`) and records total downtime duration in seconds.
+* Automatically broadcasts incident alerts to all active notification channels.
 
 ---
 
@@ -87,7 +102,8 @@ alivemon/
 │   ├── Dockerfile               # Production container image (Debian Trixie)
 │   ├── migrations/              # SQLx database migrations
 │   │   ├── 0001_initial.sql     # Monitors, results, incidents, channels
-│   │   └── 0002_basic_auth.sql  # Basic auth schema extension
+│   │   ├── 0002_basic_auth.sql  # Basic auth schema extension
+│   │   └── 0003_alert_logs.sql  # Alert delivery logs table
 │   └── src/
 │       ├── main.rs              # App entrypoint, state & router setup
 │       ├── db.rs                # Database connection & migration runner
@@ -97,14 +113,21 @@ alivemon/
 │       │   ├── monitors.rs      # Monitor CRUD, pause/resume, test
 │       │   ├── heartbeat.rs     # Push heartbeat endpoint
 │       │   ├── incidents.rs     # Incident history
+│       │   ├── notifications.rs # Channels CRUD, test alert & audit logs
 │       │   ├── stats.rs         # Global metrics & status page data
 │       │   └── ws.rs            # Real-time WebSocket hub
+│       ├── notifier/            # Alert dispatch engine
+│       │   ├── mod.rs           # Multi-channel dispatcher & router
+│       │   ├── telegram.rs      # Telegram Bot API integration
+│       │   ├── discord.rs       # Discord Rich Embeds webhook
+│       │   ├── slack.rs         # Slack Incoming Webhook
+│       │   └── webhook.rs       # Custom JSON webhook dispatcher
 │       └── probe/               # Network probe engines
 │           ├── mod.rs
 │           ├── http.rs          # HTTP/HTTPS & Basic Auth engine
 │           ├── tcp.rs           # TCP port connection engine
 │           ├── ssl.rs           # SSL/TLS certificate validator
-│           └── runner.rs        # Async probe scheduler loop
+│           └── runner.rs        # Async probe scheduler loop & incident alerts
 ├── frontend/
 │   ├── package.json             # NPM dependencies & scripts
 │   ├── vite.config.ts           # Vite configuration
@@ -121,6 +144,8 @@ alivemon/
 │       │   ├── MonitorCard.tsx
 │       │   ├── MonitorDetailModal.tsx
 │       │   ├── AddMonitorModal.tsx
+│       │   ├── NotificationChannels.tsx # Channels dashboard & delivery logs
+│       │   ├── AddChannelModal.tsx      # Modal for Telegram, Discord, Slack, Webhook
 │       │   ├── StatusPage.tsx
 │       │   └── ui/              # shadcn/ui components (button, dialog, input, card, badge)
 │       └── types/index.ts       # TypeScript definitions
@@ -194,6 +219,12 @@ All API routes are served under the `/api` prefix.
 | `POST` | `/api/monitors/:id/pause` | Pause active probing for a monitor |
 | `POST` | `/api/monitors/:id/resume` | Resume active probing |
 | `POST` | `/api/monitors/:id/test` | Trigger an immediate test probe |
+| `GET` | `/api/notifications` | List all configured notification channels |
+| `POST` | `/api/notifications` | Register a new notification channel (Telegram, Discord, Slack, Webhook) |
+| `PUT` | `/api/notifications/:id` | Update notification channel configuration or active status |
+| `DELETE` | `/api/notifications/:id` | Delete a notification channel |
+| `POST` | `/api/notifications/:id/test` | Trigger an immediate test alert to verify channel connectivity |
+| `GET` | `/api/notifications/logs` | Fetch audit logs and diagnostics of alert deliveries |
 | `GET` | `/api/incidents` | List incident logs with root-cause diagnostic information |
 | `GET` | `/api/stats` | Global metrics (total, operational, down, average latency) |
 | `GET` | `/api/status-page` | Public status page data |

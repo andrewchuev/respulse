@@ -1,4 +1,14 @@
-import { CreateMonitorPayload, GlobalStats, Incident, Monitor, MonitorWithStats, PublicStatusPage } from '../types';
+import {
+  AlertLogWithDetails,
+  CreateChannelPayload,
+  CreateMonitorPayload,
+  GlobalStats,
+  Incident,
+  Monitor,
+  MonitorWithStats,
+  NotificationChannel,
+  PublicStatusPage,
+} from '../types';
 
 const API_BASE = '/api';
 
@@ -65,6 +75,55 @@ export async function fetchIncidents(): Promise<Incident[]> {
 export async function fetchStatusPage(): Promise<PublicStatusPage> {
   const res = await fetch(`${API_BASE}/status-page`);
   if (!res.ok) throw new Error('Failed to fetch status page data');
+  return res.json();
+}
+
+// Notification Channels API
+export async function fetchChannels(): Promise<NotificationChannel[]> {
+  const res = await fetch(`${API_BASE}/notifications`);
+  if (!res.ok) throw new Error('Failed to fetch notification channels');
+  return res.json();
+}
+
+export async function createChannel(payload: CreateChannelPayload): Promise<NotificationChannel> {
+  const res = await fetch(`${API_BASE}/notifications`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || 'Failed to create notification channel');
+  }
+  return res.json();
+}
+
+export async function updateChannel(
+  id: string,
+  payload: Partial<CreateChannelPayload>
+): Promise<NotificationChannel> {
+  const res = await fetch(`${API_BASE}/notifications/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error('Failed to update notification channel');
+  return res.json();
+}
+
+export async function deleteChannel(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/notifications/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error('Failed to delete notification channel');
+}
+
+export async function testChannel(id: string): Promise<{ success: boolean; message: string; error?: string }> {
+  const res = await fetch(`${API_BASE}/notifications/${id}/test`, { method: 'POST' });
+  return res.json();
+}
+
+export async function fetchAlertLogs(): Promise<AlertLogWithDetails[]> {
+  const res = await fetch(`${API_BASE}/notifications/logs`);
+  if (!res.ok) throw new Error('Failed to fetch alert delivery logs');
   return res.json();
 }
 
