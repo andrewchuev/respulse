@@ -4,7 +4,7 @@ import {
   AuthResponse,
   BulkActionPayload,
   BulkActionResponse,
-  ConfirmPaymentPayload,
+  ConfirmFastSpringPaymentPayload,
   CreateChannelPayload,
   CreateManualIncidentPayload,
   CreateMonitorPayload,
@@ -17,7 +17,7 @@ import {
   Monitor,
   MonitorWithStats,
   NotificationChannel,
-  PayPalCheckoutConfig,
+  FastSpringCheckoutConfig,
   PaymentTransaction,
   PublicStatusPage,
   RegisterPayload,
@@ -438,24 +438,24 @@ export async function fetchAlertLogs(): Promise<AlertLogWithDetails[]> {
   return res.json();
 }
 
-// Payments & PayPal
-export async function fetchPayPalConfig(): Promise<PayPalCheckoutConfig> {
-  const res = await fetch(`${API_BASE}/payments/paypal/config`, {
+// Payments & FastSpring
+export async function fetchFastSpringConfig(): Promise<FastSpringCheckoutConfig> {
+  const res = await fetch(`${API_BASE}/payments/fastspring/config`, {
     headers: authHeaders(),
   });
-  if (!res.ok) throw new Error('Failed to fetch PayPal configuration');
+  if (!res.ok) throw new Error('Failed to fetch FastSpring configuration');
   return res.json();
 }
 
-export async function confirmPayPalPayment(payload: ConfirmPaymentPayload): Promise<any> {
-  const res = await fetch(`${API_BASE}/payments/paypal/confirm`, {
+export async function confirmFastSpringPayment(payload: ConfirmFastSpringPaymentPayload): Promise<any> {
+  const res = await fetch(`${API_BASE}/payments/fastspring/confirm`, {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
     const errorText = await res.text();
-    throw new Error(errorText || 'Failed to confirm PayPal payment');
+    throw new Error(errorText || 'Failed to confirm FastSpring payment');
   }
   return res.json();
 }

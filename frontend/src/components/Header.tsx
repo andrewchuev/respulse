@@ -179,7 +179,7 @@ export const Header: React.FC<HeaderProps> = ({
               size="sm"
               onClick={onOpenUpgradeModal}
               className="hidden md:flex items-center gap-1.5 h-8 px-3 text-xs font-semibold bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 hover:from-emerald-400 hover:to-cyan-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] animate-pulse"
-              title="Upgrade to Pro via PayPal ($8/mo)"
+              title="Upgrade to Pro via FastSpring ($8/mo)"
             >
               <Sparkles className="h-3.5 w-3.5 text-amber-300" />
               <span>Upgrade to Pro ($8/mo)</span>
@@ -236,14 +236,14 @@ export const Header: React.FC<HeaderProps> = ({
                       className={`px-1.5 py-0.5 rounded text-[9px] font-bold hover:brightness-125 transition-all ${
                         currentUser?.team_plan === 'FREE' ? 'bg-slate-800 text-slate-400 border border-slate-700' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                       }`}
-                      title="Manage PayPal subscription"
+                      title="Manage Pro subscription (FastSpring)"
                     >
                       {currentUser?.team_plan || 'PRO'} PLAN
                     </button>
                   </div>
                 </div>
 
-                {/* PayPal Subscription Action */}
+                {/* FastSpring Subscription Action */}
                 {onOpenUpgradeModal && (
                   <div className="p-2">
                     <button
@@ -254,14 +254,14 @@ export const Header: React.FC<HeaderProps> = ({
                       className="w-full flex items-center justify-between p-2 rounded-xl bg-slate-950/80 hover:bg-slate-800/80 border border-slate-800 text-xs text-left transition-colors group"
                     >
                       <div className="flex items-center gap-2">
-                        <CreditCard className="h-4 w-4 text-[#0070BA]" />
+                        <CreditCard className="h-4 w-4 text-emerald-400" />
                         <div>
-                          <div className="font-semibold text-white group-hover:text-cyan-300 flex items-center gap-1">
-                            {currentUser?.team_plan === 'PRO' ? 'PayPal Subscription' : 'Upgrade to Pro'}
+                          <div className="font-semibold text-white group-hover:text-emerald-300 flex items-center gap-1">
+                            {currentUser?.team_plan === 'PRO' ? 'FastSpring Billing' : 'Upgrade to Pro'}
                             <span className="text-[10px] text-emerald-400 font-mono">$8/mo</span>
                           </div>
                           <div className="text-[10px] text-muted-foreground font-mono truncate max-w-[170px]">
-                            andrew.chuev@gmail.com
+                            Store: reslab (FastSpring)
                           </div>
                         </div>
                       </div>

@@ -27,7 +27,7 @@ import { TeamManagement } from './components/TeamManagement';
 import { SkeletonDashboard } from './components/SkeletonDashboard';
 import { PromoLandingPage } from './components/PromoLandingPage';
 import { AuthModal } from './components/AuthModal';
-import { PayPalCheckoutModal } from './components/PayPalCheckoutModal';
+import { FastSpringCheckoutModal } from './components/FastSpringCheckoutModal';
 
 export function App() {
   const [monitors, setMonitors] = useState<MonitorWithStats[]>([]);
@@ -35,13 +35,13 @@ export function App() {
   const [selectedMonitor, setSelectedMonitor] = useState<MonitorWithStats | null>(null);
   const [editingMonitor, setEditingMonitor] = useState<MonitorWithStats | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isPayPalModalOpen, setIsPayPalModalOpen] = useState(false);
+  const [isFastSpringModalOpen, setIsFastSpringModalOpen] = useState(false);
 
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get('payment') === 'success' || params.get('upgrade') === '1') {
-        setIsPayPalModalOpen(true);
+        setIsFastSpringModalOpen(true);
       }
     } catch {}
   }, []);
@@ -289,11 +289,11 @@ export function App() {
             setIsAddModalOpen(true);
           }}
           onOpenAuth={openAuth}
-          onOpenUpgradeModal={() => setIsPayPalModalOpen(true)}
+          onOpenUpgradeModal={() => setIsFastSpringModalOpen(true)}
         />
-        <PayPalCheckoutModal
-          isOpen={isPayPalModalOpen}
-          onClose={() => setIsPayPalModalOpen(false)}
+        <FastSpringCheckoutModal
+          isOpen={isFastSpringModalOpen}
+          onClose={() => setIsFastSpringModalOpen(false)}
           onPlanUpgraded={() => {
             loadData();
             loadUserData();
@@ -332,7 +332,7 @@ export function App() {
         onSwitchUser={handleSwitchUser}
         onOpenAuth={openAuth}
         onSignOut={handleSignOut}
-        onOpenUpgradeModal={() => setIsPayPalModalOpen(true)}
+        onOpenUpgradeModal={() => setIsFastSpringModalOpen(true)}
       />
 
       {/* Viewer Mode Banner */}
@@ -354,7 +354,7 @@ export function App() {
           <TeamManagement
             currentUser={currentUser}
             onUserRefreshed={loadUserData}
-            onOpenUpgradeModal={() => setIsPayPalModalOpen(true)}
+            onOpenUpgradeModal={() => setIsFastSpringModalOpen(true)}
           />
         ) : (
           <>
@@ -402,9 +402,9 @@ export function App() {
         isViewer={isViewer}
       />
 
-      <PayPalCheckoutModal
-        isOpen={isPayPalModalOpen}
-        onClose={() => setIsPayPalModalOpen(false)}
+      <FastSpringCheckoutModal
+        isOpen={isFastSpringModalOpen}
+        onClose={() => setIsFastSpringModalOpen(false)}
         onPlanUpgraded={() => {
           loadData();
           loadUserData();

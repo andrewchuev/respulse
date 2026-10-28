@@ -248,16 +248,18 @@ export interface UserProfile {
   permissions: string[];
 }
 
-export interface PayPalCheckoutConfig {
-  recipient_email: string;
+export interface FastSpringCheckoutConfig {
+  store_id: string;
+  is_test: boolean;
+  storefront: string;
+  product_path: string;
   plan_name: string;
   amount: number;
   currency: string;
   billing_cycle: string;
   checkout_url: string;
-  subscription_url: string;
-  paypal_me_url: string;
-  custom_id: string;
+  team_id: string;
+  user_email: string;
 }
 
 export interface PaymentTransaction {
@@ -276,11 +278,11 @@ export interface PaymentTransaction {
   created_at: string;
 }
 
-export interface ConfirmPaymentPayload {
-  transaction_id?: string;
+export interface ConfirmFastSpringPaymentPayload {
   order_id?: string;
+  reference?: string;
+  subscription_id?: string;
   payer_email?: string;
-  payment_status?: string;
 }
 
 export interface TeamMember {

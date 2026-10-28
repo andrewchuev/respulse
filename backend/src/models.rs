@@ -512,22 +512,24 @@ pub struct PaymentTransaction {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PayPalCheckoutConfig {
-    pub recipient_email: String,
+pub struct FastSpringCheckoutConfig {
+    pub store_id: String,
+    pub is_test: bool,
+    pub storefront: String,
+    pub product_path: String,
     pub plan_name: String,
     pub amount: f64,
     pub currency: String,
     pub billing_cycle: String,
     pub checkout_url: String,
-    pub subscription_url: String,
-    pub paypal_me_url: String,
-    pub custom_id: String,
+    pub team_id: String,
+    pub user_email: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ConfirmPayPalPaymentRequest {
-    pub transaction_id: Option<String>,
-    pub payer_email: Option<String>,
+pub struct ConfirmFastSpringPaymentRequest {
     pub order_id: Option<String>,
-    pub payment_status: Option<String>,
+    pub reference: Option<String>,
+    pub subscription_id: Option<String>,
+    pub payer_email: Option<String>,
 }

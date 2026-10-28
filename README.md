@@ -155,10 +155,10 @@
   * **Two-Tier Transparent Pricing (Free & Pro $8/mo):** Simple, developer-friendly pricing:
     * **Free Tier ($0 / forever):** 10 synthetic monitors, 60s standard intervals, 10 cron jobs, multi-channel alerts, 14-day history, SVG status badges, solo workspace.
     * **Pro Tier ($8 / month, monthly subscription):** Up to 100 synthetic monitors, **turbo 10-second probe intervals**, unlimited cron & background tasks with timezones, **Prometheus metrics exporter (`/api/metrics`)**, **tag-based alert routing (`filter_tags`)**, full 64KB execution/STDERR capture, up to 10 team members with 4-tier RBAC, 90-day retention with SRE post-mortems (RCA), and custom domain status pages.
-  * **PayPal Payment & Subscription Integration:**
+  * **FastSpring Payment & Subscription Integration:**
     * Native self-service checkout for the Pro Plan ($8.00 USD / month).
-    * Processed securely via PayPal to merchant account **`andrew.chuev@gmail.com`**.
-    * Supports automated monthly recurring subscriptions (`_xclick-subscriptions`), direct transfers via PayPal.Me, PayPal Instant Payment Notifications (`/api/payments/paypal/ipn`), and instant team upgrade verification.
+    * Processed securely via **FastSpring** (Merchant of Record, store `reslab`).
+    * Supports in-app **FastSpring Store Builder Library (SBL) popup modal**, hosted web checkout (`https://reslab.test.onfastspring.com/respulse-pro-plan`), credit/debit cards, Apple Pay, Google Pay, wire transfers, automated VAT compliance, and real-time webhook order fulfillment (`/api/payments/fastspring/webhook`).
   * **Interactive FAQ & Social Proof:** Expandable accordions answering technical architecture, VPC self-hosting, heartbeat monitoring, and role permissions.
 
 ### 9. Production Server Deployment (respulse.online)
@@ -360,9 +360,9 @@ All API routes are served under the `/api` prefix. Authenticated requests accept
 | `PUT` | `/api/team/members/:id/role` | Update a team member's role (`OWNER`/`ADMIN` required) |
 | `DELETE` | `/api/team/members/:id` | Remove a member from the team (`OWNER`/`ADMIN` required) |
 | `POST`/`PUT` | `/api/team/plan` | Update organization subscription plan (`FREE` or `PRO`, `OWNER`/`ADMIN` required) |
-| `GET` | `/api/payments/paypal/config` | Get PayPal checkout links ($8/mo) for merchant `andrew.chuev@gmail.com` |
-| `POST` | `/api/payments/paypal/confirm` | Confirm PayPal transaction and activate Pro plan for the team |
-| `POST` | `/api/payments/paypal/ipn` | PayPal Instant Payment Notification (IPN) webhook handler |
+| `GET` | `/api/payments/fastspring/config` | Get FastSpring checkout configuration ($8/mo) for store `reslab` |
+| `POST` | `/api/payments/fastspring/confirm` | Confirm FastSpring order and activate Pro plan for the team |
+| `POST` | `/api/payments/fastspring/webhook` | FastSpring Server Webhook handler (order & subscription events) |
 | `GET` | `/api/payments/history` | List payment transaction history and invoices for team |
 | `GET` | `/api/monitors` | List all monitors with 24h/7d/30d uptime & history bars |
 | `POST` | `/api/monitors` | Create a new monitor (HTTP, PORT, SSL, HEARTBEAT) |

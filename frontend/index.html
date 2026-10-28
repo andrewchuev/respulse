@@ -1,19 +1,42 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en" class="dark" prefix="og: http://ogp.me/ns#">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ResPulse — High-Performance Synthetic Monitoring &amp; Observability</title>
+
+    <!-- Essential Open Graph (Telegram, WhatsApp, Slack, Discord, LinkedIn, Facebook) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ResPulse" />
+    <meta property="og:url" content="https://respulse.online/" />
+    <meta property="og:title" content="ResPulse — High-Performance Synthetic Monitoring &amp; Observability" />
+    <meta property="og:description" content="Systems-grade synthetic uptime monitoring and observability in Rust. Sub-10ms precision scheduler, Cron dead man's switch with timezones, Prometheus metrics exporter, and real-time public status pages." />
+    <meta property="og:image" content="https://respulse.online/og-image.jpg" />
+    <meta property="og:image:secure_url" content="https://respulse.online/og-image.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="ResPulse Synthetic Monitoring &amp; Observability Platform" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://respulse.online/" />
+    <meta name="twitter:title" content="ResPulse — High-Performance Synthetic Monitoring &amp; Observability" />
+    <meta name="twitter:description" content="Systems-grade synthetic uptime monitoring and observability in Rust. Sub-10ms precision scheduler, Cron dead man's switch with timezones, Prometheus metrics exporter, and real-time public status pages." />
+    <meta name="twitter:image" content="https://respulse.online/og-image.jpg" />
+    <meta name="twitter:image:alt" content="ResPulse Synthetic Monitoring &amp; Observability Platform" />
+
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M22 12h-4l-3 9L9 3l-3 9H2'/></svg>" />
     <link rel="canonical" href="https://respulse.online/" />
     <link rel="sitemap" type="application/xml" title="Sitemap" href="https://respulse.online/sitemap.xml" />
 
     <!-- Primary SEO Meta Tags -->
-    <title>ResPulse — High-Performance Synthetic Monitoring &amp; Uptime Observability</title>
-    <meta name="title" content="ResPulse — High-Performance Synthetic Monitoring &amp; Uptime Observability" />
+    <meta name="title" content="ResPulse — High-Performance Synthetic Monitoring &amp; Observability" />
     <meta name="description" content="Systems-grade synthetic uptime monitoring and observability engine built in Rust. Sub-10ms precision scheduler, Cron dead man's switch with timezones, Prometheus /metrics exporter, SSL certificate tracking, multi-channel alerts (Telegram, Slack, Discord), and real-time public status pages." />
     <meta name="keywords" content="uptime monitoring, synthetic monitoring, api monitoring, status page, ssl cert monitoring, website monitoring, heartbeat monitoring, cron job monitor, dead mans switch, prometheus metrics, devops monitoring, ping monitor, response time tracker, status badge, tag alert routing, multi-tenant rbac, rust axum" />
     <meta name="author" content="ResPulse" />
-    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="robots" content="index, follow" />
     <meta name="revisit-after" content="7 days" />
     <meta name="rating" content="General" />
     <meta name="theme-color" content="#030712" />
@@ -26,28 +49,6 @@
     <meta name="coverage" content="Worldwide" />
     <meta name="distribution" content="Global" />
     <meta name="target" content="all" />
-
-    <!-- Open Graph / Facebook / LinkedIn -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://respulse.online/" />
-    <meta property="og:site_name" content="ResPulse" />
-    <meta property="og:title" content="ResPulse — High-Performance Synthetic Monitoring &amp; Observability" />
-    <meta property="og:description" content="Systems-grade synthetic uptime monitoring and observability in Rust. Sub-10ms precision scheduler, Cron dead man's switch with timezones, Prometheus metrics exporter, and real-time public status pages." />
-    <meta property="og:image" content="https://respulse.online/og-image.jpg" />
-    <meta property="og:image:secure_url" content="https://respulse.online/og-image.jpg" />
-    <meta property="og:image:type" content="image/jpeg" />
-    <meta property="og:image:width" content="1376" />
-    <meta property="og:image:height" content="768" />
-    <meta property="og:image:alt" content="ResPulse Synthetic Monitoring &amp; Observability Platform" />
-    <meta property="og:locale" content="en_US" />
-
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://respulse.online/" />
-    <meta name="twitter:title" content="ResPulse — High-Performance Synthetic Monitoring &amp; Observability" />
-    <meta name="twitter:description" content="Systems-grade synthetic uptime monitoring and observability in Rust. Sub-10ms precision scheduler, Cron dead man's switch with timezones, Prometheus metrics exporter, and real-time public status pages." />
-    <meta name="twitter:image" content="https://respulse.online/og-image.jpg" />
-    <meta name="twitter:image:alt" content="ResPulse Synthetic Monitoring &amp; Observability Platform" />
 
     <!-- Structured Data (JSON-LD Schema.org) -->
     <script type="application/ld+json">

@@ -373,12 +373,12 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({ currentUser, onU
         )}
       </div>
 
-      {/* Organization Subscription & PayPal Billing */}
+      {/* Organization Subscription & FastSpring Billing */}
       <div className="border border-border/70 rounded-xl bg-card/40 backdrop-blur p-4 sm:p-5 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-[#0070BA]/20 border border-[#0070BA]/40 flex items-center justify-center text-[#0070BA]">
-              <CreditCard className="h-5 w-5 text-cyan-400" />
+            <div className="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <CreditCard className="h-5 w-5 text-emerald-400" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -391,11 +391,11 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({ currentUser, onU
                       : 'border-slate-700 text-slate-400 bg-slate-900'
                   }`}
                 >
-                  {currentUser?.team_plan === 'PRO' ? 'PRO PLAN ($8/MO)' : 'FREE PLAN ($0/FOREVER)'}
+                  {currentUser?.team_plan === 'PRO' ? 'PRO PLAN ($8.00/MO)' : 'FREE PLAN ($0/FOREVER)'}
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Processed securely via PayPal to <strong className="text-slate-300">andrew.chuev@gmail.com</strong>
+                Processed securely via <strong className="text-slate-300">FastSpring</strong> (Store: <code className="text-slate-400">reslab</code>)
               </p>
             </div>
           </div>
@@ -408,7 +408,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({ currentUser, onU
                 className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs h-9 gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
               >
                 <Sparkles className="h-3.5 w-3.5 text-amber-300" />
-                Upgrade to Pro via PayPal ($8/mo)
+                Upgrade to Pro via FastSpring ($8/mo)
               </Button>
             ) : (
               <Button
@@ -417,8 +417,8 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({ currentUser, onU
                 onClick={onOpenUpgradeModal}
                 className="border-slate-700 hover:bg-slate-800 text-xs text-slate-200 h-9 gap-1.5"
               >
-                <CreditCard className="h-3.5 w-3.5 text-[#0070BA]" />
-                Manage PayPal Subscription
+                <CreditCard className="h-3.5 w-3.5 text-emerald-400" />
+                Manage FastSpring Subscription
               </Button>
             )}
 
@@ -460,7 +460,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({ currentUser, onU
           <div className="pt-3 border-t border-border/50 space-y-2">
             <div className="text-xs font-semibold text-white font-mono flex items-center justify-between">
               <span>Payment Transaction History</span>
-              <span className="text-[10px] text-muted-foreground">PayPal Merchant: andrew.chuev@gmail.com</span>
+              <span className="text-[10px] text-muted-foreground">Merchant: FastSpring (reslab)</span>
             </div>
             <div className="border border-border/60 rounded-lg overflow-hidden">
               <table className="w-full text-left text-xs">
