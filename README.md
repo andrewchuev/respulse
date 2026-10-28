@@ -168,7 +168,7 @@
   * **Reverse Proxy:** Dockerized Caddy (`caddy:2-alpine`) orchestrating automated Let's Encrypt / ZeroSSL TLS certificates with HTTP/2, HTTP/3 (QUIC), and canonical `www` to apex domain 301 redirects.
   * **Zero Direct Exposure:** PostgreSQL, Rust API, and Nginx containers reside on an isolated internal Docker bridge network (`respulse-net`). Only ports `80` (HTTP) and `443` (HTTPS TCP/UDP) are published to the host.
   * **Strict Permissions:** `/opt/respulse` is locked down to `dev:docker` with `0750` permissions, and `.env` credentials are restricted to `0600`.
-  * **Host Hardening:** UFW firewall configured (`deny incoming`, allow `22`, `80`, `443`), `fail2ban` guarding SSH against brute-force attacks, and `docker.service` enabled on boot with automatic restart policies (`restart: unless-stopped`).
+  * **Host Hardening:** UFW firewall configured (`deny incoming`, allow `22`, `80`, `443`), SSH accepts public keys only (`PasswordAuthentication no`), `fail2ban` guards it against brute-force attacks, and `docker.service` enabled on boot with automatic restart policies (`restart: unless-stopped`).
 
 ### 10. Self-Service Registration & JWT Authentication
 * **Enterprise Identity & Password Security:**
@@ -342,6 +342,8 @@ Images are built **locally** (no CI runners needed), pushed to GitHub Container 
 
 Without a registry login, `make deploy-direct` does steps 2-3 in one go by shipping the images over SSH (the previous tag must still exist on the server for rollbacks).
 
+**Backups:** `deploy/backup.sh` runs from the server's cron daily at 03:17 UTC, writes validated `pg_dump -Fc` files to `/opt/respulse/backups/` and keeps the last 14. Run `make backup-pull` regularly for an off-host copy. Restore with `docker exec -i respulse-db pg_restore -U <user> -d <db> --clean --if-exists < db-<ts>.dump`.
+
 The server `.env` needs `POSTGRES_*`, `JWT_SECRET`, `FASTSPRING_WEBHOOK_SECRET` (see `deploy/.env.example`).
 
 ---
@@ -357,6 +359,7 @@ The server `.env` needs `POSTGRES_*`, `JWT_SECRET`, `FASTSPRING_WEBHOOK_SECRET` 
 | `make build` | Rebuild Docker images |
 | `make ps` | Show container health and port statuses |
 | `make release` | Build both images locally, tag them with the git SHA and `latest`, push to the registry (needs a clean tree and `docker login ghcr.io`) |
+| `make backup-pull` | Copy the server's daily DB dumps to `~/backups/respulse` (off-host copy) |
 | `make deploy-direct` | Registry-free alternative: build locally, stream the images to the server over SSH (`docker save \| ssh docker load`) and roll out |
 | `make deploy` | Copy `deploy/` configs to the server, set `IMAGE_TAG`, `docker compose pull` and `up -d` (`TAG=<sha>` rolls back to an older release) |
 | `make seed` | Log in (`SEED_EMAIL`/`SEED_PASSWORD`, default demo owner) and populate the database with sample monitors |

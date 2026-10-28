@@ -1,4 +1,4 @@
-.PHONY: up down restart logs build ps seed clean release deploy deploy-direct
+.PHONY: up down restart logs build ps seed clean release deploy deploy-direct backup-pull
 
 up:
 	docker compose up -d
@@ -56,7 +56,7 @@ release:
 	@echo "Released $(TAG). Run: make deploy TAG=$(TAG)"
 
 # Syncs configs, pins IMAGE_TAG in the server .env and restarts the stack; $(1) runs before `up` (e.g. a pull).
-rollout = scp deploy/docker-compose.yml deploy/Caddyfile $(PROD_HOST):$(PROD_DIR)/ \
+rollout = scp deploy/docker-compose.yml deploy/Caddyfile deploy/backup.sh $(PROD_HOST):$(PROD_DIR)/ \
 	&& ssh $(PROD_HOST) 'cd $(PROD_DIR) \
 		&& { grep -q "^IMAGE_TAG=" .env && sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$(TAG)/" .env || echo "IMAGE_TAG=$(TAG)" >> .env; } \
 		&& $(1) docker compose up -d --remove-orphans \
@@ -73,3 +73,11 @@ deploy-direct:
 	docker build -t $(REGISTRY)/respulse-frontend:$(TAG) frontend
 	docker save $(REGISTRY)/respulse-backend:$(TAG) $(REGISTRY)/respulse-frontend:$(TAG) | gzip | ssh $(PROD_HOST) 'gunzip | docker load'
 	$(call rollout,)
+
+# Off-host copy of the server's DB dumps (cron on the server writes them daily at 03:17 UTC).
+BACKUP_LOCAL ?= $(HOME)/backups/respulse
+
+backup-pull:
+	@mkdir -p -m 700 $(BACKUP_LOCAL)
+	scp -p $(PROD_HOST):$(PROD_DIR)/backups/db-*.dump $(BACKUP_LOCAL)/
+	@ls -1t $(BACKUP_LOCAL)/db-*.dump | head -3
