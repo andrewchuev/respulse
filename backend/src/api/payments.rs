@@ -1,3 +1,4 @@
+use crate::api::fastspring;
 use crate::api::monitors::AppState;
 use crate::auth::AuthUser;
 use crate::models::{FastSpringCheckoutConfig, PaymentTransaction, Team};
@@ -13,7 +14,6 @@ use serde_json::json;
 use sha2::Sha256;
 use std::env;
 use tracing::{error, info, warn};
-use uuid::Uuid;
 
 const FASTSPRING_STORE_ID: &str = "reslab";
 const FASTSPRING_PRODUCT_PATH: &str = "respulse-pro-plan";
@@ -158,133 +158,86 @@ pub async fn fastspring_webhook(
 
     info!("Received FastSpring webhook: {} bytes", body.len());
 
-    let parsed: Result<serde_json::Value, _> = serde_json::from_slice(&body);
-    let events = match parsed {
-        Ok(json) => {
-            if let Some(events) = json.get("events").and_then(|e| e.as_array()) {
-                events.clone()
-            } else if json.is_object() {
-                vec![json]
-            } else {
-                vec![]
-            }
-        }
+    let events: Vec<serde_json::Value> = match serde_json::from_slice::<serde_json::Value>(&body) {
+        Ok(json) => match json.get("events").and_then(|e| e.as_array()) {
+            Some(events) => events.clone(),
+            None if json.is_object() => vec![json],
+            None => vec![],
+        },
         Err(e) => {
             error!("Failed to parse FastSpring webhook JSON: {:?}", e);
             return StatusCode::BAD_REQUEST;
         }
     };
 
-    for event in events {
-        let event_type = event.get("type").and_then(|t| t.as_str()).unwrap_or("");
-        let data = event.get("data").unwrap_or(&event);
+    let store_label = format!("FastSpring ({})", FASTSPRING_STORE_ID);
 
-        info!("Processing FastSpring event: type={}", event_type);
+    // Any failure answers 5xx so FastSpring redelivers (same event ids); finished events are skipped.
+    for raw in events {
+        let ev = fastspring::parse_event(&raw);
 
-        // Test-store orders must never upgrade a team in live mode.
-        if is_live_mode() && data.get("live").and_then(|v| v.as_bool()) == Some(false) {
-            warn!("Ignoring non-live FastSpring event {} in live mode", event_type);
-            continue;
+        if let Some(id) = ev.id.as_deref() {
+            match sqlx::query_scalar::<_, i32>("SELECT 1 FROM fastspring_events WHERE event_id = $1")
+                .bind(id)
+                .fetch_optional(&state.pool)
+                .await
+            {
+                Ok(Some(_)) => {
+                    info!("Skipping already processed FastSpring event {}", id);
+                    continue;
+                }
+                Ok(None) => {}
+                Err(e) => {
+                    error!("Failed to look up FastSpring event {}: {:?}", id, e);
+                    return StatusCode::INTERNAL_SERVER_ERROR;
+                }
+            }
         }
 
-        let order_id = data.get("order")
-            .or_else(|| data.get("id"))
-            .or_else(|| data.get("reference"))
-            .and_then(|v| v.as_str())
-            .unwrap_or_else(|| "FS-WEBHOOK")
-            .to_string();
+        let outcome = match fastspring::process_event(&state.pool, &ev, &raw, is_live_mode(), &store_label).await {
+            Ok(outcome) => outcome,
+            Err(e) => {
+                error!("Failed to process FastSpring event {:?} ({}): {:?}", ev.id, ev.event_type, e);
+                return StatusCode::INTERNAL_SERVER_ERROR;
+            }
+        };
 
-        let payer_email = data.get("account")
-            .and_then(|a| a.get("contact"))
-            .and_then(|c| c.get("email"))
-            .and_then(|e| e.as_str())
-            .unwrap_or("")
-            .to_string();
-
-        let amount = data.get("total")
-            .and_then(|t| t.as_f64())
-            .unwrap_or(PRO_PLAN_PRICE);
-
-        let currency = data.get("currency")
-            .and_then(|c| c.as_str())
-            .unwrap_or(PRO_PLAN_CURRENCY)
-            .to_string();
-
-        // Extract team_id from tags or referrer
-        let team_id_opt: Option<Uuid> = data.get("tags")
-            .and_then(|t| t.get("team_id"))
-            .and_then(|v| v.as_str())
-            .and_then(|s| Uuid::parse_str(s).ok())
-            .or_else(|| {
-                data.get("referrer")
-                    .and_then(|v| v.as_str())
-                    .and_then(|s| Uuid::parse_str(s).ok())
-            });
-
-        match event_type {
-            "order.completed" | "subscription.activated" | "subscription.charge.completed" => {
-                if let Some(team_id) = team_id_opt {
-                    let recipient = format!("FastSpring ({})", FASTSPRING_STORE_ID);
-                    let _ = sqlx::query(
-                        r#"
-                        INSERT INTO payment_transactions (
-                            team_id, provider, transaction_id, payer_email, recipient_email,
-                            amount, currency, status, plan, billing_cycle, payload
-                        )
-                        VALUES ($1, 'FASTSPRING', $2, $3, $4, $5, $6, 'COMPLETED', 'PRO', 'MONTHLY', $7)
-                        "#,
-                    )
-                    .bind(team_id)
-                    .bind(&order_id)
-                    .bind(&payer_email)
-                    .bind(&recipient)
-                    .bind(amount)
-                    .bind(&currency)
-                    .bind(event.clone())
-                    .execute(&state.pool)
-                    .await;
-
-                    let _ = sqlx::query(
-                        r#"
-                        UPDATE teams
-                        SET plan = 'PRO',
-                            subscription_status = 'ACTIVE',
-                            subscription_id = $1,
-                            subscription_provider = 'FASTSPRING',
-                            subscription_started_at = NOW()
-                        WHERE id = $2
-                        "#,
-                    )
-                    .bind(&order_id)
-                    .bind(team_id)
-                    .execute(&state.pool)
-                    .await;
-
-                    info!("Team {} upgraded to PRO via FastSpring event {}", team_id, event_type);
+        let outcome_label = match &outcome {
+            fastspring::Outcome::Applied(team_id) => {
+                info!("FastSpring {} applied to team {}", ev.event_type, team_id);
+                format!("applied to team {}", team_id)
+            }
+            fastspring::Outcome::Ignored(reason) => {
+                if ev.kind == fastspring::Kind::Other {
+                    info!("Unhandled FastSpring event type: {}", ev.event_type);
                 } else {
-                    warn!("FastSpring event {} missing valid team_id in tags or referrer", event_type);
+                    let data_keys: Vec<&str> = raw
+                        .get("data")
+                        .and_then(|d| d.as_object())
+                        .map(|o| o.keys().map(String::as_str).collect())
+                        .unwrap_or_default();
+                    warn!(
+                        "Ignored FastSpring {} (event {:?}): {}; products={:?} data keys={:?}",
+                        ev.event_type, ev.id, reason, ev.products, data_keys
+                    );
                 }
+                format!("ignored: {}", reason)
             }
-            "subscription.canceled" | "subscription.deactivated" => {
-                if let Some(team_id) = team_id_opt {
-                    let status = if event_type == "subscription.canceled" { "CANCELED" } else { "DEACTIVATED" };
-                    let _ = sqlx::query(
-                        r#"
-                        UPDATE teams
-                        SET subscription_status = $1
-                        WHERE id = $2
-                        "#,
-                    )
-                    .bind(status)
-                    .bind(team_id)
-                    .execute(&state.pool)
-                    .await;
+        };
 
-                    info!("Team {} subscription status updated to {} via FastSpring", team_id, status);
-                }
-            }
-            _ => {
-                info!("Unhandled FastSpring event type: {}", event_type);
+        if let Some(id) = ev.id.as_deref() {
+            if let Err(e) = sqlx::query(
+                "INSERT INTO fastspring_events (event_id, event_type, outcome) VALUES ($1, $2, $3)
+                 ON CONFLICT (event_id) DO NOTHING",
+            )
+            .bind(id)
+            .bind(&ev.event_type)
+            .bind(&outcome_label)
+            .execute(&state.pool)
+            .await
+            {
+                error!("Failed to record FastSpring event {}: {:?}", id, e);
+                return StatusCode::INTERNAL_SERVER_ERROR;
             }
         }
     }

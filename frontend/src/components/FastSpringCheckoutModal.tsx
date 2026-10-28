@@ -106,11 +106,24 @@ export const FastSpringCheckoutModal: React.FC<FastSpringCheckoutModalProps> = (
     };
   }, [isOpen]);
 
+  // The plan is upgraded by FastSpring's webhook, which can lag behind the checkout popup closing.
+  const waitForUpgrade = async (payload: { order_id?: string; reference?: string }) => {
+    const attempts = 20;
+    for (let i = 1; ; i++) {
+      try {
+        return await confirmFastSpringPayment(payload);
+      } catch (err: any) {
+        if (err?.status !== 409 || i >= attempts) throw err;
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+      }
+    }
+  };
+
   const handleAutoActivate = async (refId: string) => {
     setLoading(true);
     setError(null);
     try {
-      await confirmFastSpringPayment({
+      await waitForUpgrade({
         order_id: refId,
         reference: refId,
       });
@@ -162,7 +175,7 @@ export const FastSpringCheckoutModal: React.FC<FastSpringCheckoutModalProps> = (
     setLoading(true);
     setError(null);
     try {
-      await confirmFastSpringPayment({
+      await waitForUpgrade({
         order_id: orderReference.trim() || undefined,
         reference: orderReference.trim() || undefined,
       });

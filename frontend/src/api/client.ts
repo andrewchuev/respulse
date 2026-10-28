@@ -461,7 +461,8 @@ export async function confirmFastSpringPayment(payload: ConfirmFastSpringPayment
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || 'Failed to confirm FastSpring payment');
+    // 409 means the signed FastSpring webhook has not upgraded the plan yet, which callers can retry.
+    throw Object.assign(new Error(err.error || 'Failed to confirm FastSpring payment'), { status: res.status });
   }
   return res.json();
 }

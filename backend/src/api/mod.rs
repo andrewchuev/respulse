@@ -1,5 +1,6 @@
 pub mod auth;
 pub mod badge;
+pub mod fastspring;
 pub mod heartbeat;
 pub mod incidents;
 pub mod metrics;
