@@ -234,7 +234,7 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
                 <div className="h-3 w-3 rounded-full bg-red-500/80" />
                 <div className="h-3 w-3 rounded-full bg-amber-500/80" />
                 <div className="h-3 w-3 rounded-full bg-emerald-500/80" />
-                <span className="ml-2 text-xs font-mono text-slate-400">https://respulse.online/dashboard</span>
+                <span className="ml-2 text-xs font-mono text-slate-400">https://respulse.online/app</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="flex h-2 w-2 relative">

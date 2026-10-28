@@ -30,14 +30,47 @@ export function App() {
   const [stats, setStats] = useState<GlobalStats | null>(null);
   const [selectedMonitor, setSelectedMonitor] = useState<MonitorWithStats | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo'>(() => {
+  const getViewFromLocation = (): 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo' => {
     try {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('view') === 'promo' || window.location.pathname === '/promo') return 'promo';
-      if (params.get('view') === 'status' || window.location.pathname === '/status') return 'status-page';
+      const view = params.get('view');
+      const path = window.location.pathname.toLowerCase();
+
+      if (view === 'dashboard' || view === 'app' || path === '/app' || path === '/dashboard') return 'dashboard';
+      if (view === 'channels' || path === '/channels') return 'channels';
+      if (view === 'incidents' || path === '/incidents') return 'incidents';
+      if (view === 'team' || path === '/team') return 'team';
+      if (view === 'status' || view === 'status-page' || path === '/status' || path === '/status-page') return 'status-page';
+      if (view === 'promo' || path === '/promo') return 'promo';
+      if (path === '/' || path === '') return 'promo';
     } catch {}
-    return 'dashboard';
-  });
+    return 'promo';
+  };
+
+  const [currentView, setCurrentView] = useState<'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo'>(getViewFromLocation);
+
+  const changeView = (newView: 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo') => {
+    setCurrentView(newView);
+    try {
+      let targetPath = '/';
+      if (newView === 'promo') targetPath = '/';
+      else if (newView === 'dashboard') targetPath = '/app';
+      else if (newView === 'status-page') targetPath = '/status';
+      else targetPath = `/${newView}`;
+
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState({ view: newView }, '', targetPath);
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentView(getViewFromLocation());
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
   const [loading, setLoading] = useState(true);
 
   // RBAC State
@@ -180,16 +213,26 @@ export function App() {
   };
 
   if (currentView === 'status-page') {
-    return <StatusPage onBack={() => setCurrentView('dashboard')} />;
+    return (
+      <StatusPage
+        onBack={() => {
+          if (window.history.length > 1) {
+            window.history.back();
+          } else {
+            changeView('promo');
+          }
+        }}
+      />
+    );
   }
 
   if (currentView === 'promo') {
     return (
       <PromoLandingPage
-        onOpenDashboard={() => setCurrentView('dashboard')}
-        onOpenStatusPage={() => setCurrentView('status-page')}
+        onOpenDashboard={() => changeView('dashboard')}
+        onOpenStatusPage={() => changeView('status-page')}
         onOpenAddModal={() => {
-          setCurrentView('dashboard');
+          changeView('dashboard');
           setIsAddModalOpen(true);
         }}
       />
@@ -206,7 +249,7 @@ export function App() {
 
       <Header
         currentView={currentView}
-        setCurrentView={setCurrentView}
+        setCurrentView={changeView}
         onOpenAddModal={() => setIsAddModalOpen(true)}
         totalActive={monitors.filter((m) => !m.is_paused).length}
         currentUser={currentUser}

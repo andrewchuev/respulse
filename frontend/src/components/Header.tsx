@@ -155,7 +155,7 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-              Product Tour
+              Overview & Promo
             </button>
           </nav>
         </div>
