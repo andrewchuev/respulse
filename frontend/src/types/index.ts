@@ -248,6 +248,41 @@ export interface UserProfile {
   permissions: string[];
 }
 
+export interface PayPalCheckoutConfig {
+  recipient_email: string;
+  plan_name: string;
+  amount: number;
+  currency: string;
+  billing_cycle: string;
+  checkout_url: string;
+  subscription_url: string;
+  paypal_me_url: string;
+  custom_id: string;
+}
+
+export interface PaymentTransaction {
+  id: string;
+  team_id: string;
+  provider: string;
+  transaction_id?: string | null;
+  payer_email?: string | null;
+  recipient_email: string;
+  amount: number;
+  currency: string;
+  status: string;
+  plan: string;
+  billing_cycle: string;
+  payload?: any;
+  created_at: string;
+}
+
+export interface ConfirmPaymentPayload {
+  transaction_id?: string;
+  order_id?: string;
+  payer_email?: string;
+  payment_status?: string;
+}
+
 export interface TeamMember {
   id: string;
   team_id: string;

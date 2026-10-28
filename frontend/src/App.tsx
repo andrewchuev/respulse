@@ -27,6 +27,7 @@ import { TeamManagement } from './components/TeamManagement';
 import { SkeletonDashboard } from './components/SkeletonDashboard';
 import { PromoLandingPage } from './components/PromoLandingPage';
 import { AuthModal } from './components/AuthModal';
+import { PayPalCheckoutModal } from './components/PayPalCheckoutModal';
 
 export function App() {
   const [monitors, setMonitors] = useState<MonitorWithStats[]>([]);
@@ -34,6 +35,16 @@ export function App() {
   const [selectedMonitor, setSelectedMonitor] = useState<MonitorWithStats | null>(null);
   const [editingMonitor, setEditingMonitor] = useState<MonitorWithStats | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isPayPalModalOpen, setIsPayPalModalOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('payment') === 'success' || params.get('upgrade') === '1') {
+        setIsPayPalModalOpen(true);
+      }
+    } catch {}
+  }, []);
   const getViewFromLocation = (): 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo' => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -278,6 +289,15 @@ export function App() {
             setIsAddModalOpen(true);
           }}
           onOpenAuth={openAuth}
+          onOpenUpgradeModal={() => setIsPayPalModalOpen(true)}
+        />
+        <PayPalCheckoutModal
+          isOpen={isPayPalModalOpen}
+          onClose={() => setIsPayPalModalOpen(false)}
+          onPlanUpgraded={() => {
+            loadData();
+            loadUserData();
+          }}
         />
         <AuthModal
           isOpen={isAuthModalOpen}
@@ -312,6 +332,7 @@ export function App() {
         onSwitchUser={handleSwitchUser}
         onOpenAuth={openAuth}
         onSignOut={handleSignOut}
+        onOpenUpgradeModal={() => setIsPayPalModalOpen(true)}
       />
 
       {/* Viewer Mode Banner */}
@@ -330,7 +351,11 @@ export function App() {
         ) : currentView === 'incidents' ? (
           <IncidentManagement currentUser={currentUser} />
         ) : currentView === 'team' ? (
-          <TeamManagement currentUser={currentUser} onUserRefreshed={loadUserData} />
+          <TeamManagement
+            currentUser={currentUser}
+            onUserRefreshed={loadUserData}
+            onOpenUpgradeModal={() => setIsPayPalModalOpen(true)}
+          />
         ) : (
           <>
             <StatsOverview stats={stats} />
@@ -375,6 +400,15 @@ export function App() {
         onClose={() => setSelectedMonitor(null)}
         onEdit={(m) => setEditingMonitor(m)}
         isViewer={isViewer}
+      />
+
+      <PayPalCheckoutModal
+        isOpen={isPayPalModalOpen}
+        onClose={() => setIsPayPalModalOpen(false)}
+        onPlanUpgraded={() => {
+          loadData();
+          loadUserData();
+        }}
       />
 
       <AuthModal

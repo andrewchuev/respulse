@@ -30,6 +30,7 @@ interface PromoLandingPageProps {
   onOpenStatusPage: () => void;
   onOpenAddModal?: () => void;
   onOpenAuth?: (mode: 'login' | 'register') => void;
+  onOpenUpgradeModal?: () => void;
 }
 
 export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
@@ -37,6 +38,7 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
   onOpenStatusPage,
   onOpenAddModal,
   onOpenAuth,
+  onOpenUpgradeModal,
 }) => {
   const handlePrimaryCta = () => {
     if (onOpenAuth) {
@@ -923,7 +925,13 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
               </div>
 
               <Button
-                onClick={onOpenDashboard}
+                onClick={() => {
+                  if (onOpenUpgradeModal) {
+                    onOpenUpgradeModal();
+                  } else {
+                    onOpenDashboard();
+                  }
+                }}
                 className="w-full mt-8 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-[0_0_20px_rgba(16,185,129,0.35)]"
               >
                 Upgrade to Pro — $8/mo

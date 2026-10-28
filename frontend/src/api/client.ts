@@ -4,6 +4,7 @@ import {
   AuthResponse,
   BulkActionPayload,
   BulkActionResponse,
+  ConfirmPaymentPayload,
   CreateChannelPayload,
   CreateManualIncidentPayload,
   CreateMonitorPayload,
@@ -16,6 +17,8 @@ import {
   Monitor,
   MonitorWithStats,
   NotificationChannel,
+  PayPalCheckoutConfig,
+  PaymentTransaction,
   PublicStatusPage,
   RegisterPayload,
   TeamMember,
@@ -432,6 +435,36 @@ export async function fetchAlertLogs(): Promise<AlertLogWithDetails[]> {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error('Failed to fetch alert delivery logs');
+  return res.json();
+}
+
+// Payments & PayPal
+export async function fetchPayPalConfig(): Promise<PayPalCheckoutConfig> {
+  const res = await fetch(`${API_BASE}/payments/paypal/config`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to fetch PayPal configuration');
+  return res.json();
+}
+
+export async function confirmPayPalPayment(payload: ConfirmPaymentPayload): Promise<any> {
+  const res = await fetch(`${API_BASE}/payments/paypal/confirm`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || 'Failed to confirm PayPal payment');
+  }
+  return res.json();
+}
+
+export async function fetchPaymentHistory(): Promise<PaymentTransaction[]> {
+  const res = await fetch(`${API_BASE}/payments/history`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to fetch payment history');
   return res.json();
 }
 

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { InviteMemberPayload, TeamMember, UserProfile, UserRole } from '../types';
+import { InviteMemberPayload, PaymentTransaction, TeamMember, UserProfile, UserRole } from '../types';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Badge } from './ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { timeAgo } from '../lib/utils';
 import {
@@ -18,9 +19,12 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  CreditCard,
+  Sparkles,
 } from 'lucide-react';
 import {
   deleteTeamMember,
+  fetchPaymentHistory,
   fetchTeamMembers,
   inviteTeamMember,
   updateMemberRole,
@@ -29,10 +33,13 @@ import {
 interface TeamManagementProps {
   currentUser: UserProfile | null;
   onUserRefreshed?: () => void;
+  onOpenUpgradeModal?: () => void;
 }
 
-export const TeamManagement: React.FC<TeamManagementProps> = ({ currentUser, onUserRefreshed }) => {
+export const TeamManagement: React.FC<TeamManagementProps> = ({ currentUser, onUserRefreshed, onOpenUpgradeModal }) => {
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [payments, setPayments] = useState<PaymentTransaction[]>([]);
+  const [showBillingHistory, setShowBillingHistory] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -56,6 +63,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({ currentUser, onU
     try {
       const data = await fetchTeamMembers();
       setMembers(data);
+      fetchPaymentHistory().then(setPayments).catch(() => {});
     } catch (err: any) {
       setError(err.message || 'Failed to load team members');
     } finally {
@@ -361,6 +369,127 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({ currentUser, onU
                 </tr>
               </tbody>
             </table>
+          </div>
+        )}
+      </div>
+
+      {/* Organization Subscription & PayPal Billing */}
+      <div className="border border-border/70 rounded-xl bg-card/40 backdrop-blur p-4 sm:p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-[#0070BA]/20 border border-[#0070BA]/40 flex items-center justify-center text-[#0070BA]">
+              <CreditCard className="h-5 w-5 text-cyan-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-white">Subscription & Billing</h3>
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] font-mono font-bold ${
+                    currentUser?.team_plan === 'PRO'
+                      ? 'border-emerald-500/40 text-emerald-300 bg-emerald-500/10'
+                      : 'border-slate-700 text-slate-400 bg-slate-900'
+                  }`}
+                >
+                  {currentUser?.team_plan === 'PRO' ? 'PRO PLAN ($8/MO)' : 'FREE PLAN ($0/FOREVER)'}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Processed securely via PayPal to <strong className="text-slate-300">andrew.chuev@gmail.com</strong>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {currentUser?.team_plan === 'FREE' ? (
+              <Button
+                size="sm"
+                onClick={onOpenUpgradeModal}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs h-9 gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+                Upgrade to Pro via PayPal ($8/mo)
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onOpenUpgradeModal}
+                className="border-slate-700 hover:bg-slate-800 text-xs text-slate-200 h-9 gap-1.5"
+              >
+                <CreditCard className="h-3.5 w-3.5 text-[#0070BA]" />
+                Manage PayPal Subscription
+              </Button>
+            )}
+
+            {payments.length > 0 && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowBillingHistory(!showBillingHistory)}
+                className="text-xs text-muted-foreground hover:text-white h-9"
+              >
+                {showBillingHistory ? 'Hide History' : `History (${payments.length})`}
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Plan Features Bar */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-border/50 text-xs text-slate-300">
+          <div>
+            <span className="text-[10px] text-muted-foreground font-mono block">Max Targets:</span>
+            <span className="font-semibold text-white">{currentUser?.team_plan === 'PRO' ? '100 Monitors' : '10 Monitors'}</span>
+          </div>
+          <div>
+            <span className="text-[10px] text-muted-foreground font-mono block">Probe Frequency:</span>
+            <span className="font-semibold text-white">{currentUser?.team_plan === 'PRO' ? '10s Turbo' : '60s Standard'}</span>
+          </div>
+          <div>
+            <span className="text-[10px] text-muted-foreground font-mono block">Prometheus Exporter:</span>
+            <span className="font-semibold text-white">{currentUser?.team_plan === 'PRO' ? 'Enabled (/metrics)' : 'Pro only'}</span>
+          </div>
+          <div>
+            <span className="text-[10px] text-muted-foreground font-mono block">Team Seats:</span>
+            <span className="font-semibold text-white">{currentUser?.team_plan === 'PRO' ? '10 Seats (RBAC)' : '1 Solo Seat'}</span>
+          </div>
+        </div>
+
+        {/* Collapsible Payment History Table */}
+        {showBillingHistory && payments.length > 0 && (
+          <div className="pt-3 border-t border-border/50 space-y-2">
+            <div className="text-xs font-semibold text-white font-mono flex items-center justify-between">
+              <span>Payment Transaction History</span>
+              <span className="text-[10px] text-muted-foreground">PayPal Merchant: andrew.chuev@gmail.com</span>
+            </div>
+            <div className="border border-border/60 rounded-lg overflow-hidden">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-secondary/40 text-muted-foreground font-mono text-[11px] border-b border-border/60">
+                  <tr>
+                    <th className="p-2">Date</th>
+                    <th className="p-2">Provider</th>
+                    <th className="p-2">Transaction ID</th>
+                    <th className="p-2">Amount</th>
+                    <th className="p-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/40 font-mono text-[11px]">
+                  {payments.map((p) => (
+                    <tr key={p.id} className="hover:bg-muted/10">
+                      <td className="p-2 text-muted-foreground">{new Date(p.created_at).toLocaleDateString()}</td>
+                      <td className="p-2 text-[#0070BA] font-bold">{p.provider}</td>
+                      <td className="p-2 text-slate-300 truncate max-w-[150px]">{p.transaction_id || p.id}</td>
+                      <td className="p-2 text-emerald-400 font-semibold">${p.amount.toFixed(2)} {p.currency}</td>
+                      <td className="p-2">
+                        <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-bold">
+                          {p.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

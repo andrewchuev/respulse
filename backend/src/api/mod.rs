@@ -5,6 +5,7 @@ pub mod incidents;
 pub mod metrics;
 pub mod monitors;
 pub mod notifications;
+pub mod payments;
 pub mod stats;
 pub mod team;
 pub mod ws;
@@ -27,6 +28,12 @@ pub fn create_router() -> Router<AppState> {
         .route("/team/members/:id/role", axum::routing::put(team::update_member_role))
         .route("/team/members/:id", axum::routing::delete(team::remove_member))
         .route("/team/plan", axum::routing::put(team::update_team_plan).post(team::update_team_plan))
+        // Payments & PayPal Subscription
+        .route("/payments/paypal/config", get(payments::get_paypal_config))
+        .route("/payments/paypal/confirm", axum::routing::post(payments::confirm_paypal_payment))
+        .route("/payments/paypal/ipn", axum::routing::post(payments::paypal_ipn))
+        .route("/payments/paypal/webhook", axum::routing::post(payments::paypal_ipn))
+        .route("/payments/history", get(payments::get_payment_history))
         // Monitors
         .route("/monitors", get(monitors::list_monitors).post(monitors::create_monitor))
         .route("/monitors/bulk", axum::routing::post(monitors::bulk_action))

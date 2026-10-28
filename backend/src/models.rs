@@ -493,3 +493,41 @@ pub struct AuthResponse {
     pub token: String,
     pub user: UserProfile,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct PaymentTransaction {
+    pub id: Uuid,
+    pub team_id: Uuid,
+    pub provider: String,
+    pub transaction_id: Option<String>,
+    pub payer_email: Option<String>,
+    pub recipient_email: String,
+    pub amount: f64,
+    pub currency: String,
+    pub status: String,
+    pub plan: String,
+    pub billing_cycle: String,
+    pub payload: serde_json::Value,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PayPalCheckoutConfig {
+    pub recipient_email: String,
+    pub plan_name: String,
+    pub amount: f64,
+    pub currency: String,
+    pub billing_cycle: String,
+    pub checkout_url: String,
+    pub subscription_url: String,
+    pub paypal_me_url: String,
+    pub custom_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConfirmPayPalPaymentRequest {
+    pub transaction_id: Option<String>,
+    pub payer_email: Option<String>,
+    pub order_id: Option<String>,
+    pub payment_status: Option<String>,
+}

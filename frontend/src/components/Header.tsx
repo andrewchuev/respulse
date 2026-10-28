@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Activity, Plus, Radio, Globe, Bell, AlertTriangle, Users, ChevronDown, Check, Sparkles, LogOut, KeyRound } from 'lucide-react';
+import { Activity, Plus, Radio, Globe, Bell, AlertTriangle, Users, ChevronDown, Check, Sparkles, LogOut, KeyRound, CreditCard } from 'lucide-react';
 import { Button } from './ui/button';
 import { UserProfile, UserRole } from '../types';
 
@@ -13,6 +13,7 @@ interface HeaderProps {
   onSwitchUser: (email: string) => void;
   onOpenAuth?: (mode: 'login' | 'register') => void;
   onSignOut?: () => void;
+  onOpenUpgradeModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -25,6 +26,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSwitchUser,
   onOpenAuth,
   onSignOut,
+  onOpenUpgradeModal,
 }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -171,6 +173,19 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="text-foreground font-mono font-medium">({totalActive} active)</span>
           </div>
 
+          {/* Upgrade to Pro CTA in Header */}
+          {currentUser?.team_plan === 'FREE' && onOpenUpgradeModal && (
+            <Button
+              size="sm"
+              onClick={onOpenUpgradeModal}
+              className="hidden md:flex items-center gap-1.5 h-8 px-3 text-xs font-semibold bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 hover:from-emerald-400 hover:to-cyan-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] animate-pulse"
+              title="Upgrade to Pro via PayPal ($8/mo)"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+              <span>Upgrade to Pro ($8/mo)</span>
+            </Button>
+          )}
+
           {/* User Profile / RBAC Switcher Dropdown */}
           <div className="relative" ref={menuRef}>
             <button
@@ -213,13 +228,47 @@ export const Header: React.FC<HeaderProps> = ({
                   <div className="text-[11px] text-muted-foreground font-mono">{currentUser?.email}</div>
                   <div className="flex items-center justify-between text-[10px] font-mono mt-1 pt-1 border-t border-slate-800/60">
                     <span className="text-emerald-400">Org: {currentUser?.team_name || 'ResPulse Enterprise'}</span>
-                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
-                      currentUser?.team_plan === 'FREE' ? 'bg-slate-800 text-slate-400 border border-slate-700' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                    }`}>
+                    <button
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        onOpenUpgradeModal?.();
+                      }}
+                      className={`px-1.5 py-0.5 rounded text-[9px] font-bold hover:brightness-125 transition-all ${
+                        currentUser?.team_plan === 'FREE' ? 'bg-slate-800 text-slate-400 border border-slate-700' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                      }`}
+                      title="Manage PayPal subscription"
+                    >
                       {currentUser?.team_plan || 'PRO'} PLAN
-                    </span>
+                    </button>
                   </div>
                 </div>
+
+                {/* PayPal Subscription Action */}
+                {onOpenUpgradeModal && (
+                  <div className="p-2">
+                    <button
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        onOpenUpgradeModal();
+                      }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl bg-slate-950/80 hover:bg-slate-800/80 border border-slate-800 text-xs text-left transition-colors group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="h-4 w-4 text-[#0070BA]" />
+                        <div>
+                          <div className="font-semibold text-white group-hover:text-cyan-300 flex items-center gap-1">
+                            {currentUser?.team_plan === 'PRO' ? 'PayPal Subscription' : 'Upgrade to Pro'}
+                            <span className="text-[10px] text-emerald-400 font-mono">$8/mo</span>
+                          </div>
+                          <div className="text-[10px] text-muted-foreground font-mono truncate max-w-[170px]">
+                            andrew.chuev@gmail.com
+                          </div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-cyan-400 font-bold">&rarr;</span>
+                    </button>
+                  </div>
+                )}
 
                 {/* Role Switcher for Demo / B2B evaluation */}
                 <div className="p-2 space-y-1.5">
