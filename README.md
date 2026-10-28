@@ -130,7 +130,7 @@
 ## 📁 Repository Structure
 
 ```
-alivemon/
+respulse/
 ├── backend/
 │   ├── Cargo.toml               # Rust package manifest & dependencies
 │   ├── Dockerfile               # Production container image (Debian Trixie)
