@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CreateMonitorPayload, GlobalStats, MonitorWithStats, UserProfile } from './types';
 import {
+  clearAuthSession,
   createMonitor,
   createWebSocketConnection,
   deleteMonitor,
@@ -24,6 +25,7 @@ import { IncidentManagement } from './components/IncidentManagement';
 import { TeamManagement } from './components/TeamManagement';
 import { SkeletonDashboard } from './components/SkeletonDashboard';
 import { PromoLandingPage } from './components/PromoLandingPage';
+import { AuthModal } from './components/AuthModal';
 
 export function App() {
   const [monitors, setMonitors] = useState<MonitorWithStats[]>([]);
@@ -73,9 +75,33 @@ export function App() {
   }, []);
   const [loading, setLoading] = useState(true);
 
-  // RBAC State
+  // Auth & RBAC State
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [availableUsers, setAvailableUsers] = useState<UserProfile[]>([]);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
+
+  const openAuth = (mode: 'login' | 'register') => {
+    setAuthModalMode(mode);
+    setIsAuthModalOpen(true);
+  };
+
+  useEffect(() => {
+    try {
+      const path = window.location.pathname.toLowerCase();
+      if (path === '/login') {
+        openAuth('login');
+      } else if (path === '/register' || path === '/signup') {
+        openAuth('register');
+      }
+    } catch {}
+  }, []);
+
+  const handleSignOut = () => {
+    clearAuthSession();
+    setCurrentUser(null);
+    changeView('promo');
+  };
 
   const loadUserData = async () => {
     try {
@@ -86,7 +112,7 @@ export function App() {
       setCurrentUser(user);
       setAvailableUsers(users);
     } catch (e) {
-      console.error('Failed to load user info', e);
+      console.warn('Failed to load user info', e);
     }
   };
 
@@ -214,28 +240,55 @@ export function App() {
 
   if (currentView === 'status-page') {
     return (
-      <StatusPage
-        onBack={() => {
-          if (window.history.length > 1) {
-            window.history.back();
-          } else {
-            changeView('promo');
-          }
-        }}
-      />
+      <>
+        <StatusPage
+          onBack={() => {
+            if (window.history.length > 1) {
+              window.history.back();
+            } else {
+              changeView('promo');
+            }
+          }}
+        />
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          initialMode={authModalMode}
+          onSuccess={(user) => {
+            setCurrentUser(user);
+            loadData();
+            loadUserData();
+            changeView('dashboard');
+          }}
+        />
+      </>
     );
   }
 
   if (currentView === 'promo') {
     return (
-      <PromoLandingPage
-        onOpenDashboard={() => changeView('dashboard')}
-        onOpenStatusPage={() => changeView('status-page')}
-        onOpenAddModal={() => {
-          changeView('dashboard');
-          setIsAddModalOpen(true);
-        }}
-      />
+      <>
+        <PromoLandingPage
+          onOpenDashboard={() => changeView('dashboard')}
+          onOpenStatusPage={() => changeView('status-page')}
+          onOpenAddModal={() => {
+            changeView('dashboard');
+            setIsAddModalOpen(true);
+          }}
+          onOpenAuth={openAuth}
+        />
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          initialMode={authModalMode}
+          onSuccess={(user) => {
+            setCurrentUser(user);
+            loadData();
+            loadUserData();
+            changeView('dashboard');
+          }}
+        />
+      </>
     );
   }
 
@@ -255,6 +308,8 @@ export function App() {
         currentUser={currentUser}
         availableUsers={availableUsers}
         onSwitchUser={handleSwitchUser}
+        onOpenAuth={openAuth}
+        onSignOut={handleSignOut}
       />
 
       {/* Viewer Mode Banner */}
@@ -302,6 +357,18 @@ export function App() {
       <MonitorDetailModal
         monitor={selectedMonitor}
         onClose={() => setSelectedMonitor(null)}
+      />
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialMode={authModalMode}
+        onSuccess={(user) => {
+          setCurrentUser(user);
+          loadData();
+          loadUserData();
+          changeView('dashboard');
+        }}
       />
 
       <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground">

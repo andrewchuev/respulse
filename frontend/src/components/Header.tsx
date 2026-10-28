@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Activity, Plus, Radio, Globe, Bell, AlertTriangle, Users, ChevronDown, Check, Sparkles } from 'lucide-react';
+import { Activity, Plus, Radio, Globe, Bell, AlertTriangle, Users, ChevronDown, Check, Sparkles, LogOut, KeyRound } from 'lucide-react';
 import { Button } from './ui/button';
 import { UserProfile, UserRole } from '../types';
 
@@ -11,6 +11,8 @@ interface HeaderProps {
   currentUser: UserProfile | null;
   availableUsers: UserProfile[];
   onSwitchUser: (email: string) => void;
+  onOpenAuth?: (mode: 'login' | 'register') => void;
+  onSignOut?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -21,6 +23,8 @@ export const Header: React.FC<HeaderProps> = ({
   currentUser,
   availableUsers,
   onSwitchUser,
+  onOpenAuth,
+  onSignOut,
 }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -248,17 +252,46 @@ export const Header: React.FC<HeaderProps> = ({
                   </div>
                 </div>
 
-                <div className="p-1 pt-1.5">
+                <div className="p-1.5 pt-2 flex items-center justify-between border-t border-white/5">
                   <button
                     type="button"
                     onClick={() => {
                       setCurrentView('team');
                       setIsUserMenuOpen(false);
                     }}
-                    className="w-full text-center py-1.5 text-xs text-muted-foreground hover:text-white transition-colors"
+                    className="py-1 text-xs text-muted-foreground hover:text-white transition-colors"
                   >
-                    Manage Team & Permissions ➔
+                    Manage Team ➔
                   </button>
+                  <div className="flex items-center gap-1.5">
+                    {onOpenAuth && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          onOpenAuth('login');
+                        }}
+                        className="flex items-center gap-1 py-1 px-2 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800 transition-all"
+                        title="Sign in with credentials"
+                      >
+                        <KeyRound className="h-3 w-3 text-cyan-400" />
+                        Auth
+                      </button>
+                    )}
+                    {onSignOut && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          onSignOut();
+                        }}
+                        className="flex items-center gap-1.5 py-1 px-2.5 rounded-lg text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-rose-500/20 transition-all font-medium"
+                      >
+                        <LogOut className="h-3 w-3" />
+                        Sign Out
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}

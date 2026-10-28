@@ -228,3 +228,20 @@ export interface InviteMemberPayload {
   name: string;
   role: UserRole;
 }
+
+export interface RegisterPayload {
+  company_name: string;
+  name: string;
+  email: string;
+  password: string;
+}
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: UserProfile;
+}

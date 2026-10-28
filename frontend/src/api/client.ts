@@ -1,6 +1,7 @@
 import {
   AddIncidentUpdatePayload,
   AlertLogWithDetails,
+  AuthResponse,
   BulkActionPayload,
   BulkActionResponse,
   CreateChannelPayload,
@@ -11,10 +12,12 @@ import {
   IncidentUpdate,
   IncidentWithDetails,
   InviteMemberPayload,
+  LoginPayload,
   Monitor,
   MonitorWithStats,
   NotificationChannel,
   PublicStatusPage,
+  RegisterPayload,
   TeamMember,
   UpdateIncidentPayload,
   UserProfile,
@@ -23,11 +26,30 @@ import {
 
 const API_BASE = '/api';
 
-// RBAC user context stored in localStorage (defaults to Alice Vance - Owner)
+// RBAC user context & JWT token stored in localStorage
+let jwtToken: string | null = localStorage.getItem('respulse_jwt_token');
 let activeUserEmail: string = localStorage.getItem('respulse_active_email') || 'alice@respulse.internal';
+
+export function getAuthToken(): string | null {
+  return localStorage.getItem('respulse_jwt_token');
+}
 
 export function getActiveUserEmail(): string {
   return activeUserEmail;
+}
+
+export function setAuthSession(token: string, email: string) {
+  jwtToken = token;
+  activeUserEmail = email;
+  localStorage.setItem('respulse_jwt_token', token);
+  localStorage.setItem('respulse_active_email', email);
+}
+
+export function clearAuthSession() {
+  jwtToken = null;
+  activeUserEmail = '';
+  localStorage.removeItem('respulse_jwt_token');
+  localStorage.removeItem('respulse_active_email');
 }
 
 export function setActiveUserEmail(email: string) {
@@ -36,15 +58,53 @@ export function setActiveUserEmail(email: string) {
 }
 
 function authHeaders(custom: Record<string, string> = {}): Record<string, string> {
-  return {
-    'x-user-email': activeUserEmail,
+  const headers: Record<string, string> = {
     ...custom,
   };
+  const token = localStorage.getItem('respulse_jwt_token') || jwtToken;
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  const email = localStorage.getItem('respulse_active_email') || activeUserEmail;
+  if (email) {
+    headers['x-user-email'] = email;
+  }
+  return headers;
 }
 
 // -----------------------------------------------------------------------------
 // Auth & Identity API
 // -----------------------------------------------------------------------------
+
+export async function registerUser(payload: RegisterPayload): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Registration failed' }));
+    throw new Error(err.error || 'Registration failed');
+  }
+  const data: AuthResponse = await res.json();
+  setAuthSession(data.token, data.user.email);
+  return data;
+}
+
+export async function loginUser(payload: LoginPayload): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Login failed' }));
+    throw new Error(err.error || 'Invalid email or password');
+  }
+  const data: AuthResponse = await res.json();
+  setAuthSession(data.token, data.user.email);
+  return data;
+}
 
 export async function fetchCurrentUser(): Promise<UserProfile> {
   const res = await fetch(`${API_BASE}/auth/me`, {
@@ -69,9 +129,13 @@ export async function switchUser(email: string): Promise<UserProfile> {
     body: JSON.stringify({ email }),
   });
   if (!res.ok) throw new Error('Failed to switch user');
-  const user: UserProfile = await res.json();
-  setActiveUserEmail(user.email);
-  return user;
+  const data = await res.json();
+  if (data.token && data.user) {
+    setAuthSession(data.token, data.user.email);
+    return data.user;
+  }
+  setActiveUserEmail(email);
+  return data;
 }
 
 // -----------------------------------------------------------------------------

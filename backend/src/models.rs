@@ -431,3 +431,23 @@ pub struct UpdateMemberRoleRequest {
 pub struct SwitchUserRequest {
     pub email: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RegisterRequest {
+    pub company_name: String,
+    pub name: String,
+    pub email: String,
+    pub password: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LoginRequest {
+    pub email: String,
+    pub password: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AuthResponse {
+    pub token: String,
+    pub user: UserProfile,
+}

@@ -13,6 +13,7 @@ import {
   Globe,
   Cpu,
   Zap,
+  Sparkles,
   Check,
   Copy,
   ExternalLink,
@@ -29,15 +30,19 @@ interface PromoLandingPageProps {
   onOpenDashboard: () => void;
   onOpenStatusPage: () => void;
   onOpenAddModal?: () => void;
+  onOpenAuth?: (mode: 'login' | 'register') => void;
 }
 
 export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
   onOpenDashboard,
   onOpenStatusPage,
   onOpenAddModal,
+  onOpenAuth,
 }) => {
   const handlePrimaryCta = () => {
-    if (onOpenAddModal) {
+    if (onOpenAuth) {
+      onOpenAuth('register');
+    } else if (onOpenAddModal) {
       onOpenAddModal();
     } else {
       onOpenDashboard();
@@ -109,23 +114,32 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
           </nav>
 
           {/* Header Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <a
               href="https://github.com/andrewchuev/respulse"
               target="_blank"
               rel="noreferrer"
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 text-slate-300 transition-all hover:text-white"
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 text-slate-300 transition-all hover:text-white"
             >
               <Code2 className="h-3.5 w-3.5 text-emerald-400" />
               GitHub
             </a>
 
+            {onOpenAuth && (
+              <button
+                onClick={() => onOpenAuth('login')}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/80 border border-slate-800/60 transition-all"
+              >
+                Sign In
+              </button>
+            )}
+
             <Button
-              onClick={onOpenDashboard}
+              onClick={() => onOpenAuth ? onOpenAuth('register') : onOpenDashboard()}
               size="sm"
               className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-[0_0_20px_rgba(16,185,129,0.35)] gap-1.5"
             >
-              <span>Open Console</span>
+              <span>Get Started Free</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </div>
@@ -162,23 +176,23 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-4">
             <Button
-              onClick={handlePrimaryCta}
+              onClick={() => onOpenAuth ? onOpenAuth('register') : handlePrimaryCta()}
               size="lg"
               className="w-full sm:w-auto h-12 px-8 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-[0_0_25px_rgba(16,185,129,0.4)] transition-all transform hover:scale-[1.02] gap-2"
             >
-              <Activity className="h-4 w-4" />
-              <span>Launch Live Monitoring Console</span>
+              <Sparkles className="h-4 w-4" />
+              <span>Create Organization Free</span>
               <ArrowRight className="h-4 w-4" />
             </Button>
 
             <Button
-              onClick={onOpenStatusPage}
+              onClick={onOpenDashboard}
               variant="outline"
               size="lg"
               className="w-full sm:w-auto h-12 px-6 border-slate-700 bg-slate-900/60 hover:bg-slate-800 text-slate-200 hover:text-white text-sm backdrop-blur gap-2"
             >
-              <Globe className="h-4 w-4 text-cyan-400" />
-              <span>Explore Public Status Page</span>
+              <Activity className="h-4 w-4 text-emerald-400" />
+              <span>Open Live Console</span>
             </Button>
           </div>
 

@@ -146,6 +146,15 @@
   * **Strict Permissions:** `/opt/respulse` is locked down to `dev:docker` with `0750` permissions, and `.env` credentials are restricted to `0600`.
   * **Host Hardening:** UFW firewall configured (`deny incoming`, allow `22`, `80`, `443`), `fail2ban` guarding SSH against brute-force attacks, and `docker.service` enabled on boot with automatic restart policies (`restart: unless-stopped`).
 
+### 10. Self-Service Registration & JWT Authentication
+* **Enterprise Identity & Password Security:**
+  * **Public Self-Service Registration (`POST /api/auth/register`):** Visitors can create their own organization workspace, team slug, and owner account in one step.
+  * **Password Hashing:** Passwords securely hashed with `bcrypt` (10 rounds).
+  * **Cryptographically Signed JWT Tokens:** Stateless JWT tokens issued via `jsonwebtoken` (HS256) valid for 7 days, carrying identity, organization ID, and role.
+  * **Login Endpoint (`POST /api/auth/login`):** Validates credentials, updates login timestamp, and issues JWT tokens.
+  * **Glassmorphic Auth Modal (`AuthModal.tsx`):** Seamless sign in / registration dialog with brand glow, error alerts, password reveal, and 1-click sandbox access.
+  * **Clean Session Management:** Tokens stored securely in client session with header extraction and instant "Sign Out" capability.
+
 ---
 
 ## 🛠 Tech Stack
@@ -311,7 +320,9 @@ All API routes are served under the `/api` prefix. Authenticated requests accept
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `GET` | `/api/health` | Healthcheck endpoint (`OK`) |
-| `GET` | `/api/auth/me` | Current authenticated user profile, team details & permissions |
+| `POST` | `/api/auth/register` | Self-service registration (creates organization workspace + Owner with bcrypt password) |
+| `POST` | `/api/auth/login` | Authenticate with email/password and obtain signed JWT token |
+| `GET` | `/api/auth/me` | Current authenticated user profile, team details & permissions (Bearer JWT) |
 | `GET` | `/api/auth/users` | List available demo enterprise user personas for switching |
 | `POST` | `/api/auth/switch-user` | Switch current active persona identity |
 | `GET` | `/api/team/members` | List all team members of the active enterprise organization |
