@@ -22,6 +22,8 @@ pub fn create_router() -> Router<AppState> {
         // Auth & Identity
         .route("/auth/register", axum::routing::post(auth::register))
         .route("/auth/login", axum::routing::post(auth::login))
+        .route("/auth/verify-email", axum::routing::post(auth::verify_email))
+        .route("/auth/resend-verification", axum::routing::post(auth::resend_verification))
         .route("/auth/config", get(auth::auth_config))
         .route("/auth/me", get(auth::get_current_user))
         .route("/auth/users", get(auth::list_available_users))

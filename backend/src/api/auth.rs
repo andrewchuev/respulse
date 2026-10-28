@@ -1,5 +1,6 @@
 use crate::api::monitors::AppState;
 use crate::auth::{hash_password, AuthUser};
+use crate::email_verification;
 use crate::models::{
     AuthResponse, LoginRequest, RegisterRequest, SwitchUserRequest, Team, User, UserProfile,
     UserRole,
@@ -9,8 +10,10 @@ use axum::extract::{ConnectInfo, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use serde::Deserialize;
 use serde_json::json;
 use std::net::SocketAddr;
+use tracing::error;
 use uuid::Uuid;
 
 pub async fn register(
@@ -18,7 +21,7 @@ pub async fn register(
     ConnectInfo(peer): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
     Json(payload): Json<RegisterRequest>,
-) -> Result<Json<AuthResponse>, (StatusCode, Response)> {
+) -> Result<Json<serde_json::Value>, (StatusCode, Response)> {
     state
         .limits
         .check_register(client_ip(&headers, peer))
@@ -113,8 +116,8 @@ pub async fn register(
     // Create User with OWNER role
     let user_id = Uuid::new_v4();
     let user = sqlx::query_as::<_, User>(
-        "INSERT INTO users (id, team_id, email, name, password_hash, role, avatar_url, is_active, last_login_at)
-         VALUES ($1, $2, $3, $4, $5, 'OWNER', NULL, TRUE, NOW())
+        "INSERT INTO users (id, team_id, email, name, password_hash, role, avatar_url, is_active, last_login_at, email_verified_at)
+         VALUES ($1, $2, $3, $4, $5, 'OWNER', NULL, TRUE, NOW(), CASE WHEN $6 THEN NOW() ELSE NULL END)
          RETURNING *"
     )
     .bind(user_id)
@@ -122,6 +125,7 @@ pub async fn register(
     .bind(&email)
     .bind(name)
     .bind(password_hash)
+    .bind(!state.settings.require_email_verification)
     .fetch_one(&state.pool)
     .await
     .map_err(|e| {
@@ -130,6 +134,14 @@ pub async fn register(
             Json(json!({ "error": format!("Failed to create user: {}", e) })).into_response(),
         )
     })?;
+
+    if state.settings.require_email_verification {
+        // The account exists but cannot sign in until the link is used; a failed send can be retried via resend.
+        if let Err(e) = email_verification::issue_and_send(&state, &user).await {
+            error!("Failed to send verification email to {}: {}", user.email, e);
+        }
+        return Ok(Json(json!({ "status": "verification_required", "email": user.email })));
+    }
 
     // Generate JWT
     let token = state.auth.create_jwt(&user, "OWNER").map_err(|e| {
@@ -153,10 +165,9 @@ pub async fn register(
         permissions: UserRole::Owner.permissions(),
     };
 
-    Ok(Json(AuthResponse {
-        token,
-        user: profile,
-    }))
+    Ok(Json(
+        serde_json::to_value(AuthResponse { token, user: profile }).expect("AuthResponse serializes"),
+    ))
 }
 
 pub async fn login(
@@ -200,6 +211,18 @@ pub async fn login(
         return Err((
             StatusCode::UNAUTHORIZED,
             Json(json!({ "error": "Invalid email or password" })).into_response(),
+        ));
+    }
+
+    // Checked after the password so the answer does not reveal whether an address is registered.
+    if state.settings.require_email_verification && user.email_verified_at.is_none() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(json!({
+                "error": "Please confirm your email address first. We sent you a link when you signed up.",
+                "code": "EMAIL_NOT_VERIFIED"
+            }))
+            .into_response(),
         ));
     }
 
@@ -465,4 +488,117 @@ pub async fn list_available_users(
         .collect();
 
     Ok(Json(profiles))
+}
+
+#[derive(Deserialize)]
+pub struct VerifyEmailRequest {
+    pub token: String,
+}
+
+#[derive(Deserialize)]
+pub struct ResendVerificationRequest {
+    pub email: String,
+}
+
+/// Opens a session for a user that has just been confirmed (shared by the verification link flow).
+async fn auth_response(state: &AppState, user: User) -> Result<AuthResponse, (StatusCode, Response)> {
+    let internal = |e: &dyn std::fmt::Display| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": format!("Failed to sign in: {}", e) })).into_response(),
+        )
+    };
+
+    let team = sqlx::query_as::<_, Team>("SELECT * FROM teams WHERE id = $1")
+        .bind(user.team_id)
+        .fetch_one(&state.pool)
+        .await
+        .map_err(|e| internal(&e))?;
+    let token = state.auth.create_jwt(&user, &user.role).map_err(|e| internal(&e))?;
+    let _ = sqlx::query("UPDATE users SET last_login_at = NOW() WHERE id = $1")
+        .bind(user.id)
+        .execute(&state.pool)
+        .await;
+
+    let role = UserRole::from_str(&user.role);
+    Ok(AuthResponse {
+        token,
+        user: UserProfile {
+            id: user.id,
+            team_id: user.team_id,
+            team_name: team.name,
+            team_ping_key: Some(team.ping_key),
+            team_plan: team.plan,
+            email: user.email,
+            name: user.name,
+            role: role.clone(),
+            avatar_url: user.avatar_url,
+            is_active: user.is_active,
+            permissions: role.permissions(),
+        },
+    })
+}
+
+/// Consumes the emailed token and signs the user in. POST, so link scanners that prefetch URLs cannot use it up.
+pub async fn verify_email(
+    State(state): State<AppState>,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+    Json(payload): Json<VerifyEmailRequest>,
+) -> Result<Json<AuthResponse>, (StatusCode, Response)> {
+    state
+        .limits
+        .check_login(client_ip(&headers, peer))
+        .map_err(too_many_requests)?;
+
+    let user = email_verification::consume(&state.pool, &payload.token)
+        .await
+        .map_err(|e| {
+            error!("Email verification lookup failed: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Verification failed, please try again" })).into_response(),
+            )
+        })?
+        .ok_or_else(|| {
+            (
+                StatusCode::BAD_REQUEST,
+                Json(json!({ "error": "This confirmation link is invalid or has expired." })).into_response(),
+            )
+        })?;
+
+    Ok(Json(auth_response(&state, user).await?))
+}
+
+/// Sends a fresh confirmation link. The answer is identical for unknown, confirmed and pending addresses.
+pub async fn resend_verification(
+    State(state): State<AppState>,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+    Json(payload): Json<ResendVerificationRequest>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Response)> {
+    state
+        .limits
+        .check_resend(client_ip(&headers, peer))
+        .map_err(too_many_requests)?;
+
+    if state.settings.require_email_verification {
+        let email = payload.email.trim().to_lowercase();
+        let pending = sqlx::query_as::<_, User>(
+            "SELECT * FROM users WHERE email = $1 AND is_active = TRUE AND email_verified_at IS NULL",
+        )
+        .bind(&email)
+        .fetch_optional(&state.pool)
+        .await
+        .ok()
+        .flatten();
+
+        if let Some(user) = pending {
+            if let Err(e) = email_verification::issue_and_send(&state, &user).await {
+                error!("Failed to resend verification email to {}: {}", user.email, e);
+            }
+        }
+    }
+
+    Ok(Json(json!({ "status": "ok" })))
 }

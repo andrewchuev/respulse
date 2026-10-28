@@ -5,6 +5,7 @@ use crate::models::{
     CheckResult, CreateMonitorRequest, LatencyPoint, Monitor, MonitorWithStats,
     UptimeBarPoint, UpdateMonitorRequest, WsMessage,
 };
+use crate::mail::Mailer;
 use crate::net_guard;
 use crate::plans::{self, AppSettings};
 use crate::probe::runner::execute_single_probe;
@@ -41,6 +42,7 @@ pub struct AppState {
     pub webhook: Arc<WebhookConfig>,
     pub limits: Arc<RateLimits>,
     pub settings: Arc<AppSettings>,
+    pub mailer: Option<Arc<Mailer>>,
 }
 
 #[derive(FromRow)]

@@ -172,6 +172,7 @@
 ### 10. Self-Service Registration & JWT Authentication
 * **Enterprise Identity & Password Security:**
   * **Public Self-Service Registration (`POST /api/auth/register`):** Visitors can create their own organization workspace, team slug, and owner account in one step.
+  * **Email Confirmation (optional):** with `REQUIRE_EMAIL_VERIFICATION=true` a new account cannot sign in until the emailed single-use link (24 h) is opened; only a SHA-256 hash of the token is stored, resend is rate-limited, and pre-existing accounts are grandfathered as confirmed. Sign-in answers `403 EMAIL_NOT_VERIFIED` only after a correct password.
   * **Password Hashing:** Passwords securely hashed with `bcrypt` (10 rounds).
   * **Cryptographically Signed JWT Tokens:** Stateless JWT tokens issued via `jsonwebtoken` (HS256) valid for 7 days, carrying identity, organization ID, and role.
   * **Login Endpoint (`POST /api/auth/login`):** Validates credentials, updates login timestamp, and issues JWT tokens.
@@ -380,7 +381,9 @@ All API routes are served under the `/api` prefix. Authenticated routes require 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `GET` | `/api/health` | Healthcheck endpoint (`OK`) |
-| `POST` | `/api/auth/register` | Self-service registration (creates organization workspace + Owner with bcrypt password) |
+| `POST` | `/api/auth/register` | Self-service registration (creates organization workspace + Owner with bcrypt password); with `REQUIRE_EMAIL_VERIFICATION=true` it answers `{"status":"verification_required"}` and emails a confirmation link instead of returning a token |
+| `POST` | `/api/auth/verify-email` | Redeem the emailed confirmation token (`{"token": ...}`) and sign in; single use, `400` if invalid or expired |
+| `POST` | `/api/auth/resend-verification` | Send a fresh confirmation link (`{"email": ...}`); always answers `200` so addresses cannot be probed, rate-limited per IP |
 | `POST` | `/api/auth/login` | Authenticate with email/password and obtain signed JWT token |
 | `GET` | `/api/auth/me` | Current authenticated user profile, team details & permissions (Bearer JWT) |
 | `GET` | `/api/auth/config` | Public capabilities used by the UI: `demo_mode`, `billing_enabled` and the plan limits |
@@ -443,6 +446,10 @@ All API routes are served under the `/api` prefix. Authenticated routes require 
 | `JWT_SECRET` | *required* | HS256 signing key, at least 32 characters (`openssl rand -hex 32`); the server exits if missing or short |
 | `DEMO_MODE` | `false` | Enables demo persona switching, 1-click sandbox login and seeded demo passwords |
 | `BILLING_ENABLED` | `false` | Shows prices, upgrade buttons and checkout; leave off during the free open beta |
+| `REQUIRE_EMAIL_VERIFICATION` | `false` | New signups must confirm their email (single-use link, valid 24 h) before they can sign in; needs the `SMTP_*` settings, the server refuses to start without them |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_TLS` | *unset* / provider default / `starttls` | SMTP relay for outgoing email; `SMTP_TLS` is `starttls` (587), `tls` (implicit TLS, 465) or `none` (local test servers only) |
+| `SMTP_USERNAME` / `SMTP_PASSWORD` / `SMTP_FROM` | *unset* | SMTP credentials and the sender address, e.g. `ResPulse <noreply@respulse.online>` |
+| `APP_URL` | `http://localhost:8080` | Public base URL used in emailed links |
 | `ADMIN_EMAILS` | *unset* | Comma-separated emails that can open the operator report at `/admin` (aggregates only, demo org excluded) |
 | `ALLOW_PRIVATE_TARGETS` | `false` | Lets monitors and webhooks reach private, loopback and link-local addresses; leave off on a public server (SSRF guard) |
 | `CORS_ALLOWED_ORIGINS` | *unset* | Comma-separated origins allowed to call the API cross-origin; unset means same-origin only (the bundled SPA needs nothing) |

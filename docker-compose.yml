@@ -34,6 +34,14 @@ services:
       ALLOW_PRIVATE_TARGETS: ${ALLOW_PRIVATE_TARGETS:-true}
       BILLING_ENABLED: ${BILLING_ENABLED:-false}
       ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      APP_URL: ${APP_URL:-https://respulse.wsl.local}
+      REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-false}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_TLS: ${SMTP_TLS:-starttls}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
       FASTSPRING_WEBHOOK_SECRET: ${FASTSPRING_WEBHOOK_SECRET:-}
     depends_on:
       respulse-db:

@@ -85,7 +85,10 @@ async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<R
 // Auth & Identity API
 // -----------------------------------------------------------------------------
 
-export async function registerUser(payload: RegisterPayload): Promise<AuthResponse> {
+/** Signups either get a session straight away or must confirm their email first. */
+export type RegisterResult = AuthResponse | { status: 'verification_required'; email: string };
+
+export async function registerUser(payload: RegisterPayload): Promise<RegisterResult> {
   const res = await fetch(`${API_BASE}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -95,8 +98,8 @@ export async function registerUser(payload: RegisterPayload): Promise<AuthRespon
     const err = await res.json().catch(() => ({ error: 'Registration failed' }));
     throw new Error(err.error || 'Registration failed');
   }
-  const data: AuthResponse = await res.json();
-  setAuthSession(data.token);
+  const data: RegisterResult = await res.json();
+  if ('token' in data) setAuthSession(data.token);
   return data;
 }
 
@@ -108,7 +111,34 @@ export async function loginUser(payload: LoginPayload): Promise<AuthResponse> {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Login failed' }));
-    throw new Error(err.error || 'Invalid email or password');
+    // `code` lets the UI offer to resend the confirmation email.
+    throw Object.assign(new Error(err.error || 'Invalid email or password'), { code: err.code as string | undefined });
+  }
+  const data: AuthResponse = await res.json();
+  setAuthSession(data.token);
+  return data;
+}
+
+export async function resendVerification(email: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/auth/resend-verification`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  if (res.status === 429) throw new Error('Too many requests. Please wait a few minutes and try again.');
+  if (!res.ok) throw new Error('Could not send the email. Please try again later.');
+}
+
+/** Redeems the emailed link and signs the user in. */
+export async function verifyEmail(token: string): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE}/auth/verify-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'This confirmation link is invalid or has expired.');
   }
   const data: AuthResponse = await res.json();
   setAuthSession(data.token);

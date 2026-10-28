@@ -35,9 +35,10 @@ import { AuthModal } from './components/AuthModal';
 import { LegalPage } from './components/LegalPage';
 import { legalReady } from './legal/content';
 import { AdminReport } from './components/AdminReport';
+import { VerifyEmailPage } from './components/VerifyEmailPage';
 import { FastSpringCheckoutModal } from './components/FastSpringCheckoutModal';
 
-type View = 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo' | 'terms' | 'privacy' | 'refund' | 'admin';
+type View = 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo' | 'terms' | 'privacy' | 'refund' | 'admin' | 'verify-email';
 
 export function App() {
   const [monitors, setMonitors] = useState<MonitorWithStats[]>([]);
@@ -67,6 +68,7 @@ export function App() {
       if (view === 'team' || path === '/team') return 'team';
       if (view === 'status' || view === 'status-page' || path === '/status' || path === '/status-page') return 'status-page';
       if (path === '/admin') return 'admin';
+      if (path === '/verify-email') return 'verify-email';
       if (path === '/terms') return 'terms';
       if (path === '/privacy') return 'privacy';
       if (path === '/refund') return 'refund';
@@ -312,6 +314,10 @@ export function App() {
     await loadData();
     setIsAddModalOpen(false);
   };
+
+  if (currentView === 'verify-email') {
+    return <VerifyEmailPage />;
+  }
 
   if (currentView === 'terms' || currentView === 'privacy' || currentView === 'refund') {
     return <LegalPage kind={currentView} />;

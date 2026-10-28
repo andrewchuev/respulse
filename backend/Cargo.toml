@@ -31,3 +31,4 @@ sha2 = "0.11.1"
 base64 = "0.23.1"
 governor = "0.10.4"
 url = "2.5.8"
+lettre = { version = "0.11.23", default-features = false, features = ["builder", "smtp-transport", "tokio1", "tokio1-rustls-tls"] }

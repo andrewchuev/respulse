@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -21,7 +21,7 @@ import {
   User,
   Users,
 } from 'lucide-react';
-import { loginUser, registerUser, switchUser } from '../api/client';
+import { loginUser, registerUser, resendVerification, switchUser } from '../api/client';
 import { UserProfile } from '../types';
 
 interface AuthModalProps {
@@ -51,6 +51,36 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Set once the account exists but its email still has to be confirmed.
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendNote, setResendNote] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setPendingEmail(null);
+      setResendNote(null);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = window.setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [resendCooldown]);
+
+  const handleResend = async () => {
+    if (!pendingEmail || resendCooldown > 0) return;
+    setResendNote(null);
+    try {
+      await resendVerification(pendingEmail);
+      setResendNote('A new link is on its way. Check your inbox and spam folder.');
+      setResendCooldown(60);
+    } catch (err: any) {
+      setResendNote(err?.message || 'Could not send the email.');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -64,8 +94,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           email,
           password,
         });
-        onSuccess(res.user);
-        onClose();
+        if ('token' in res) {
+          onSuccess(res.user);
+          onClose();
+        } else {
+          setPendingEmail(res.email);
+          setResendCooldown(60);
+        }
       } else {
         const res = await loginUser({
           email,
@@ -75,7 +110,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         onClose();
       }
     } catch (err: any) {
-      setError(err?.message || 'Authentication failed. Please check your credentials.');
+      if (err?.code === 'EMAIL_NOT_VERIFIED') {
+        setPendingEmail(email);
+      } else {
+        setError(err?.message || 'Authentication failed. Please check your credentials.');
+      }
     } finally {
       setLoading(false);
     }
@@ -94,6 +133,49 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setLoading(false);
     }
   };
+
+  if (pendingEmail) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[460px] bg-slate-900/95 backdrop-blur-2xl border border-white/10 ring-1 ring-white/5 shadow-2xl shadow-black/90 p-6">
+          <DialogHeader className="text-center sm:text-center pb-2">
+            <div className="mx-auto mb-3 h-12 w-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <Mail className="h-6 w-6" />
+            </div>
+            <DialogTitle className="text-2xl font-extrabold tracking-tight text-white">Check your inbox</DialogTitle>
+            <DialogDescription className="text-xs text-slate-400">
+              We sent a confirmation link to <strong className="text-slate-200">{pendingEmail}</strong>. Open it to
+              finish signing in. The link works once and expires in 24 hours.
+            </DialogDescription>
+          </DialogHeader>
+
+          {resendNote && <p className="text-center text-xs text-emerald-300">{resendNote}</p>}
+
+          <div className="flex flex-col items-center gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleResend}
+              disabled={resendCooldown > 0}
+              className="border-slate-700 text-xs text-slate-200"
+            >
+              {resendCooldown > 0 ? `Resend email (${resendCooldown}s)` : 'Resend email'}
+            </Button>
+            <button
+              type="button"
+              onClick={() => {
+                setPendingEmail(null);
+                setMode('register');
+              }}
+              className="text-[11px] text-slate-500 hover:text-emerald-400"
+            >
+              Wrong address? Go back
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

@@ -40,6 +40,10 @@ pub struct AppSettings {
     pub billing_enabled: bool,
     /// Lower-cased emails allowed to open the operator report.
     pub admin_emails: Vec<String>,
+    /// Signups must confirm their email before they can sign in.
+    pub require_email_verification: bool,
+    /// Public base URL used in emailed links.
+    pub app_url: String,
 }
 
 impl AppSettings {
@@ -53,7 +57,14 @@ impl AppSettings {
             .map(|e| e.trim().to_lowercase())
             .filter(|e| !e.is_empty())
             .collect();
-        Self { billing_enabled, admin_emails }
+        let require_email_verification = std::env::var("REQUIRE_EMAIL_VERIFICATION")
+            .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
+            .unwrap_or(false);
+        let app_url = std::env::var("APP_URL")
+            .ok()
+            .filter(|u| !u.trim().is_empty())
+            .unwrap_or_else(|| "http://localhost:8080".to_string());
+        Self { billing_enabled, admin_emails, require_email_verification, app_url }
     }
 
     pub fn is_admin(&self, email: &str) -> bool {
@@ -87,9 +98,17 @@ mod tests {
         let settings = AppSettings {
             billing_enabled: false,
             admin_emails: vec!["boss@example.com".to_string()],
+            require_email_verification: false,
+            app_url: String::new(),
         };
         assert!(settings.is_admin(" Boss@Example.com "));
         assert!(!settings.is_admin("other@example.com"));
-        assert!(!AppSettings { billing_enabled: false, admin_emails: vec![] }.is_admin(""));
+        let empty = AppSettings {
+            billing_enabled: false,
+            admin_emails: vec![],
+            require_email_verification: false,
+            app_url: String::new(),
+        };
+        assert!(!empty.is_admin(""));
     }
 }

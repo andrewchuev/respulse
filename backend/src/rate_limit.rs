@@ -18,6 +18,7 @@ use std::time::Duration;
 pub struct RateLimits {
     login: DefaultKeyedRateLimiter<IpAddr>,
     register: DefaultKeyedRateLimiter<IpAddr>,
+    resend: DefaultKeyedRateLimiter<IpAddr>,
 }
 
 fn quota(replenish_every: Duration, burst: u32) -> Quota {
@@ -33,6 +34,8 @@ impl RateLimits {
             login: RateLimiter::keyed(quota(Duration::from_secs(6), 10)),
             // 3 signups up front, then one every 20 minutes.
             register: RateLimiter::keyed(quota(Duration::from_secs(20 * 60), 3)),
+            // 3 confirmation resends up front, then one every 10 minutes.
+            resend: RateLimiter::keyed(quota(Duration::from_secs(10 * 60), 3)),
         }
     }
 
@@ -42,6 +45,10 @@ impl RateLimits {
 
     pub fn check_register(&self, ip: IpAddr) -> Result<(), Duration> {
         Self::check(&self.register, ip)
+    }
+
+    pub fn check_resend(&self, ip: IpAddr) -> Result<(), Duration> {
+        Self::check(&self.resend, ip)
     }
 
     fn check(limiter: &DefaultKeyedRateLimiter<IpAddr>, ip: IpAddr) -> Result<(), Duration> {
@@ -61,6 +68,8 @@ impl RateLimits {
                 limits.login.shrink_to_fit();
                 limits.register.retain_recent();
                 limits.register.shrink_to_fit();
+                limits.resend.retain_recent();
+                limits.resend.shrink_to_fit();
             }
         });
     }

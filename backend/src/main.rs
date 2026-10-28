@@ -1,6 +1,8 @@
 mod api;
 mod auth;
 mod db;
+mod email_verification;
+mod mail;
 mod models;
 mod net_guard;
 mod notifier;
@@ -62,6 +64,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         warn!("DEMO_MODE is enabled: passwordless persona login and demo passwords are active");
     }
 
+    let settings = Arc::new(AppSettings::from_env());
+    let mailer = mail::Mailer::from_env()?.map(Arc::new);
+    if settings.require_email_verification && mailer.is_none() {
+        return Err("REQUIRE_EMAIL_VERIFICATION needs SMTP_HOST and SMTP_FROM to be configured".into());
+    }
+
     let state = AppState {
         pool: pool.clone(),
         tx: tx.clone(),
@@ -69,7 +77,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         auth,
         webhook: Arc::new(WebhookConfig::from_env()),
         limits,
-        settings: Arc::new(AppSettings::from_env()),
+        settings,
+        mailer,
     };
 
     // Spawn probe background scheduler

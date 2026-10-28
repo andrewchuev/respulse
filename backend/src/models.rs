@@ -440,6 +440,8 @@ pub struct User {
     pub is_active: bool,
     pub created_at: DateTime<Utc>,
     pub last_login_at: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub email_verified_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

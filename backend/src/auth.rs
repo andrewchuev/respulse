@@ -226,6 +226,7 @@ mod tests {
             avatar_url: None,
             is_active: true,
             last_login_at: None,
+            email_verified_at: None,
             created_at: Utc::now(),
         }
     }
