@@ -6,6 +6,7 @@ mod net_guard;
 mod notifier;
 mod probe;
 mod rate_limit;
+mod retention;
 
 use api::monitors::AppState;
 use api::payments::WebhookConfig;
@@ -14,7 +15,8 @@ use rate_limit::RateLimits;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::broadcast;
-use tower_http::cors::{Any, CorsLayer};
+use axum::http::{header, HeaderValue, Method};
+use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::{info, warn};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -69,11 +71,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Spawn probe background scheduler
     tokio::spawn(probe::run_probe_scheduler(pool.clone(), tx.clone()));
-
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
+    tokio::spawn(retention::run_retention_loop(pool.clone()));
 
     let api_router = api::create_router();
 
@@ -83,10 +81,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/health", axum::routing::get(|| async { "ResPulse Backend OK" }))
         .route("/metrics", axum::routing::get(api::metrics::get_prometheus_metrics))
         .route("/badge/:token", axum::routing::get(api::badge::get_badge_by_token))
-        .route("/badge/:ping_key/:slug", axum::routing::get(api::badge::get_badge_by_slug))
-        .layer(cors)
-        .layer(TraceLayer::new_for_http())
-        .with_state(state);
+        .route("/badge/:ping_key/:slug", axum::routing::get(api::badge::get_badge_by_slug));
+
+    // The SPA is served from the same origin, so CORS stays off unless origins are listed explicitly.
+    let app = match cors_layer_from_env() {
+        Some(cors) => app.layer(cors),
+        None => app,
+    };
+    let app = app.layer(TraceLayer::new_for_http()).with_state(state);
 
     let port: u16 = std::env::var("PORT")
         .unwrap_or_else(|_| "8080".to_string())
@@ -101,4 +103,32 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>()).await?;
 
     Ok(())
+}
+
+/// Builds a CORS layer from `CORS_ALLOWED_ORIGINS` (comma-separated origins); `None` when unset.
+fn cors_layer_from_env() -> Option<CorsLayer> {
+    let raw = std::env::var("CORS_ALLOWED_ORIGINS").ok()?;
+    let origins: Vec<HeaderValue> = raw
+        .split(',')
+        .map(str::trim)
+        .filter(|o| !o.is_empty())
+        .filter_map(|o| match HeaderValue::from_str(o) {
+            Ok(v) => Some(v),
+            Err(_) => {
+                warn!("Ignoring invalid CORS origin: {}", o);
+                None
+            }
+        })
+        .collect();
+    if origins.is_empty() {
+        return None;
+    }
+
+    info!("CORS enabled for {} origin(s)", origins.len());
+    Some(
+        CorsLayer::new()
+            .allow_origin(AllowOrigin::list(origins))
+            .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS])
+            .allow_headers([header::AUTHORIZATION, header::CONTENT_TYPE]),
+    )
 }

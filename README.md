@@ -388,7 +388,7 @@ All API routes are served under the `/api` prefix. Authenticated routes require 
 | `POST`/`PUT` | `/api/team/plan` | Change plan (`OWNER`/`ADMIN`); downgrade to `FREE` always, upgrade to `PRO` only in demo mode (otherwise use checkout) |
 | `GET` | `/api/payments/fastspring/config` | Get FastSpring checkout configuration ($8/mo) for store `reslab` |
 | `POST` | `/api/payments/fastspring/confirm` | Report whether the Pro upgrade has landed (`200` if PRO, `409` while the webhook is pending); never upgrades by itself |
-| `POST` | `/api/payments/fastspring/webhook` | FastSpring webhook (order & subscription events); requires a valid `X-FS-Signature` HMAC-SHA256 (base64) over the raw body, `503` if `FASTSPRING_WEBHOOK_SECRET` is unset |
+| `POST` | `/api/payments/fastspring/webhook` | FastSpring webhook; requires a valid `X-FS-Signature` HMAC-SHA256 (base64) over the raw body (`503` if `FASTSPRING_WEBHOOK_SECRET` is unset). Events are deduplicated by event id, only the `respulse-pro-plan` product counts, and the team is matched by stored subscription id, checkout `team_id` tag/`referrer`, or the buyer's email (owner/admin). `order.completed`, `subscription.activated`, `subscription.charge.completed` keep the team on Pro; `subscription.canceled` marks it canceled (Pro until the period ends); `subscription.deactivated` drops it to Free. Failures answer `5xx` so FastSpring retries |
 | `GET` | `/api/payments/history` | List payment transaction history and invoices for team |
 | `GET` | `/api/monitors` | List all monitors with 24h/7d/30d uptime & history bars |
 | `POST` | `/api/monitors` | Create a new monitor (HTTP, PORT, SSL, HEARTBEAT) |
@@ -436,6 +436,8 @@ All API routes are served under the `/api` prefix. Authenticated routes require 
 | `JWT_SECRET` | *required* | HS256 signing key, at least 32 characters (`openssl rand -hex 32`); the server exits if missing or short |
 | `DEMO_MODE` | `false` | Enables demo persona switching, 1-click sandbox login and seeded demo passwords |
 | `ALLOW_PRIVATE_TARGETS` | `false` | Lets monitors and webhooks reach private, loopback and link-local addresses; leave off on a public server (SSRF guard) |
+| `CORS_ALLOWED_ORIGINS` | *unset* | Comma-separated origins allowed to call the API cross-origin; unset means same-origin only (the bundled SPA needs nothing) |
+| `RETENTION_FREE_DAYS` / `RETENTION_PRO_DAYS` | `14` / `90` | How long probe history (`check_results`) is kept per plan; pruned daily in batches |
 | `FASTSPRING_WEBHOOK_SECRET` | *unset* | HMAC SHA256 secret configured on the FastSpring webhook; webhooks are rejected without it |
 | `FASTSPRING_LIVE_MODE` | `false` | Use the live FastSpring storefront and ignore non-live (test) orders |
 | `APP_URL` | — | Public base URL of the deployment |
