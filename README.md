@@ -131,12 +131,20 @@
 
 ### 8. Product Promo & Tour Landing Page
 * **High-Impact SaaS Showcase:**
-  * Accessible directly via `https://respulse.wsl.local?view=promo` or via the **Product Tour** navigation button in the top header.
+  * Accessible directly via `https://respulse.online?view=promo` (or local `https://respulse.wsl.local?view=promo`) or via the **Product Tour** navigation button in the top header.
   * **Hero Section:** Systems-grade synthetic monitoring value proposition, 1-click Docker launch snippet, and animated real-time browser console mockup with simulated probes.
   * **Interactive Multi-Protocol Playground:** Tabbed live explorer covering HTTP/REST APIs, TCP sockets & databases, TLS certificate tracking, asynchronous worker heartbeats, and multi-channel alerts with executable curl examples.
   * **Architectural Deep Dive (Why Rust?):** Benchmark comparison matrix comparing ResPulse (Rust Axum + Tokio) against legacy NodeJS/Python engines (memory, zero GC jitter, thread concurrency, rustls memory safety).
   * **Transparent Tiered Pricing:** Interactive monthly/annual billing toggle across Community ($0), Pro ($39/mo), and Enterprise ($159/mo) plans.
   * **Interactive FAQ & Social Proof:** Expandable accordions answering technical architecture, VPC self-hosting, heartbeat monitoring, and role permissions.
+
+### 9. Production Server Deployment (respulse.online)
+* **Cloud Architecture & Security Hardening:**
+  * Hosted at `/opt/respulse` on Debian 13 (Trixie) x86_64 (`respulse.online`, `46.225.23.41`).
+  * **Reverse Proxy:** Dockerized Caddy (`caddy:2-alpine`) orchestrating automated Let's Encrypt / ZeroSSL TLS certificates with HTTP/2, HTTP/3 (QUIC), and canonical `www` to apex domain 301 redirects.
+  * **Zero Direct Exposure:** PostgreSQL, Rust API, and Nginx containers reside on an isolated internal Docker bridge network (`respulse-net`). Only ports `80` (HTTP) and `443` (HTTPS TCP/UDP) are published to the host.
+  * **Strict Permissions:** `/opt/respulse` is locked down to `dev:docker` with `0750` permissions, and `.env` credentials are restricted to `0600`.
+  * **Host Hardening:** UFW firewall configured (`deny incoming`, allow `22`, `80`, `443`), `fail2ban` guarding SSH against brute-force attacks, and `docker.service` enabled on boot with automatic restart policies (`restart: unless-stopped`).
 
 ---
 
@@ -197,6 +205,10 @@ respulse/
 │           ├── tcp.rs           # TCP port connection engine
 │           ├── ssl.rs           # SSL/TLS certificate validator
 │           └── runner.rs        # Async probe scheduler loop & incident alerts
+├── deploy/                      # Production deployment manifests
+│   ├── Caddyfile                # Production reverse proxy configuration with automatic TLS
+│   ├── docker-compose.yml       # Production Docker Compose orchestration
+│   └── .env.example             # Environment credentials template
 ├── frontend/
 │   ├── package.json             # NPM dependencies & scripts
 │   ├── vite.config.ts           # Vite configuration

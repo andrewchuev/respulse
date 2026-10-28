@@ -1,0 +1,74 @@
+services:
+  respulse-caddy:
+    image: caddy:2-alpine
+    container_name: respulse-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - respulse-net
+    depends_on:
+      - respulse-frontend
+      - respulse-backend
+
+  respulse-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: respulse-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@respulse-db:5432/${POSTGRES_DB}
+      PORT: 8080
+      APP_URL: https://respulse.online
+      APP_USER_AGENT: "ResPulse/1.0 (+https://respulse.online)"
+      RUST_LOG: respulse_api=info,tower_http=info
+    depends_on:
+      respulse-db:
+        condition: service_healthy
+    networks:
+      - respulse-net
+
+  respulse-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: respulse-frontend
+    restart: unless-stopped
+    depends_on:
+      - respulse-backend
+    networks:
+      - respulse-net
+
+  respulse-db:
+    image: postgres:16-alpine
+    container_name: respulse-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+    networks:
+      - respulse-net
+
+volumes:
+  pg_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  respulse-net:
+    driver: bridge

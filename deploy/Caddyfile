@@ -1,0 +1,38 @@
+{
+    email admin@respulse.online
+}
+
+www.respulse.online {
+    redir https://respulse.online{uri} permanent
+}
+
+respulse.online {
+    encode zstd gzip
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        -Server
+    }
+
+    # REST API, WebSockets, and health checks -> backend (unbuffered)
+    @backend path /api/* /ws* /health
+    handle @backend {
+        reverse_proxy respulse-backend:8080 {
+            flush_interval -1
+        }
+    }
+
+    # Frontend SPA
+    handle {
+        reverse_proxy respulse-frontend:8080
+    }
+
+    log {
+        output stdout
+        format json
+    }
+}
