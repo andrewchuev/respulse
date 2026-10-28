@@ -32,6 +32,7 @@ declare global {
       builder: {
         reset: () => void;
         add: (productPath: string) => void;
+        recognize: (customer: { email: string; firstName?: string; lastName?: string }) => void;
         tag: (tags: Record<string, any>) => void;
         checkout: () => void;
         push: (payload: any) => void;
@@ -92,10 +93,11 @@ export const FastSpringCheckoutModal: React.FC<FastSpringCheckoutModalProps> = (
         if (!existingScript) {
           const script = document.createElement('script');
           script.id = 'fsc-api';
-          script.src = 'https://sbl.onfastspring.com/sbl/1.0.1/fastspring-builder.min.js';
+          script.src = 'https://sbl.onfastspring.com/sbl/1.0.6/fastspring-builder.min.js';
           script.type = 'text/javascript';
           script.setAttribute('data-storefront', cfg.storefront);
-          script.setAttribute('data-closed-callback', 'fscClosedCallback');
+          // SBL reads `data-popup-closed`; a differently named attribute is silently ignored.
+          script.setAttribute('data-popup-closed', 'fscClosedCallback');
           script.setAttribute('data-data-callback', 'fscDataCallback');
           script.setAttribute('data-error-callback', 'fscErrorCallback');
           document.body.appendChild(script);
@@ -173,8 +175,11 @@ export const FastSpringCheckoutModal: React.FC<FastSpringCheckoutModalProps> = (
           user_email: config.user_email,
         });
         builder.add(config.product_path);
+        // Prefill the buyer's email so the order matches the account that is upgrading.
+        builder.recognize({ email: config.user_email });
         setPopupActive(true);
-        // Let React unmount the dialog first so its pointer-events lock is gone when the popup appears.
+        // Let React unmount the dialog first so its pointer-events lock is gone, and give recognize()
+        // time to reach the session: opening the popup immediately shows an empty email field.
         window.setTimeout(() => {
           try {
             builder.checkout();
@@ -183,7 +188,7 @@ export const FastSpringCheckoutModal: React.FC<FastSpringCheckoutModalProps> = (
             setPopupActive(false);
             handleOpenWebCheckout(config.checkout_url);
           }
-        }, 100);
+        }, 600);
         return;
       } catch (e) {
         console.warn('FastSpring builder popup error, falling back to web checkout', e);
