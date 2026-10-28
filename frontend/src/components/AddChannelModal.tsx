@@ -104,7 +104,7 @@ export const AddChannelModal: React.FC<AddChannelModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[540px] bg-card border-border">
+      <DialogContent className="sm:max-w-[560px] bg-slate-900/95 backdrop-blur-2xl border border-white/10 ring-1 ring-white/5 shadow-2xl shadow-black/90">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold text-white">Add Notification Channel</DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
@@ -114,14 +114,15 @@ export const AddChannelModal: React.FC<AddChannelModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           {error && (
-            <div className="p-3 text-xs rounded-md bg-destructive/15 border border-destructive/30 text-destructive">
-              {error}
+            <div className="p-3 text-xs rounded-lg bg-destructive/15 border border-destructive/30 text-destructive flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+              <span>{error}</span>
             </div>
           )}
 
           {/* Channel Type Selector */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Delivery Channel</label>
+            <label className="text-xs font-medium text-slate-300 mb-1.5 block">Delivery Channel</label>
             <div className="grid grid-cols-2 gap-2">
               {types.map((t) => {
                 const Icon = t.icon;
@@ -131,13 +132,19 @@ export const AddChannelModal: React.FC<AddChannelModalProps> = ({
                     type="button"
                     key={t.id}
                     onClick={() => setChannelType(t.id)}
-                    className={`flex items-start gap-2.5 p-2.5 rounded-lg border text-left transition-all ${
+                    className={`relative flex items-start gap-2.5 p-2.5 rounded-xl border text-left transition-all ${
                       isSelected
-                        ? 'border-emerald-500 bg-emerald-500/10 text-white'
-                        : 'border-border/80 bg-background/50 hover:bg-background text-muted-foreground'
+                        ? 'border-emerald-400 bg-gradient-to-br from-emerald-500/25 via-emerald-950/40 to-slate-900/90 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] ring-1 ring-emerald-400/50'
+                        : 'border-slate-800 bg-slate-950/70 hover:bg-slate-900/90 hover:border-slate-700 text-slate-400 hover:text-slate-200'
                     }`}
                   >
-                    <Icon className={`h-4 w-4 mt-0.5 flex-shrink-0 ${isSelected ? 'text-emerald-400' : ''}`} />
+                    {isSelected && (
+                      <span className="absolute top-2 right-2 flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                      </span>
+                    )}
+                    <Icon className={`h-4 w-4 mt-0.5 flex-shrink-0 ${isSelected ? 'text-emerald-300' : ''}`} />
                     <div>
                       <div className="text-xs font-semibold">{t.label}</div>
                       <div className="text-[10px] text-muted-foreground">{t.desc}</div>
@@ -150,7 +157,7 @@ export const AddChannelModal: React.FC<AddChannelModalProps> = ({
 
           {/* Channel Friendly Name */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">Channel Name</label>
+            <label className="text-xs font-medium text-slate-300 mb-1 block">Channel Name</label>
             <Input
               placeholder={
                 channelType === 'TELEGRAM'
@@ -162,13 +169,13 @@ export const AddChannelModal: React.FC<AddChannelModalProps> = ({
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="h-9 text-xs"
+              className="h-9 text-xs bg-slate-950/80 border-slate-700/80 focus:border-emerald-500 text-white"
             />
           </div>
 
           {/* Telegram Config */}
           {channelType === 'TELEGRAM' && (
-            <div className="space-y-3 bg-secondary/20 p-3.5 rounded-lg border border-border/50">
+            <div className="space-y-3 bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/80 shadow-inner">
               <div>
                 <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Bot Token</label>
                 <Input

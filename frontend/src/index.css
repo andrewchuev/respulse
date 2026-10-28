@@ -48,3 +48,57 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground));
 }
+
+/* Premium SaaS Glow & Glass Effects */
+.glow-emerald {
+  box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.25), 0 0 10px -5px rgba(16, 185, 129, 0.15);
+}
+
+.glow-emerald-strong {
+  box-shadow: 0 0 35px -5px rgba(16, 185, 129, 0.4), 0 0 15px -3px rgba(16, 185, 129, 0.25);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.25), 0 0 10px -5px rgba(6, 182, 212, 0.15);
+}
+
+.glow-purple {
+  box-shadow: 0 0 25px -5px rgba(168, 85, 247, 0.25), 0 0 10px -5px rgba(168, 85, 247, 0.15);
+}
+
+.glow-card {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.6), 0 0 20px -5px rgba(16, 185, 129, 0.08);
+}
+
+.glow-card-hover:hover {
+  box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.7), 0 0 25px -4px rgba(16, 185, 129, 0.16);
+}
+
+.glass-modal {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(10, 15, 29, 0.98) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 40px -10px rgba(16, 185, 129, 0.1);
+}
+
+/* Skeleton Loading Shimmer */
+@keyframes shimmerWave {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(30, 41, 59, 0.45) 0%,
+    rgba(51, 65, 85, 0.65) 50%,
+    rgba(30, 41, 59, 0.45) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmerWave 1.8s infinite ease-in-out;
+}

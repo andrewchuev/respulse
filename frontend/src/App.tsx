@@ -22,6 +22,7 @@ import { StatusPage } from './components/StatusPage';
 import { NotificationChannels } from './components/NotificationChannels';
 import { IncidentManagement } from './components/IncidentManagement';
 import { TeamManagement } from './components/TeamManagement';
+import { SkeletonDashboard } from './components/SkeletonDashboard';
 
 export function App() {
   const [monitors, setMonitors] = useState<MonitorWithStats[]>([]);
@@ -177,7 +178,11 @@ export function App() {
   const isViewer = currentUser?.role === 'VIEWER';
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
+    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans relative overflow-x-hidden">
+      {/* Ambient Brand Glow Mesh in Background */}
+      <div className="pointer-events-none fixed top-0 left-1/4 -z-10 h-[450px] w-[550px] rounded-full bg-emerald-500/5 blur-[140px]" />
+      <div className="pointer-events-none fixed top-10 right-1/4 -z-10 h-[400px] w-[500px] rounded-full bg-cyan-500/5 blur-[150px]" />
+
       <Header
         currentView={currentView}
         setCurrentView={setCurrentView}
@@ -198,10 +203,7 @@ export function App() {
 
       <main className="flex-1 container mx-auto px-4 py-8">
         {loading ? (
-          <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
-            <p className="text-xs text-muted-foreground font-mono">Connecting to probe engine...</p>
-          </div>
+          <SkeletonDashboard />
         ) : currentView === 'channels' ? (
           <NotificationChannels currentUser={currentUser} />
         ) : currentView === 'incidents' ? (

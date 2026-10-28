@@ -59,8 +59,24 @@ export const MonitorList: React.FC<MonitorListProps> = ({
 
   // View state
   const [viewMode, setViewMode] = useState<'flat' | 'grouped'>('flat');
-  const [isCompact, setIsCompact] = useState(false);
+  const [isCompact, setIsCompact] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('respulse_compact_view') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+  const toggleCompact = () => {
+    setIsCompact((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('respulse_compact_view', String(next));
+      } catch {}
+      return next;
+    });
+  };
 
   // Pagination state
   const [pageSize, setPageSize] = useState<number>(10);
@@ -347,13 +363,16 @@ export const MonitorList: React.FC<MonitorListProps> = ({
               </button>
               <div className="w-[1px] h-3 bg-border/80 mx-0.5" />
               <button
-                onClick={() => setIsCompact(!isCompact)}
-                title={isCompact ? 'Comfortable view' : 'Compact high-density view'}
-                className={`p-1.5 rounded transition-all ${
-                  isCompact ? 'bg-background text-emerald-400 shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                onClick={toggleCompact}
+                title={isCompact ? 'Switch to Comfortable view' : 'Switch to Compact high-density view'}
+                className={`px-2 py-1 rounded-md transition-all flex items-center gap-1.5 font-medium text-xs ${
+                  isCompact
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.2)]'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-background/60'
                 }`}
               >
                 <SlidersHorizontal className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline text-[11px]">{isCompact ? 'Compact' : 'Comfortable'}</span>
               </button>
             </div>
           </div>

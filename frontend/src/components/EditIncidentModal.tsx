@@ -162,7 +162,7 @@ Immediate actions taken by the response team to restore normal operations.
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-card border-border">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-slate-900/95 backdrop-blur-2xl border border-white/10 ring-1 ring-white/5 shadow-2xl shadow-black/90">
         <DialogHeader>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">

@@ -70,18 +70,20 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-5">
-          <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => setCurrentView('dashboard')}>
-            <div className="h-9 w-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+          <div className="flex items-center gap-2.5 cursor-pointer group" onClick={() => setCurrentView('dashboard')}>
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20 border border-emerald-500/35 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.25)] group-hover:scale-105 transition-all">
               <Activity className="h-5 w-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold tracking-tight text-lg text-white">ResPulse</span>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1 animate-pulse"></span>
+                <span className="font-extrabold tracking-tight text-lg bg-gradient-to-r from-white via-slate-100 to-emerald-300 bg-clip-text text-transparent">
+                  ResPulse
+                </span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-[0_0_8px_rgba(16,185,129,0.2)]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse shadow-[0_0_5px_rgba(16,185,129,1)]"></span>
                   LIVE
                 </span>
               </div>
@@ -89,12 +91,12 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          <nav className="hidden md:flex items-center gap-1 bg-secondary/50 p-1 rounded-lg border border-border">
+          <nav className="hidden md:flex items-center gap-1 bg-secondary/50 p-1 rounded-xl border border-border/80">
             <button
               onClick={() => setCurrentView('dashboard')}
-              className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 currentView === 'dashboard'
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-background text-foreground shadow-sm border border-border/60'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -102,9 +104,9 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
             <button
               onClick={() => setCurrentView('channels')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 currentView === 'channels'
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-background text-foreground shadow-sm border border-border/60'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -113,9 +115,9 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
             <button
               onClick={() => setCurrentView('incidents')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 currentView === 'incidents'
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-background text-foreground shadow-sm border border-border/60'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -124,9 +126,9 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
             <button
               onClick={() => setCurrentView('team')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 currentView === 'team'
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-background text-foreground shadow-sm border border-border/60'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -135,9 +137,9 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
             <button
               onClick={() => setCurrentView('status-page')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 currentView === 'status-page'
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-background text-foreground shadow-sm border border-border/60'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -148,7 +150,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="hidden lg:flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 px-3 py-1.5 rounded-md border border-border/50">
+          <div className="hidden lg:flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 px-3 py-1.5 rounded-lg border border-border/50">
             <Radio className="h-3.5 w-3.5 text-emerald-400 animate-pulse" />
             <span>Multi-node Probing</span>
             <span className="text-foreground font-mono font-medium">({totalActive} active)</span>
@@ -179,7 +181,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Dropdown Menu */}
             {isUserMenuOpen && (
-              <div className="absolute right-0 mt-2 w-72 bg-card border border-border/80 rounded-xl shadow-2xl p-2 z-50 divide-y divide-border/60">
+              <div className="absolute right-0 mt-2 w-72 bg-slate-900/95 backdrop-blur-2xl border border-white/10 ring-1 ring-white/5 rounded-2xl shadow-2xl shadow-black/90 p-2.5 z-50 divide-y divide-slate-800/80 animate-in fade-in-0 zoom-in-95 duration-150">
                 <div className="p-2 space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] uppercase font-mono tracking-wider text-muted-foreground">

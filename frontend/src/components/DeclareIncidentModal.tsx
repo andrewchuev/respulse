@@ -73,7 +73,7 @@ export const DeclareIncidentModal: React.FC<DeclareIncidentModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[540px] bg-card border-border">
+      <DialogContent className="sm:max-w-[540px] bg-slate-900/95 backdrop-blur-2xl border border-white/10 ring-1 ring-white/5 shadow-2xl shadow-black/90">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">

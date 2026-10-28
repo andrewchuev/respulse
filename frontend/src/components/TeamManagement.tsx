@@ -460,7 +460,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({ currentUser, onU
 
       {/* Invite Member Modal */}
       <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
-        <DialogContent className="sm:max-w-[480px] bg-card border-border">
+        <DialogContent className="sm:max-w-[480px] bg-slate-900/95 backdrop-blur-2xl border border-white/10 ring-1 ring-white/5 shadow-2xl shadow-black/90">
           <DialogHeader>
             <div className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
@@ -483,34 +483,34 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({ currentUser, onU
             )}
 
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Full Name</label>
+              <label className="text-xs font-medium text-slate-300 mb-1 block">Full Name</label>
               <Input
                 value={inviteName}
                 onChange={(e) => setInviteName(e.target.value)}
                 placeholder="e.g. Sarah Connor"
                 required
-                className="h-9 text-xs"
+                className="h-9 text-xs bg-slate-950/80 border-slate-700/80 focus:border-emerald-500 text-white"
               />
             </div>
 
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Corporate Email Address</label>
+              <label className="text-xs font-medium text-slate-300 mb-1 block">Corporate Email Address</label>
               <Input
                 type="email"
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
                 placeholder="e.g. sarah.connor@enterprise.com"
                 required
-                className="h-9 text-xs"
+                className="h-9 text-xs bg-slate-950/80 border-slate-700/80 focus:border-emerald-500 text-white"
               />
             </div>
 
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Role & Security Tier</label>
+              <label className="text-xs font-medium text-slate-300 mb-1 block">Role & Security Tier</label>
               <select
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value as UserRole)}
-                className="w-full bg-background border border-border rounded-md px-3 py-1.5 text-xs text-foreground h-9 focus:ring-1 focus:ring-emerald-500"
+                className="w-full bg-slate-950/80 border border-slate-700/80 rounded-md px-3 py-1.5 text-xs text-foreground h-9 focus:ring-1 focus:ring-emerald-500 text-white"
               >
                 <option value="ADMIN">🛡️ ADMIN — Full monitoring & team management</option>
                 <option value="ENGINEER">🛠️ ENGINEER — Create/edit monitors, run tests & declare RCA</option>

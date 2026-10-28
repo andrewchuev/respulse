@@ -12,3 +12,5 @@ frontend/.vite/
 .env
 *.local
 *.log
+scratch/
+*.png

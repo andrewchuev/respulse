@@ -42,13 +42,13 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
 
   return (
     <Dialog open={!!monitor} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] bg-card border-border max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] bg-slate-900/95 backdrop-blur-2xl border border-white/10 ring-1 ring-white/5 shadow-2xl shadow-black/90 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <span className="flex h-3.5 w-3.5 relative">
               {isUp && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>}
               {isDown && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>}
-              <span className={`relative inline-flex rounded-full h-3.5 w-3.5 ${isUp ? 'bg-emerald-500' : isDown ? 'bg-red-500' : 'bg-muted-foreground'}`}></span>
+              <span className={`relative inline-flex rounded-full h-3.5 w-3.5 ${isUp ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]' : isDown ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]' : 'bg-muted-foreground'}`}></span>
             </span>
             <div>
               <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
@@ -67,7 +67,7 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
         <div className="space-y-6 pt-2">
           {/* Heartbeat Token snippet if Heartbeat */}
           {data.heartbeat_token && (
-            <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-lg">
+            <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
                   <Activity className="h-3.5 w-3.5" />
@@ -81,7 +81,7 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
                   {copied ? 'Copied!' : 'Copy'}
                 </button>
               </div>
-              <code className="block p-2 bg-background/90 rounded border font-mono text-xs text-white select-all break-all">
+              <code className="block p-2 bg-slate-950 rounded-lg border border-slate-800 font-mono text-xs text-emerald-300 select-all break-all">
                 curl -X POST https://respulse.wsl.local/api/heartbeat/{data.heartbeat_token}
               </code>
             </div>
@@ -89,21 +89,21 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
 
           {/* Stats Bar */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-secondary/40 border border-border/80 p-3 rounded-lg text-center">
+            <div className="bg-slate-950/60 border border-slate-800/80 p-3 rounded-xl text-center shadow-inner">
               <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block">24h Uptime</span>
               <span className="text-lg font-bold font-mono text-emerald-400">{data.uptime_24h.toFixed(1)}%</span>
             </div>
-            <div className="bg-secondary/40 border border-border/80 p-3 rounded-lg text-center">
+            <div className="bg-slate-950/60 border border-slate-800/80 p-3 rounded-xl text-center shadow-inner">
               <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block">7d Uptime</span>
               <span className="text-lg font-bold font-mono text-emerald-400">{data.uptime_7d.toFixed(1)}%</span>
             </div>
-            <div className="bg-secondary/40 border border-border/80 p-3 rounded-lg text-center">
+            <div className="bg-slate-950/60 border border-slate-800/80 p-3 rounded-xl text-center shadow-inner">
               <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block">Current Latency</span>
               <span className="text-lg font-bold font-mono text-white">{formatMs(data.last_response_time_ms)}</span>
             </div>
           </div>
 
-          {/* Latency History Chart */}
+          {/* Latency History Chart with Brand Neon Glow */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-xs font-semibold text-white uppercase tracking-wider flex items-center gap-1.5">
@@ -113,23 +113,42 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
               <span className="text-[11px] text-muted-foreground">Last {data.latency_history.length || 0} checks</span>
             </div>
 
-            <div className="h-44 w-full bg-secondary/20 rounded-lg p-2 border border-border/60">
+            <div className="relative h-48 w-full bg-slate-950/70 rounded-xl p-3 border border-slate-800 shadow-[0_0_30px_rgba(16,185,129,0.08)] overflow-hidden">
+              {/* Ambient Glow Aura */}
+              <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-72 h-24 bg-emerald-500/15 rounded-full blur-2xl pointer-events-none" />
+
               {data.latency_history.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={data.latency_history}>
                     <defs>
                       <linearGradient id="latencyGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                        <stop offset="0%" stopColor="#10b981" stopOpacity={0.65} />
+                        <stop offset="60%" stopColor="#06b6d4" stopOpacity={0.2} />
+                        <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.0} />
                       </linearGradient>
                     </defs>
                     <XAxis dataKey="time" stroke="#6b7280" fontSize={10} tickLine={false} />
                     <YAxis stroke="#6b7280" fontSize={10} tickLine={false} unit="ms" />
                     <Tooltip
-                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.375rem', fontSize: '11px' }}
+                      contentStyle={{
+                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                        backdropFilter: 'blur(12px)',
+                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                        borderRadius: '0.5rem',
+                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 15px rgba(16, 185, 129, 0.2)',
+                        fontSize: '11px',
+                        color: '#fff',
+                      }}
                       formatter={(val: any) => [`${val} ms`, 'Response Time']}
                     />
-                    <Area type="monotone" dataKey="latency" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#latencyGradient)" />
+                    <Area
+                      type="monotone"
+                      dataKey="latency"
+                      stroke="#10b981"
+                      strokeWidth={2.5}
+                      fillOpacity={1}
+                      fill="url(#latencyGradient)"
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (

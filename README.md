@@ -40,12 +40,14 @@
 ### 2. Interactive Real-Time Dashboard
 * **Live WebSocket Streaming:**
   * Updates status, response time, and incident state in real time without refreshing the page.
-* **30-Check Uptime Timeline:**
+* **30-Check Uptime Timeline & Micro-interactions:**
   * Color-coded status bars (operational, down, paused).
-  * Interactive tooltips displaying exact timestamp, status code, and latency for each check.
-* **Response Time Analytics:**
-  * Interactive area charts built with `Recharts` showing latency history.
+  * Smooth hover scale transitions (`hover:scale-y-125 hover:brightness-125`) with animated floating glass tooltips displaying exact timestamp, HTTP status code, and latency in milliseconds.
+* **Response Time Analytics & Brand Neon Glow:**
+  * Interactive area charts built with `Recharts` showing latency history with dual-stop emerald/cyan gradients and luminous ambient glow auras.
   * Calculates rolling 24-hour, 7-day, and 30-day uptime percentages.
+* **Perceived Performance & Skeleton UI:**
+  * Zero-layout-shift shimmering skeleton loaders during initial data fetching across KPI metrics, filter bars, and 30-bar timelines.
 * **Quick Management Actions:**
   * **Test Now:** Trigger an immediate probe on demand.
   * **Pause / Resume:** Suspend monitoring during maintenance.
@@ -66,10 +68,12 @@
 * **Tagging System & Dynamic Tag Cloud:**
   * Assign multiple tags (`#prod`, `#ecommerce`, `#api`, `#dns`) to each monitor.
   * Horizontal scrollable tag filter bar showing count badges for instant 1-click filtering.
-* **Pagination & High-Density Display:**
+* **High-Density Compact View Mode:**
+  * Dedicated 1-click **Compact View toggle** (persisted in `localStorage`).
+  * Compresses monitors into sleek single-line rows (~46px height), allowing DevOps & NOC engineers to supervise dozens of endpoints simultaneously on a single viewport without scrolling.
+* **Pagination & Controls:**
   * Configurable page sizes (`5`, `10`, `25`, `50`, `100` targets per page).
   * Page jump navigation (`<<`, `<`, numbered buttons with ellipsis, `>`, `>>`).
-  * **Compact Density Mode toggle:** tightens padding and heights, allowing engineers to supervise 100+ endpoints simultaneously.
 
 ### 4. Public Status Page
 * Built-in public status page accessible via the header navigation or directly.
@@ -195,7 +199,8 @@ respulse/
 │       ├── api/client.ts        # Fetch client & WebSocket connection
 │       ├── components/          # UI components
 │       │   ├── Header.tsx       # Navigation, user profile & persona switcher dropdown
-│       │   ├── StatsOverview.tsx
+│       │   ├── StatsOverview.tsx# Glowing KPI metrics & system health cards
+│       │   ├── SkeletonDashboard.tsx # Shimmering zero-layout-shift loading state
 │       │   ├── MonitorList.tsx  # Multi-select, bulk operations & high-density view
 │       │   ├── MonitorCard.tsx  # Live status, uptime bars, latency charts & actions
 │       │   ├── MonitorDetailModal.tsx
