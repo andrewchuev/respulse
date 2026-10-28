@@ -4,7 +4,6 @@ import {
   ShieldCheck,
   Server,
   Heart,
-  Code2,
   CheckCircle2,
   AlertTriangle,
   Layers,
@@ -16,7 +15,6 @@ import {
   Sparkles,
   Check,
   Copy,
-  ExternalLink,
   ArrowRight,
   ChevronDown,
   ChevronUp,
@@ -115,16 +113,6 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
 
           {/* Header Actions */}
           <div className="flex items-center gap-2.5">
-            <a
-              href="https://github.com/andrewchuev/respulse"
-              target="_blank"
-              rel="noreferrer"
-              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 text-slate-300 transition-all hover:text-white"
-            >
-              <Code2 className="h-3.5 w-3.5 text-emerald-400" />
-              GitHub
-            </a>
-
             {onOpenAuth && (
               <button
                 onClick={() => onOpenAuth('login')}
@@ -200,9 +188,9 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
           <div className="pt-4 flex items-center justify-center">
             <div className="inline-flex items-center gap-3 bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-2 text-xs font-mono text-slate-300 shadow-xl backdrop-blur">
               <span className="text-emerald-400 font-bold">$</span>
-              <span className="select-all">git clone https://github.com/andrewchuev/respulse && cd respulse && make up</span>
+              <span className="select-all">docker compose up -d</span>
               <button
-                onClick={() => copyToClipboard('git clone https://github.com/andrewchuev/respulse && cd respulse && make up', 'hero-clone')}
+                onClick={() => copyToClipboard('docker compose up -d', 'hero-clone')}
                 className="text-slate-400 hover:text-emerald-400 transition-colors p-1"
                 title="Copy launch command"
               >
@@ -762,7 +750,7 @@ let latency_ms = start.elapsed().as_millis();
             {/* Plan 1: Community */}
             <div className="rounded-2xl border border-white/10 bg-slate-900/40 p-6 flex flex-col justify-between backdrop-blur">
               <div className="space-y-4">
-                <div className="text-xs font-mono text-slate-400 uppercase tracking-wider">Community Open-Source</div>
+                <div className="text-xs font-mono text-slate-400 uppercase tracking-wider">Community / Self-Hosted</div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl font-extrabold text-white">$0</span>
                   <span className="text-xs text-slate-400">/ forever free</span>
@@ -1067,7 +1055,7 @@ let latency_ms = start.elapsed().as_millis();
             </div>
             <span className="font-bold text-white text-sm">ResPulse</span>
             <span className="text-[11px] text-slate-500">
-              © {new Date().getFullYear()} ResPulse Open-Source Project. Systems-grade synthetic monitoring.
+              © {new Date().getFullYear()} ResPulse. Systems-grade synthetic monitoring.
             </span>
           </div>
 
@@ -1078,13 +1066,8 @@ let latency_ms = start.elapsed().as_millis();
             <button onClick={onOpenStatusPage} className="hover:text-emerald-400 transition-colors">
               Status Page
             </button>
-            <a
-              href="https://github.com/andrewchuev/respulse"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-emerald-400 transition-colors flex items-center gap-1"
-            >
-              GitHub <ExternalLink className="h-3 w-3" />
+            <a href="#faq" className="hover:text-emerald-400 transition-colors">
+              FAQ
             </a>
           </div>
         </div>
