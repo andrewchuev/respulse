@@ -445,9 +445,17 @@ export const FastSpringCheckoutModal: React.FC<FastSpringCheckoutModalProps> = (
         )}
 
         <DialogFooter className="pt-2 border-t border-slate-800/80 flex items-center justify-between sm:justify-between">
-          <div className="text-[11px] text-slate-400 font-mono flex items-center gap-1.5">
-            <Building2 className="h-3 w-3 text-slate-500" />
-            <span>Merchant of Record: <strong className="text-slate-300 font-medium">FastSpring (reslab)</strong></span>
+          <div className="text-[11px] text-slate-400 font-mono space-y-1">
+            <div className="flex items-center gap-1.5">
+              <Building2 className="h-3 w-3 text-slate-500" />
+              <span>Merchant of Record: <strong className="text-slate-300 font-medium">FastSpring (reslab)</strong></span>
+            </div>
+            <div className="text-[10px] text-slate-500">
+              By subscribing you agree to the{' '}
+              <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-emerald-400">Terms</a>
+              {' '}and{' '}
+              <a href="/refund" target="_blank" rel="noopener noreferrer" className="underline hover:text-emerald-400">Refund Policy</a>.
+            </div>
           </div>
           <Button
             type="button"

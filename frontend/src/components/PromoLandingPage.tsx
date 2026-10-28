@@ -1133,6 +1133,15 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
             <a href="#faq" className="hover:text-emerald-400 transition-colors">
               FAQ
             </a>
+            <a href="/terms" className="hover:text-emerald-400 transition-colors">
+              Terms
+            </a>
+            <a href="/privacy" className="hover:text-emerald-400 transition-colors">
+              Privacy
+            </a>
+            <a href="/refund" className="hover:text-emerald-400 transition-colors">
+              Refunds
+            </a>
           </div>
         </div>
       </footer>

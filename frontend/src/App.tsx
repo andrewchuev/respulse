@@ -30,7 +30,10 @@ import { TeamManagement } from './components/TeamManagement';
 import { SkeletonDashboard } from './components/SkeletonDashboard';
 import { PromoLandingPage } from './components/PromoLandingPage';
 import { AuthModal } from './components/AuthModal';
+import { LegalPage } from './components/LegalPage';
 import { FastSpringCheckoutModal } from './components/FastSpringCheckoutModal';
+
+type View = 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo' | 'terms' | 'privacy' | 'refund';
 
 export function App() {
   const [monitors, setMonitors] = useState<MonitorWithStats[]>([]);
@@ -48,7 +51,7 @@ export function App() {
       }
     } catch {}
   }, []);
-  const getViewFromLocation = (): 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo' => {
+  const getViewFromLocation = (): View => {
     try {
       const params = new URLSearchParams(window.location.search);
       const view = params.get('view');
@@ -59,18 +62,21 @@ export function App() {
       if (view === 'incidents' || path === '/incidents') return 'incidents';
       if (view === 'team' || path === '/team') return 'team';
       if (view === 'status' || view === 'status-page' || path === '/status' || path === '/status-page') return 'status-page';
+      if (path === '/terms') return 'terms';
+      if (path === '/privacy') return 'privacy';
+      if (path === '/refund') return 'refund';
       if (view === 'promo' || path === '/promo') return 'promo';
       if (path === '/' || path === '') return 'promo';
     } catch {}
     return 'promo';
   };
 
-  const [currentView, setCurrentView] = useState<'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo'>(getViewFromLocation);
+  const [currentView, setCurrentView] = useState<View>(getViewFromLocation);
 
   const requiresAuth = (view: string) =>
     view === 'dashboard' || view === 'channels' || view === 'incidents' || view === 'team';
 
-  const changeView = (requested: 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo') => {
+  const changeView = (requested: View) => {
     let newView = requested;
     if (requiresAuth(newView) && !getAuthToken()) {
       openAuth('login');
@@ -289,6 +295,10 @@ export function App() {
     setIsAddModalOpen(false);
   };
 
+  if (currentView === 'terms' || currentView === 'privacy' || currentView === 'refund') {
+    return <LegalPage kind={currentView} />;
+  }
+
   if (currentView === 'status-page') {
     return (
       <>
@@ -466,6 +476,11 @@ export function App() {
 
       <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground">
         <p className="font-mono">ResPulse v1.0 — High-performance Synthetic Monitoring Engine in Rust</p>
+        <p className="font-mono mt-1 space-x-3">
+          <a href="/terms" className="hover:text-emerald-400 transition-colors">Terms</a>
+          <a href="/privacy" className="hover:text-emerald-400 transition-colors">Privacy</a>
+          <a href="/refund" className="hover:text-emerald-400 transition-colors">Refunds</a>
+        </p>
       </footer>
     </div>
   );
