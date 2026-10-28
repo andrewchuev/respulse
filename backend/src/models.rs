@@ -122,6 +122,64 @@ pub struct Incident {
     pub resolved_at: Option<DateTime<Utc>>,
     pub duration_seconds: Option<i32>,
     pub root_cause: Option<String>,
+    pub title: Option<String>,
+    #[serde(default = "default_severity")]
+    pub severity: String,
+    #[serde(default = "default_stage")]
+    pub stage: String,
+    pub summary: Option<String>,
+    pub post_mortem: Option<String>,
+    #[serde(default = "default_true")]
+    pub is_published: bool,
+}
+
+fn default_severity() -> String { "MAJOR".to_string() }
+fn default_stage() -> String { "INVESTIGATING".to_string() }
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct IncidentUpdate {
+    pub id: i64,
+    pub incident_id: Uuid,
+    pub stage: String,
+    pub message: String,
+    pub author: String,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IncidentWithDetails {
+    #[serde(flatten)]
+    pub incident: Incident,
+    pub monitor_name: String,
+    pub monitor_url: String,
+    pub updates: Vec<IncidentUpdate>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateIncidentRequest {
+    pub title: Option<String>,
+    pub severity: Option<String>,
+    pub stage: Option<String>,
+    pub summary: Option<String>,
+    pub post_mortem: Option<String>,
+    pub is_published: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AddIncidentUpdateRequest {
+    pub stage: String,
+    pub message: String,
+    pub author: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateManualIncidentRequest {
+    pub monitor_id: Uuid,
+    pub title: String,
+    pub severity: Option<String>,
+    pub stage: Option<String>,
+    pub summary: Option<String>,
+    pub message: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

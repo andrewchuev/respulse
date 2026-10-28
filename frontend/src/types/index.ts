@@ -52,6 +52,9 @@ export interface MonitorWithStats extends Monitor {
   latency_history: LatencyPoint[];
 }
 
+export type IncidentStage = 'INVESTIGATING' | 'IDENTIFIED' | 'MONITORING' | 'RESOLVED';
+export type IncidentSeverity = 'MINOR' | 'MAJOR' | 'CRITICAL' | 'MAINTENANCE';
+
 export interface Incident {
   id: string;
   monitor_id: string;
@@ -62,6 +65,51 @@ export interface Incident {
   resolved_at: string | null;
   duration_seconds: number | null;
   root_cause: string | null;
+  title?: string | null;
+  severity: IncidentSeverity;
+  stage: IncidentStage;
+  summary?: string | null;
+  post_mortem?: string | null;
+  is_published: boolean;
+}
+
+export interface IncidentUpdate {
+  id: number;
+  incident_id: string;
+  stage: IncidentStage;
+  message: string;
+  author: string;
+  created_at: string;
+}
+
+export interface IncidentWithDetails extends Incident {
+  monitor_name: string;
+  monitor_url: string;
+  updates: IncidentUpdate[];
+}
+
+export interface UpdateIncidentPayload {
+  title?: string;
+  severity?: IncidentSeverity;
+  stage?: IncidentStage;
+  summary?: string;
+  post_mortem?: string;
+  is_published?: boolean;
+}
+
+export interface AddIncidentUpdatePayload {
+  stage: IncidentStage;
+  message: string;
+  author?: string;
+}
+
+export interface CreateManualIncidentPayload {
+  monitor_id: string;
+  title: string;
+  severity?: IncidentSeverity;
+  stage?: IncidentStage;
+  summary?: string;
+  message?: string;
 }
 
 export interface GlobalStats {
@@ -78,7 +126,8 @@ export interface PublicStatusPage {
   description: string;
   all_systems_operational: boolean;
   overall_uptime_90d: number;
-  active_incidents: Incident[];
+  active_incidents: IncidentWithDetails[];
+  resolved_incidents: IncidentWithDetails[];
   services: MonitorWithStats[];
 }
 

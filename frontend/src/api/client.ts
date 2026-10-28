@@ -1,15 +1,20 @@
 import {
+  AddIncidentUpdatePayload,
   AlertLogWithDetails,
   BulkActionPayload,
   BulkActionResponse,
   CreateChannelPayload,
+  CreateManualIncidentPayload,
   CreateMonitorPayload,
   GlobalStats,
   Incident,
+  IncidentUpdate,
+  IncidentWithDetails,
   Monitor,
   MonitorWithStats,
   NotificationChannel,
   PublicStatusPage,
+  UpdateIncidentPayload,
 } from '../types';
 
 const API_BASE = '/api';
@@ -78,9 +83,45 @@ export async function fetchStats(): Promise<GlobalStats> {
   return res.json();
 }
 
-export async function fetchIncidents(): Promise<Incident[]> {
+export async function fetchIncidents(): Promise<IncidentWithDetails[]> {
   const res = await fetch(`${API_BASE}/incidents`);
   if (!res.ok) throw new Error('Failed to fetch incidents');
+  return res.json();
+}
+
+export async function fetchIncident(id: string): Promise<IncidentWithDetails> {
+  const res = await fetch(`${API_BASE}/incidents/${id}`);
+  if (!res.ok) throw new Error('Failed to fetch incident details');
+  return res.json();
+}
+
+export async function updateIncident(id: string, payload: UpdateIncidentPayload): Promise<Incident> {
+  const res = await fetch(`${API_BASE}/incidents/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error('Failed to update incident');
+  return res.json();
+}
+
+export async function addIncidentUpdate(id: string, payload: AddIncidentUpdatePayload): Promise<IncidentUpdate> {
+  const res = await fetch(`${API_BASE}/incidents/${id}/updates`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error('Failed to post incident update');
+  return res.json();
+}
+
+export async function createManualIncident(payload: CreateManualIncidentPayload): Promise<IncidentWithDetails> {
+  const res = await fetch(`${API_BASE}/incidents`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error('Failed to create manual incident');
   return res.json();
 }
 

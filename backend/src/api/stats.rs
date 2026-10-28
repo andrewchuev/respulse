@@ -77,7 +77,8 @@ pub struct PublicStatusPage {
     pub description: String,
     pub all_systems_operational: bool,
     pub overall_uptime_90d: f64,
-    pub active_incidents: Vec<crate::models::Incident>,
+    pub active_incidents: Vec<crate::models::IncidentWithDetails>,
+    pub resolved_incidents: Vec<crate::models::IncidentWithDetails>,
     pub services: Vec<MonitorWithStats>,
 }
 
@@ -93,12 +94,63 @@ pub async fn get_status_page(
 
     let all_up = monitors.iter().all(|m| m.status == "UP");
 
-    let active_incidents: Vec<crate::models::Incident> = sqlx::query_as::<_, crate::models::Incident>(
-        "SELECT * FROM incidents WHERE status = 'ONGOING' ORDER BY started_at DESC"
+    // Fetch active ongoing incidents
+    let active_rows: Vec<crate::models::Incident> = sqlx::query_as::<_, crate::models::Incident>(
+        "SELECT * FROM incidents WHERE status = 'ONGOING' AND is_published = TRUE ORDER BY started_at DESC"
     )
     .fetch_all(&state.pool)
     .await
     .unwrap_or_default();
+
+    let mut active_incidents = Vec::new();
+    for inc in active_rows {
+        let m_name = monitors.iter().find(|m| m.id == inc.monitor_id).map(|m| m.name.clone()).unwrap_or_else(|| "Service".to_string());
+        let m_url = monitors.iter().find(|m| m.id == inc.monitor_id).map(|m| m.url.clone()).unwrap_or_default();
+        let updates: Vec<crate::models::IncidentUpdate> = sqlx::query_as::<_, crate::models::IncidentUpdate>(
+            "SELECT * FROM incident_updates WHERE incident_id = $1 ORDER BY created_at ASC"
+        )
+        .bind(inc.id)
+        .fetch_all(&state.pool)
+        .await
+        .unwrap_or_default();
+
+        active_incidents.push(crate::models::IncidentWithDetails {
+            incident: inc,
+            monitor_name: m_name,
+            monitor_url: m_url,
+            updates,
+        });
+    }
+
+    // Fetch resolved incidents with post-mortems (past 7 days)
+    let seven_days_ago = Utc::now() - Duration::days(7);
+    let resolved_rows: Vec<crate::models::Incident> = sqlx::query_as::<_, crate::models::Incident>(
+        "SELECT * FROM incidents WHERE status = 'RESOLVED' AND is_published = TRUE AND started_at >= $1 ORDER BY started_at DESC LIMIT 10"
+    )
+    .bind(seven_days_ago)
+    .fetch_all(&state.pool)
+    .await
+    .unwrap_or_default();
+
+    let mut resolved_incidents = Vec::new();
+    for inc in resolved_rows {
+        let m_name = monitors.iter().find(|m| m.id == inc.monitor_id).map(|m| m.name.clone()).unwrap_or_else(|| "Service".to_string());
+        let m_url = monitors.iter().find(|m| m.id == inc.monitor_id).map(|m| m.url.clone()).unwrap_or_default();
+        let updates: Vec<crate::models::IncidentUpdate> = sqlx::query_as::<_, crate::models::IncidentUpdate>(
+            "SELECT * FROM incident_updates WHERE incident_id = $1 ORDER BY created_at ASC"
+        )
+        .bind(inc.id)
+        .fetch_all(&state.pool)
+        .await
+        .unwrap_or_default();
+
+        resolved_incidents.push(crate::models::IncidentWithDetails {
+            incident: inc,
+            monitor_name: m_name,
+            monitor_url: m_url,
+            updates,
+        });
+    }
 
     let mut services = Vec::new();
     let day_ago = Utc::now() - Duration::days(1);
@@ -160,6 +212,7 @@ pub async fn get_status_page(
         all_systems_operational: all_up && active_incidents.is_empty(),
         overall_uptime_90d: 99.98,
         active_incidents,
+        resolved_incidents,
         services,
     }))
 }

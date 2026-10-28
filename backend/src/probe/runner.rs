@@ -127,15 +127,38 @@ pub async fn execute_single_probe(
     if status_changed {
         if new_status == "DOWN" {
             let incident_id = Uuid::new_v4();
+            let title = format!("{} Service Disruption", monitor.name);
+            let summary = format!(
+                "Our automated probes detected connectivity or response issues with {}.",
+                monitor.name
+            );
+            let initial_update = format!(
+                "Automated check failed: {}",
+                probe_result.error.as_deref().unwrap_or("Endpoint check failed")
+            );
+
             let _ = sqlx::query(
                 r#"
-                INSERT INTO incidents (id, monitor_id, status, started_at, root_cause)
-                VALUES ($1, $2, 'ONGOING', NOW(), $3)
+                INSERT INTO incidents (id, monitor_id, status, started_at, root_cause, title, severity, stage, summary)
+                VALUES ($1, $2, 'ONGOING', NOW(), $3, $4, 'MAJOR', 'INVESTIGATING', $5)
                 "#
             )
             .bind(incident_id)
             .bind(monitor.id)
             .bind(&probe_result.error)
+            .bind(&title)
+            .bind(&summary)
+            .execute(&pool)
+            .await;
+
+            let _ = sqlx::query(
+                r#"
+                INSERT INTO incident_updates (incident_id, stage, message, author)
+                VALUES ($1, 'INVESTIGATING', $2, 'Automated Monitor')
+                "#
+            )
+            .bind(incident_id)
+            .bind(&initial_update)
             .execute(&pool)
             .await;
 
@@ -147,6 +170,12 @@ pub async fn execute_single_probe(
                 resolved_at: None,
                 duration_seconds: None,
                 root_cause: probe_result.error.clone(),
+                title: Some(title),
+                severity: "MAJOR".to_string(),
+                stage: "INVESTIGATING".to_string(),
+                summary: Some(summary),
+                post_mortem: None,
+                is_published: true,
             };
             let _ = tx.send(WsMessage::IncidentCreated(inc));
 
@@ -181,7 +210,7 @@ pub async fn execute_single_probe(
                 let _ = sqlx::query(
                     r#"
                     UPDATE incidents
-                    SET status = 'RESOLVED', resolved_at = $1, duration_seconds = $2
+                    SET status = 'RESOLVED', stage = 'RESOLVED', resolved_at = $1, duration_seconds = $2
                     WHERE id = $3
                     "#
                 )
@@ -191,8 +220,21 @@ pub async fn execute_single_probe(
                 .execute(&pool)
                 .await;
 
+                let recovery_msg = format!("Service recovered and is responding normally. Total outage duration: {}s.", duration);
+                let _ = sqlx::query(
+                    r#"
+                    INSERT INTO incident_updates (incident_id, stage, message, author)
+                    VALUES ($1, 'RESOLVED', $2, 'Automated Monitor')
+                    "#
+                )
+                .bind(inc.id)
+                .bind(&recovery_msg)
+                .execute(&pool)
+                .await;
+
                 let mut resolved = inc.clone();
                 resolved.status = "RESOLVED".to_string();
+                resolved.stage = "RESOLVED".to_string();
                 resolved.resolved_at = Some(now);
                 resolved.duration_seconds = Some(duration);
                 let _ = tx.send(WsMessage::IncidentResolved(resolved));

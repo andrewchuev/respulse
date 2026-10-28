@@ -91,10 +91,23 @@
   * Detailed delivery history table logging timestamps, event types (`DOWN`, `RESOLVED`, `TEST`), target monitors, HTTP status codes, and error responses.
   * Aggregated delivery metrics (total configured, alerts dispatched, success delivery rate).
 
-### 5. Automated Incident Lifecycle
-* Detects state transitions (`UP → DOWN`) and registers active incidents with root-cause diagnostic error messages.
-* Automatically resolves incidents upon recovery (`DOWN → UP`) and records total downtime duration in seconds.
-* Automatically broadcasts incident alerts to all active notification channels.
+### 6. Incident Management, Live Timelines & Post-Mortems (RCA)
+* **Incident Lifecycle & Timeline Stages:**
+  * Auto-generates friendly incident titles and initial investigation logs upon probe failure.
+  * Timeline stages track real-time operational response: `INVESTIGATING` → `IDENTIFIED` → `MONITORING` → `RESOLVED`.
+  * Engineers and SREs can post chronological live updates with author attribution and custom messages.
+  * Auto-resolves incidents and records exact recovery timestamp when targets come back online.
+* **Root Cause Analysis (RCA) & Post-Mortem Editor:**
+  * Dedicated Post-Mortem editor with 1-click **Insert Standard SRE Template** (Executive Summary, Impact, Timeline, Root Cause, Mitigating Actions, Action Items).
+  * Toggle public visibility (`is_published`) to control disclosure to end-users.
+* **Manual Outage & Scheduled Maintenance Declaration:**
+  * Proactively declare planned maintenance windows or unplanned service disruptions before automated probes fire.
+  * Supports custom severity ratings: `CRITICAL`, `MAJOR`, `MINOR`, and `MAINTENANCE`.
+* **Public Status Page Integration:**
+  * Active incidents display real-time chronological updates and current stage badges directly on the public status page.
+  * **Past Incidents & Post-Mortems (Past 7 Days):** Expandable cards displaying the complete incident timeline and formatted Post-Mortem report.
+* **Incident Management Dashboard:**
+  * Dedicated "Incidents & RCA" workspace view with MTTR (Mean Time to Resolution) tracking, active outage banners, and comprehensive incident history table.
 
 ---
 
@@ -125,7 +138,8 @@ alivemon/
 │   │   ├── 0001_initial.sql     # Monitors, results, incidents, channels
 │   │   ├── 0002_basic_auth.sql  # Basic auth schema extension
 │   │   ├── 0003_alert_logs.sql  # Alert delivery logs table
-│   │   └── 0004_tags_and_groups.sql # Tags and folders schema extension
+│   │   ├── 0004_tags_and_groups.sql # Tags and folders schema extension
+│   │   └── 0005_incident_management.sql # Incident details, timeline & post-mortem schema
 │   └── src/
 │       ├── main.rs              # App entrypoint, state & router setup
 │       ├── db.rs                # Database connection & migration runner
@@ -134,7 +148,7 @@ alivemon/
 │       │   ├── mod.rs
 │       │   ├── monitors.rs      # Monitor CRUD, pause/resume, test
 │       │   ├── heartbeat.rs     # Push heartbeat endpoint
-│       │   ├── incidents.rs     # Incident history
+│       │   ├── incidents.rs     # Incident management, timeline updates & post-mortems
 │       │   ├── notifications.rs # Channels CRUD, test alert & audit logs
 │       │   ├── stats.rs         # Global metrics & status page data
 │       │   └── ws.rs            # Real-time WebSocket hub
@@ -168,7 +182,10 @@ alivemon/
 │       │   ├── AddMonitorModal.tsx
 │       │   ├── NotificationChannels.tsx # Channels dashboard & delivery logs
 │       │   ├── AddChannelModal.tsx      # Modal for Telegram, Discord, Slack, Webhook
-│       │   ├── StatusPage.tsx
+│       │   ├── IncidentManagement.tsx   # Incidents & RCA dashboard
+│       │   ├── EditIncidentModal.tsx    # Modal for timeline updates & Post-Mortem editor
+│       │   ├── DeclareIncidentModal.tsx # Proactive incident/maintenance declaration
+│       │   ├── StatusPage.tsx           # Public status page with live incidents & RCA
 │       │   └── ui/              # shadcn/ui components (button, dialog, input, card, badge)
 │       └── types/index.ts       # TypeScript definitions
 ├── docker-compose.yml           # Compose specification for Postgres, API & Web
@@ -248,7 +265,11 @@ All API routes are served under the `/api` prefix.
 | `DELETE` | `/api/notifications/:id` | Delete a notification channel |
 | `POST` | `/api/notifications/:id/test` | Trigger an immediate test alert to verify channel connectivity |
 | `GET` | `/api/notifications/logs` | Fetch audit logs and diagnostics of alert deliveries |
-| `GET` | `/api/incidents` | List incident logs with root-cause diagnostic information |
+| `GET` | `/api/incidents` | List incident logs with root-cause diagnostic information & timeline updates |
+| `POST` | `/api/incidents` | Declare a manual incident or scheduled maintenance window |
+| `GET` | `/api/incidents/:id` | Get incident details and full chronological timeline |
+| `PUT` | `/api/incidents/:id` | Update incident metadata, severity, stage, RCA post-mortem & publication |
+| `POST` | `/api/incidents/:id/updates` | Append a new live status update to the incident timeline |
 | `GET` | `/api/stats` | Global metrics (total, operational, down, average latency) |
 | `GET` | `/api/status-page` | Public status page data |
 | `POST` | `/api/heartbeat/:token` | Push endpoint for cron jobs / dead man's switch |
