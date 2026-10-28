@@ -129,6 +129,15 @@
   * Prominent yellow *"Viewer Mode (Read-Only)"* banner automatically alerts non-privileged users.
   * Interactive action buttons (Add Monitor, Declare Incident, Add Channel, Pause/Resume, Delete) are gracefully disabled with informative tooltips explaining role requirements.
 
+### 8. Product Promo & Tour Landing Page
+* **High-Impact SaaS Showcase:**
+  * Accessible directly via `https://respulse.wsl.local?view=promo` or via the **Product Tour** navigation button in the top header.
+  * **Hero Section:** Systems-grade synthetic monitoring value proposition, 1-click Docker launch snippet, and animated real-time browser console mockup with simulated probes.
+  * **Interactive Multi-Protocol Playground:** Tabbed live explorer covering HTTP/REST APIs, TCP sockets & databases, TLS certificate tracking, asynchronous worker heartbeats, and multi-channel alerts with executable curl examples.
+  * **Architectural Deep Dive (Why Rust?):** Benchmark comparison matrix comparing ResPulse (Rust Axum + Tokio) against legacy NodeJS/Python engines (memory, zero GC jitter, thread concurrency, rustls memory safety).
+  * **Transparent Tiered Pricing:** Interactive monthly/annual billing toggle across Community ($0), Pro ($39/mo), and Enterprise ($159/mo) plans.
+  * **Interactive FAQ & Social Proof:** Expandable accordions answering technical architecture, VPC self-hosting, heartbeat monitoring, and role permissions.
+
 ---
 
 ## 🛠 Tech Stack
@@ -211,6 +220,7 @@ respulse/
 │       │   ├── EditIncidentModal.tsx    # Modal for timeline updates & Post-Mortem editor
 │       │   ├── DeclareIncidentModal.tsx # Proactive incident/maintenance declaration
 │       │   ├── TeamManagement.tsx       # Team roster, roles matrix & member invitations
+│       │   ├── PromoLandingPage.tsx     # High-impact SaaS promo & interactive product tour
 │       │   ├── StatusPage.tsx           # Public status page with live incidents & RCA
 │       │   └── ui/              # shadcn/ui components (button, dialog, input, card, badge)
 │       └── types/index.ts       # TypeScript definitions & RBAC models

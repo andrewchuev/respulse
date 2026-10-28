@@ -23,13 +23,21 @@ import { NotificationChannels } from './components/NotificationChannels';
 import { IncidentManagement } from './components/IncidentManagement';
 import { TeamManagement } from './components/TeamManagement';
 import { SkeletonDashboard } from './components/SkeletonDashboard';
+import { PromoLandingPage } from './components/PromoLandingPage';
 
 export function App() {
   const [monitors, setMonitors] = useState<MonitorWithStats[]>([]);
   const [stats, setStats] = useState<GlobalStats | null>(null);
   const [selectedMonitor, setSelectedMonitor] = useState<MonitorWithStats | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo'>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('view') === 'promo' || window.location.pathname === '/promo') return 'promo';
+      if (params.get('view') === 'status' || window.location.pathname === '/status') return 'status-page';
+    } catch {}
+    return 'dashboard';
+  });
   const [loading, setLoading] = useState(true);
 
   // RBAC State
@@ -173,6 +181,19 @@ export function App() {
 
   if (currentView === 'status-page') {
     return <StatusPage onBack={() => setCurrentView('dashboard')} />;
+  }
+
+  if (currentView === 'promo') {
+    return (
+      <PromoLandingPage
+        onOpenDashboard={() => setCurrentView('dashboard')}
+        onOpenStatusPage={() => setCurrentView('status-page')}
+        onOpenAddModal={() => {
+          setCurrentView('dashboard');
+          setIsAddModalOpen(true);
+        }}
+      />
+    );
   }
 
   const isViewer = currentUser?.role === 'VIEWER';

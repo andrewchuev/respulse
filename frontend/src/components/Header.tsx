@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Activity, Plus, Radio, Globe, Bell, AlertTriangle, Users, ChevronDown, Check } from 'lucide-react';
+import { Activity, Plus, Radio, Globe, Bell, AlertTriangle, Users, ChevronDown, Check, Sparkles } from 'lucide-react';
 import { Button } from './ui/button';
 import { UserProfile, UserRole } from '../types';
 
 interface HeaderProps {
-  currentView: 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page';
-  setCurrentView: (view: 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page') => void;
+  currentView: 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo';
+  setCurrentView: (view: 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo') => void;
   onOpenAddModal: () => void;
   totalActive: number;
   currentUser: UserProfile | null;
@@ -145,6 +145,17 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Globe className="h-3.5 w-3.5" />
               Public Status
+            </button>
+            <button
+              onClick={() => setCurrentView('promo')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                currentView === 'promo'
+                  ? 'bg-background text-foreground shadow-sm border border-border/60 text-amber-300'
+                  : 'text-muted-foreground hover:text-amber-300'
+              }`}
+            >
+              <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+              Product Tour
             </button>
           </nav>
         </div>
