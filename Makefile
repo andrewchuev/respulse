@@ -1,4 +1,4 @@
-.PHONY: up down restart logs build ps seed clean
+.PHONY: up down restart logs build ps seed clean release deploy
 
 up:
 	docker compose up -d
@@ -36,3 +36,30 @@ seed:
 	post '{"name":"GitHub SSL Cert","url":"github.com","monitor_type":"SSL","port":443,"interval_seconds":60,"timeout_seconds":5}' "GitHub SSL Certificate monitor created"; \
 	post '{"name":"Nightly Backup Cron","url":"heartbeat://push","monitor_type":"HEARTBEAT","interval_seconds":60,"timeout_seconds":10}' "Nightly Backup Cron (Heartbeat) created"
 	@echo "Done seeding sample monitors!"
+
+# --- Release: build images locally, push to the registry, pull on the server ---
+# Needs `docker login ghcr.io` locally (PAT with write:packages) and a read:packages login on the server.
+REGISTRY ?= ghcr.io/andrewchuev
+PROD_HOST ?= dev@respulse.online
+PROD_DIR ?= /opt/respulse
+TAG ?= $(shell git rev-parse --short=12 HEAD)
+
+# Refuses a dirty tree so an image tag always maps to exactly one commit.
+release:
+	@test -z "$$(git status --porcelain)" || { echo "Working tree is dirty: commit or stash first"; exit 1; }
+	docker build -t $(REGISTRY)/respulse-backend:$(TAG) -t $(REGISTRY)/respulse-backend:latest backend
+	docker build -t $(REGISTRY)/respulse-frontend:$(TAG) -t $(REGISTRY)/respulse-frontend:latest frontend
+	docker push $(REGISTRY)/respulse-backend:$(TAG)
+	docker push $(REGISTRY)/respulse-backend:latest
+	docker push $(REGISTRY)/respulse-frontend:$(TAG)
+	docker push $(REGISTRY)/respulse-frontend:latest
+	@echo "Released $(TAG). Run: make deploy TAG=$(TAG)"
+
+# Rolls the server to TAG (default: current commit); use an older TAG to roll back.
+deploy:
+	scp deploy/docker-compose.yml deploy/Caddyfile $(PROD_HOST):$(PROD_DIR)/
+	ssh $(PROD_HOST) 'cd $(PROD_DIR) \
+		&& { grep -q "^IMAGE_TAG=" .env && sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$(TAG)/" .env || echo "IMAGE_TAG=$(TAG)" >> .env; } \
+		&& docker compose pull \
+		&& docker compose up -d --remove-orphans \
+		&& docker compose ps'

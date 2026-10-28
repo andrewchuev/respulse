@@ -204,7 +204,7 @@
 respulse/
 ├── backend/
 │   ├── Cargo.toml               # Rust package manifest & dependencies
-│   ├── Dockerfile               # Production container image (Debian Trixie)
+│   ├── Dockerfile               # Multi-stage build (Rust builder → Debian Trixie runtime, non-root)
 │   ├── migrations/              # SQLx database migrations
 │   │   ├── 0001_initial.sql     # Monitors, results, incidents, channels
 │   │   ├── 0002_basic_auth.sql  # Basic auth schema extension
@@ -254,7 +254,7 @@ respulse/
 │   ├── package.json             # NPM dependencies & scripts
 │   ├── vite.config.ts           # Vite configuration
 │   ├── tailwind.config.js       # Tailwind CSS configuration & theme
-│   ├── Dockerfile               # Nginx 1.27 production container
+│   ├── Dockerfile               # Multi-stage build (Node builder → Nginx 1.30 runtime)
 │   ├── nginx.conf               # Nginx server block & SPA routing
 │   └── src/
 │       ├── App.tsx              # Root component & WebSocket listener
@@ -331,6 +331,19 @@ ResPulse comes pre-configured with a default enterprise organization (`Acme Glob
 
 ---
 
+## 🚢 Release & Deployment
+
+Images are built **locally** (no CI runners needed), pushed to GitHub Container Registry and pulled by the server:
+
+1. One-time: `docker login ghcr.io` locally with a PAT that has `write:packages`; on the server log in with a read-only `read:packages` PAT.
+2. `make release` builds `ghcr.io/andrewchuev/respulse-{backend,frontend}` (override with `REGISTRY=`), tags them with the commit SHA and `latest`, and pushes them. The Dockerfiles are multi-stage, so no local Rust/Node toolchain output is involved and `Cargo.lock` pins the dependencies.
+3. `make deploy` syncs `deploy/docker-compose.yml` and `Caddyfile` to `/opt/respulse`, writes `IMAGE_TAG` into the server's `.env`, pulls and restarts the stack.
+4. Roll back with `make deploy TAG=<older sha>`.
+
+The server `.env` needs `POSTGRES_*`, `JWT_SECRET`, `FASTSPRING_WEBHOOK_SECRET` (see `deploy/.env.example`).
+
+---
+
 ## 🛠 Makefile Commands
 
 | Command | Description |
@@ -341,6 +354,8 @@ ResPulse comes pre-configured with a default enterprise organization (`Acme Glob
 | `make logs` | Stream live logs from all containers |
 | `make build` | Rebuild Docker images |
 | `make ps` | Show container health and port statuses |
+| `make release` | Build both images locally, tag them with the git SHA and `latest`, push to the registry (needs a clean tree and `docker login ghcr.io`) |
+| `make deploy` | Copy `deploy/` configs to the server, set `IMAGE_TAG`, `docker compose pull` and `up -d` (`TAG=<sha>` rolls back to an older release) |
 | `make seed` | Log in (`SEED_EMAIL`/`SEED_PASSWORD`, default demo owner) and populate the database with sample monitors |
 
 ---

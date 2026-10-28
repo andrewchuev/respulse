@@ -18,9 +18,7 @@ services:
       - respulse-backend
 
   respulse-backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ${REGISTRY:-ghcr.io/andrewchuev}/respulse-backend:${IMAGE_TAG:?IMAGE_TAG is required}
     container_name: respulse-backend
     restart: unless-stopped
     environment:
@@ -40,9 +38,7 @@ services:
       - respulse-net
 
   respulse-frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: ${REGISTRY:-ghcr.io/andrewchuev}/respulse-frontend:${IMAGE_TAG:?IMAGE_TAG is required}
     container_name: respulse-frontend
     restart: unless-stopped
     depends_on:
