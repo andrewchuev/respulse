@@ -28,6 +28,7 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialMode?: 'login' | 'register';
+  subtitle?: string;
   demoMode?: boolean;
   onSuccess: (user: UserProfile) => void;
 }
@@ -36,11 +37,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
   initialMode = 'login',
+  subtitle,
   demoMode = false,
   onSuccess,
 }) => {
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode);
+    }
+  }, [isOpen, initialMode]);
 
   // Form fields
   const [companyName, setCompanyName] = useState('');
@@ -192,9 +200,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             {mode === 'login' ? 'Sign In to ResPulse' : 'Create Organization'}
           </DialogTitle>
           <DialogDescription className="text-xs text-slate-400">
-            {mode === 'login'
-              ? 'Access real-time synthetic monitors, incidents & telemetry'
-              : 'Launch high-performance uptime monitoring for your team'}
+            {subtitle ? (
+              <span className="text-emerald-400 font-medium inline-block mt-0.5">{subtitle}</span>
+            ) : mode === 'login' ? (
+              'Access real-time synthetic monitors, incidents & telemetry'
+            ) : (
+              'Launch high-performance uptime monitoring for your team'
+            )}
           </DialogDescription>
         </DialogHeader>
 

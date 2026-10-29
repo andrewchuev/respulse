@@ -128,13 +128,23 @@ export function App() {
   const [availableUsers, setAvailableUsers] = useState<UserProfile[]>([]);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
+  const [pendingUpgradeAfterAuth, setPendingUpgradeAfterAuth] = useState(false);
   const [appConfig, setAppConfig] = useState<AppConfig>(DEFAULT_APP_CONFIG);
   const [isAdmin, setIsAdmin] = useState(false);
   const demoMode = appConfig.demo_mode;
   const billingEnabled = appConfig.billing_enabled;
   const planKey = currentUser?.team_plan === 'PRO' ? 'PRO' : 'FREE';
   // Checkout is hidden while the service is a free beta.
-  const openUpgrade = billingEnabled ? () => setIsUpgradeModalOpen(true) : undefined;
+  const openUpgrade = billingEnabled
+    ? () => {
+        if (!currentUser) {
+          setPendingUpgradeAfterAuth(true);
+          openAuth('register');
+        } else {
+          setIsUpgradeModalOpen(true);
+        }
+      }
+    : undefined;
 
   const openExportImport = (tab: 'export' | 'import' = 'export') => {
     setExportImportDefaultTab(tab);
@@ -144,6 +154,22 @@ export function App() {
   const openAuth = (mode: 'login' | 'register') => {
     setAuthModalMode(mode);
     setIsAuthModalOpen(true);
+  };
+
+  const handleAuthClose = () => {
+    setIsAuthModalOpen(false);
+    setPendingUpgradeAfterAuth(false);
+  };
+
+  const handleAuthSuccess = (user: UserProfile) => {
+    setCurrentUser(user);
+    loadData();
+    loadUserData();
+    changeView('dashboard');
+    if (pendingUpgradeAfterAuth) {
+      setPendingUpgradeAfterAuth(false);
+      setIsUpgradeModalOpen(true);
+    }
   };
 
   useEffect(() => {
@@ -352,15 +378,17 @@ export function App() {
         />
         <AuthModal
           isOpen={isAuthModalOpen}
-          onClose={() => setIsAuthModalOpen(false)}
+          onClose={handleAuthClose}
           initialMode={authModalMode}
+          subtitle={
+            pendingUpgradeAfterAuth
+              ? authModalMode === 'login'
+                ? 'Sign in to your account to upgrade to ResPulse Pro ($16/mo)'
+                : 'Create your workspace account to activate ResPulse Pro ($16/mo)'
+              : undefined
+          }
           demoMode={demoMode}
-          onSuccess={(user) => {
-            setCurrentUser(user);
-            loadData();
-            loadUserData();
-            changeView('dashboard');
-          }}
+          onSuccess={handleAuthSuccess}
         />
       </>
     );
@@ -387,15 +415,17 @@ export function App() {
         />
         <AuthModal
           isOpen={isAuthModalOpen}
-          onClose={() => setIsAuthModalOpen(false)}
+          onClose={handleAuthClose}
           initialMode={authModalMode}
+          subtitle={
+            pendingUpgradeAfterAuth
+              ? authModalMode === 'login'
+                ? 'Sign in to your account to upgrade to ResPulse Pro ($16/mo)'
+                : 'Create your workspace account to activate ResPulse Pro ($16/mo)'
+              : undefined
+          }
           demoMode={demoMode}
-          onSuccess={(user) => {
-            setCurrentUser(user);
-            loadData();
-            loadUserData();
-            changeView('dashboard');
-          }}
+          onSuccess={handleAuthSuccess}
         />
       </>
     );
@@ -507,14 +537,17 @@ export function App() {
 
       <AuthModal
         isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
+        onClose={handleAuthClose}
         initialMode={authModalMode}
-        onSuccess={(user) => {
-          setCurrentUser(user);
-          loadData();
-          loadUserData();
-          changeView('dashboard');
-        }}
+        subtitle={
+          pendingUpgradeAfterAuth
+            ? authModalMode === 'login'
+              ? 'Sign in to your account to upgrade to ResPulse Pro ($16/mo)'
+              : 'Create your workspace account to activate ResPulse Pro ($16/mo)'
+            : undefined
+        }
+        demoMode={demoMode}
+        onSuccess={handleAuthSuccess}
       />
 
       <ExportImportModal

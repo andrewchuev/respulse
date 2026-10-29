@@ -938,7 +938,7 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
               </div>
 
               <Button
-                onClick={onOpenDashboard}
+                onClick={() => (onOpenAuth ? onOpenAuth('register') : onOpenDashboard())}
                 variant="outline"
                 className="w-full mt-8 border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-white"
               >
