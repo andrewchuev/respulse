@@ -1,6 +1,9 @@
 import {
   AddIncidentUpdatePayload,
   AdminReportData,
+  AdminTeamItem,
+  AdminUserItem,
+  AdminSystemStatus,
   AppConfig,
   AlertLogWithDetails,
   AuthResponse,
@@ -193,6 +196,83 @@ export async function fetchAdminAccess(): Promise<boolean> {
 export async function fetchAdminReport(): Promise<AdminReportData> {
   const res = await apiFetch(`${API_BASE}/admin/report`, { headers: authHeaders() });
   if (!res.ok) throw new Error(res.status === 403 ? 'Operator access only' : 'Failed to load report');
+  return res.json();
+}
+
+export async function fetchAdminTeams(): Promise<AdminTeamItem[]> {
+  const res = await apiFetch(`${API_BASE}/admin/teams`, { headers: authHeaders() });
+  if (!res.ok) throw new Error('Failed to load teams');
+  return res.json();
+}
+
+export async function updateAdminTeamPlan(teamId: string, plan: 'FREE' | 'PRO'): Promise<void> {
+  const res = await apiFetch(`${API_BASE}/admin/teams/${teamId}/plan`, {
+    method: 'PATCH',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ plan }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to update team plan');
+  }
+}
+
+export async function deleteAdminTeam(teamId: string): Promise<void> {
+  const res = await apiFetch(`${API_BASE}/admin/teams/${teamId}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to delete team');
+  }
+}
+
+export async function fetchAdminUsers(): Promise<AdminUserItem[]> {
+  const res = await apiFetch(`${API_BASE}/admin/users`, { headers: authHeaders() });
+  if (!res.ok) throw new Error('Failed to load users');
+  return res.json();
+}
+
+export async function updateAdminUserStatus(userId: string, isActive: boolean): Promise<void> {
+  const res = await apiFetch(`${API_BASE}/admin/users/${userId}/status`, {
+    method: 'PATCH',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ is_active: isActive }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to update user status');
+  }
+}
+
+export async function fetchAdminSystemStatus(): Promise<AdminSystemStatus> {
+  const res = await apiFetch(`${API_BASE}/admin/system/status`, { headers: authHeaders() });
+  if (!res.ok) throw new Error('Failed to load system status');
+  return res.json();
+}
+
+export async function triggerAdminPrune(): Promise<{ deleted_rows: number; message: string }> {
+  const res = await apiFetch(`${API_BASE}/admin/system/prune`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to run retention prune');
+  }
+  return res.json();
+}
+
+export async function triggerAdminBackupPing(): Promise<{ status: string; message: string }> {
+  const res = await apiFetch(`${API_BASE}/admin/system/backup-ping`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to trigger backup heartbeat');
+  }
   return res.json();
 }
 

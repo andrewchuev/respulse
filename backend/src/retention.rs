@@ -36,6 +36,12 @@ pub async fn run_retention_loop(pool: DbPool) {
 }
 
 /// Deletes in batches so a large backlog never holds a long lock on the table.
+pub async fn prune_now(pool: &DbPool) -> Result<u64, sqlx::Error> {
+    let free_days = days_from_env("RETENTION_FREE_DAYS", crate::plans::FREE.retention_days);
+    let pro_days = days_from_env("RETENTION_PRO_DAYS", crate::plans::PRO.retention_days);
+    prune(pool, free_days, pro_days).await
+}
+
 async fn prune(pool: &DbPool, free_days: i32, pro_days: i32) -> Result<u64, sqlx::Error> {
     let mut total = 0;
     loop {

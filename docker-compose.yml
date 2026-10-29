@@ -33,7 +33,7 @@ services:
       # Local development monitors local services; production keeps this off (SSRF guard)
       ALLOW_PRIVATE_TARGETS: ${ALLOW_PRIVATE_TARGETS:-true}
       BILLING_ENABLED: ${BILLING_ENABLED:-false}
-      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-alice@respulse.internal}
       APP_URL: ${APP_URL:-https://respulse.wsl.local}
       REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-false}
       SMTP_HOST: ${SMTP_HOST:-}

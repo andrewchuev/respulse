@@ -173,7 +173,7 @@ fn calculate_next_expected(
         .map(|dt| dt.with_timezone(&Utc))
 }
 
-async fn execute_heartbeat_lifecycle(
+pub(crate) async fn execute_heartbeat_lifecycle(
     state: AppState,
     monitor: Monitor,
     action: Option<String>,

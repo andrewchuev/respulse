@@ -34,7 +34,7 @@ import { PromoLandingPage } from './components/PromoLandingPage';
 import { AuthModal } from './components/AuthModal';
 import { LegalPage } from './components/LegalPage';
 import { legalReady } from './legal/content';
-import { AdminReport } from './components/AdminReport';
+import { AdminPanel } from './components/AdminPanel';
 import { VerifyEmailPage } from './components/VerifyEmailPage';
 import { FastSpringCheckoutModal } from './components/FastSpringCheckoutModal';
 import { ExportImportModal } from './components/ExportImportModal';
@@ -438,7 +438,7 @@ export function App() {
         ) : currentView === 'incidents' ? (
           <IncidentManagement currentUser={currentUser} />
         ) : currentView === 'admin' ? (
-          <AdminReport />
+          <AdminPanel />
         ) : currentView === 'team' ? (
           <TeamManagement
             currentUser={currentUser}

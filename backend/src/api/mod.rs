@@ -39,9 +39,17 @@ pub fn create_router() -> Router<AppState> {
         .route("/payments/fastspring/confirm", axum::routing::post(payments::confirm_fastspring_payment))
         .route("/payments/fastspring/webhook", axum::routing::post(payments::fastspring_webhook))
         .route("/payments/history", get(payments::get_payment_history))
-        // Operator report
+        // Operator report & super-admin control plane
         .route("/admin/access", get(admin::admin_access))
         .route("/admin/report", get(admin::get_report))
+        .route("/admin/teams", get(admin::list_teams))
+        .route("/admin/teams/:id/plan", axum::routing::patch(admin::update_team_plan))
+        .route("/admin/teams/:id", axum::routing::delete(admin::delete_team))
+        .route("/admin/users", get(admin::list_users))
+        .route("/admin/users/:id/status", axum::routing::patch(admin::update_user_status))
+        .route("/admin/system/status", get(admin::get_system_status))
+        .route("/admin/system/prune", axum::routing::post(admin::trigger_prune))
+        .route("/admin/system/backup-ping", axum::routing::post(admin::trigger_backup_ping))
         // Monitors
         .route("/monitors", get(monitors::list_monitors).post(monitors::create_monitor))
         .route("/monitors/bulk", axum::routing::post(monitors::bulk_action))

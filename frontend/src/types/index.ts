@@ -404,3 +404,52 @@ export interface ImportSummary {
   errors: string[];
 }
 
+// -----------------------------------------------------------------------------
+// Super-Admin / Operator Types
+// -----------------------------------------------------------------------------
+
+export interface AdminTeamItem {
+  id: string;
+  name: string;
+  slug: string;
+  plan: 'FREE' | 'PRO';
+  subscription_status: string;
+  ping_key: string;
+  created_at: string;
+  monitors_count: number;
+  users_count: number;
+  active_incidents_count: number;
+}
+
+export interface AdminUserItem {
+  id: string;
+  team_id: string;
+  team_name: string;
+  email: string;
+  name: string;
+  role: string;
+  is_active: boolean;
+  created_at: string;
+  last_login_at: string | null;
+  email_verified_at: string | null;
+}
+
+export interface AdminSystemStatus {
+  database_connected: boolean;
+  total_check_results: number;
+  check_results_bytes: number;
+  database_bytes: number;
+  total_incidents: number;
+  active_incidents: number;
+  total_monitors: number;
+  active_monitors: number;
+  total_teams: number;
+  total_users: number;
+  allow_private_targets: boolean;
+  billing_enabled: boolean;
+  demo_mode: boolean;
+  email_verification_required: boolean;
+  smtp_configured: boolean;
+}
+
+

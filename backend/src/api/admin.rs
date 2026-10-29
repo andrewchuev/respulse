@@ -1,17 +1,19 @@
-//! Operator report: aggregate usage numbers to judge whether the service is worth developing.
+//! Operator & Super-Administrator Control Plane:
+//! Platform telemetry, tenant management, user lifecycle, and system diagnostics.
 //!
-//! Only emails listed in `ADMIN_EMAILS` may read it. It deliberately returns aggregates and team
-//! names, never user emails, and excludes the seeded demo organization.
+//! Only emails listed in `ADMIN_EMAILS` (or default demo admin) may access these endpoints.
 
 use crate::api::monitors::AppState;
 use crate::auth::AuthUser;
 use crate::db::DbPool;
+use crate::models::Monitor;
 use crate::plans;
-use axum::extract::State;
+use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use chrono::{DateTime, NaiveDate, Utc};
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tracing::error;
 use uuid::Uuid;
@@ -29,10 +31,411 @@ fn require_admin(auth: &AuthUser, state: &AppState) -> Result<(), (StatusCode, R
     }
 }
 
-/// Lets the UI decide whether to show the admin link without running the heavy report.
+/// Lets the UI decide whether to show the admin link without running heavy reports.
 pub async fn admin_access(State(state): State<AppState>, auth: AuthUser) -> Json<Value> {
     Json(json!({ "is_admin": state.settings.is_admin(&auth.user.email) }))
 }
+
+// -----------------------------------------------------------------------------
+// 1. Teams / Tenants Management
+// -----------------------------------------------------------------------------
+
+#[derive(Serialize)]
+pub struct AdminTeamItem {
+    pub id: Uuid,
+    pub name: String,
+    pub slug: String,
+    pub plan: String,
+    pub subscription_status: String,
+    pub ping_key: String,
+    pub created_at: DateTime<Utc>,
+    pub monitors_count: i64,
+    pub users_count: i64,
+    pub active_incidents_count: i64,
+}
+
+pub async fn list_teams(
+    State(state): State<AppState>,
+    auth: AuthUser,
+) -> Result<Json<Vec<AdminTeamItem>>, (StatusCode, Response)> {
+    require_admin(&auth, &state)?;
+
+    let rows: Vec<(Uuid, String, String, String, String, String, DateTime<Utc>, i64, i64, i64)> =
+        sqlx::query_as(
+            r#"
+            SELECT 
+                t.id, 
+                t.name, 
+                t.slug, 
+                t.plan, 
+                t.subscription_status,
+                t.ping_key, 
+                t.created_at,
+                COALESCE(COUNT(DISTINCT m.id), 0)::bigint as monitors_count,
+                COALESCE(COUNT(DISTINCT u.id), 0)::bigint as users_count,
+                COALESCE(COUNT(DISTINCT i.id) FILTER (WHERE i.status = 'ONGOING'), 0)::bigint as active_incidents_count
+            FROM teams t
+            LEFT JOIN monitors m ON m.team_id = t.id
+            LEFT JOIN users u ON u.team_id = t.id
+            LEFT JOIN incidents i ON i.team_id = t.id
+            GROUP BY t.id, t.name, t.slug, t.plan, t.subscription_status, t.ping_key, t.created_at
+            ORDER BY t.created_at DESC
+            "#,
+        )
+        .fetch_all(&state.pool)
+        .await
+        .map_err(|e| {
+            error!("Failed to query admin teams: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to query teams" })).into_response(),
+            )
+        })?;
+
+    let items = rows
+        .into_iter()
+        .map(
+            |(id, name, slug, plan, subscription_status, ping_key, created_at, monitors_count, users_count, active_incidents_count)| {
+                AdminTeamItem {
+                    id,
+                    name,
+                    slug,
+                    plan,
+                    subscription_status,
+                    ping_key,
+                    created_at,
+                    monitors_count,
+                    users_count,
+                    active_incidents_count,
+                }
+            },
+        )
+        .collect();
+
+    Ok(Json(items))
+}
+
+#[derive(Deserialize)]
+pub struct UpdateTeamPlanPayload {
+    pub plan: String,
+}
+
+pub async fn update_team_plan(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(team_id): Path<Uuid>,
+    Json(payload): Json<UpdateTeamPlanPayload>,
+) -> Result<Json<Value>, (StatusCode, Response)> {
+    require_admin(&auth, &state)?;
+    let plan = payload.plan.trim().to_uppercase();
+    if plan != "FREE" && plan != "PRO" {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "Plan must be 'FREE' or 'PRO'" })).into_response(),
+        ));
+    }
+
+    sqlx::query("UPDATE teams SET plan = $1 WHERE id = $2")
+        .bind(&plan)
+        .bind(team_id)
+        .execute(&state.pool)
+        .await
+        .map_err(|e| {
+            error!("Failed to update team plan: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to update team plan" })).into_response(),
+            )
+        })?;
+
+    Ok(Json(json!({ "status": "ok", "team_id": team_id, "plan": plan })))
+}
+
+pub async fn delete_team(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(team_id): Path<Uuid>,
+) -> Result<Json<Value>, (StatusCode, Response)> {
+    require_admin(&auth, &state)?;
+    if team_id == DEMO_TEAM_ID {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "Cannot delete primary demo system organization" })).into_response(),
+        ));
+    }
+
+    sqlx::query("DELETE FROM teams WHERE id = $1")
+        .bind(team_id)
+        .execute(&state.pool)
+        .await
+        .map_err(|e| {
+            error!("Failed to delete team: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to delete team" })).into_response(),
+            )
+        })?;
+
+    Ok(Json(json!({ "status": "ok", "deleted_team_id": team_id })))
+}
+
+// -----------------------------------------------------------------------------
+// 2. Users Management
+// -----------------------------------------------------------------------------
+
+#[derive(Serialize)]
+pub struct AdminUserItem {
+    pub id: Uuid,
+    pub team_id: Uuid,
+    pub team_name: String,
+    pub email: String,
+    pub name: String,
+    pub role: String,
+    pub is_active: bool,
+    pub created_at: DateTime<Utc>,
+    pub last_login_at: Option<DateTime<Utc>>,
+    pub email_verified_at: Option<DateTime<Utc>>,
+}
+
+pub async fn list_users(
+    State(state): State<AppState>,
+    auth: AuthUser,
+) -> Result<Json<Vec<AdminUserItem>>, (StatusCode, Response)> {
+    require_admin(&auth, &state)?;
+
+    let rows: Vec<(Uuid, Uuid, String, String, String, String, bool, DateTime<Utc>, Option<DateTime<Utc>>, Option<DateTime<Utc>>)> =
+        sqlx::query_as(
+            r#"
+            SELECT 
+                u.id, 
+                u.team_id, 
+                t.name as team_name, 
+                u.email, 
+                u.name, 
+                u.role, 
+                u.is_active, 
+                u.created_at, 
+                u.last_login_at, 
+                u.email_verified_at
+            FROM users u
+            JOIN teams t ON t.id = u.team_id
+            ORDER BY u.created_at DESC
+            "#,
+        )
+        .fetch_all(&state.pool)
+        .await
+        .map_err(|e| {
+            error!("Failed to query admin users: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to query users" })).into_response(),
+            )
+        })?;
+
+    let items = rows
+        .into_iter()
+        .map(
+            |(id, team_id, team_name, email, name, role, is_active, created_at, last_login_at, email_verified_at)| {
+                AdminUserItem {
+                    id,
+                    team_id,
+                    team_name,
+                    email,
+                    name,
+                    role,
+                    is_active,
+                    created_at,
+                    last_login_at,
+                    email_verified_at,
+                }
+            },
+        )
+        .collect();
+
+    Ok(Json(items))
+}
+
+#[derive(Deserialize)]
+pub struct UpdateUserStatusPayload {
+    pub is_active: bool,
+}
+
+pub async fn update_user_status(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(user_id): Path<Uuid>,
+    Json(payload): Json<UpdateUserStatusPayload>,
+) -> Result<Json<Value>, (StatusCode, Response)> {
+    require_admin(&auth, &state)?;
+
+    // Protect self from accidental lockout
+    if user_id == auth.user.id && !payload.is_active {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "Cannot deactivate your own active super-administrator account" })).into_response(),
+        ));
+    }
+
+    sqlx::query("UPDATE users SET is_active = $1 WHERE id = $2")
+        .bind(payload.is_active)
+        .bind(user_id)
+        .execute(&state.pool)
+        .await
+        .map_err(|e| {
+            error!("Failed to update user active status: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to update user status" })).into_response(),
+            )
+        })?;
+
+    Ok(Json(json!({ "status": "ok", "user_id": user_id, "is_active": payload.is_active })))
+}
+
+// -----------------------------------------------------------------------------
+// 3. System Health & Infrastructure Diagnostics
+// -----------------------------------------------------------------------------
+
+#[derive(Serialize)]
+pub struct AdminSystemStatus {
+    pub database_connected: bool,
+    pub total_check_results: i64,
+    pub check_results_bytes: i64,
+    pub database_bytes: i64,
+    pub total_incidents: i64,
+    pub active_incidents: i64,
+    pub total_monitors: i64,
+    pub active_monitors: i64,
+    pub total_teams: i64,
+    pub total_users: i64,
+    pub allow_private_targets: bool,
+    pub billing_enabled: bool,
+    pub demo_mode: bool,
+    pub email_verification_required: bool,
+    pub smtp_configured: bool,
+}
+
+pub async fn get_system_status(
+    State(state): State<AppState>,
+    auth: AuthUser,
+) -> Result<Json<AdminSystemStatus>, (StatusCode, Response)> {
+    require_admin(&auth, &state)?;
+
+    let row: (i64, i64, i64, i64, i64, i64, i64, i64, i64) = sqlx::query_as(
+        r#"
+        SELECT 
+            (SELECT COUNT(*) FROM check_results)::bigint,
+            (SELECT pg_total_relation_size('check_results'))::bigint,
+            (SELECT pg_database_size(current_database()))::bigint,
+            (SELECT COUNT(*) FROM incidents)::bigint,
+            (SELECT COUNT(*) FROM incidents WHERE status = 'ONGOING')::bigint,
+            (SELECT COUNT(*) FROM monitors)::bigint,
+            (SELECT COUNT(*) FROM monitors WHERE NOT is_paused)::bigint,
+            (SELECT COUNT(*) FROM teams)::bigint,
+            (SELECT COUNT(*) FROM users)::bigint
+        "#,
+    )
+    .fetch_one(&state.pool)
+    .await
+    .map_err(|e| {
+        error!("Failed to read system status: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to query system status" })).into_response(),
+        )
+    })?;
+
+    Ok(Json(AdminSystemStatus {
+        database_connected: true,
+        total_check_results: row.0,
+        check_results_bytes: row.1,
+        database_bytes: row.2,
+        total_incidents: row.3,
+        active_incidents: row.4,
+        total_monitors: row.5,
+        active_monitors: row.6,
+        total_teams: row.7,
+        total_users: row.8,
+        allow_private_targets: std::env::var("ALLOW_PRIVATE_TARGETS")
+            .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
+            .unwrap_or(false),
+        billing_enabled: state.settings.billing_enabled,
+        demo_mode: state.auth.demo_mode,
+        email_verification_required: state.settings.require_email_verification,
+        smtp_configured: state.mailer.is_some(),
+    }))
+}
+
+pub async fn trigger_prune(
+    State(state): State<AppState>,
+    auth: AuthUser,
+) -> Result<Json<Value>, (StatusCode, Response)> {
+    require_admin(&auth, &state)?;
+
+    let deleted = crate::retention::prune_now(&state.pool).await.map_err(|e| {
+        error!("Manual retention pruning failed: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": format!("Pruning failed: {}", e) })).into_response(),
+        )
+    })?;
+
+    Ok(Json(json!({
+        "status": "ok",
+        "message": format!("Successfully pruned {} expired check results", deleted),
+        "deleted_rows": deleted
+    })))
+}
+
+pub async fn trigger_backup_ping(
+    State(state): State<AppState>,
+    auth: AuthUser,
+) -> Result<Json<Value>, (StatusCode, Response)> {
+    require_admin(&auth, &state)?;
+
+    let monitor_opt: Option<Monitor> = sqlx::query_as::<_, Monitor>(
+        "SELECT * FROM monitors WHERE heartbeat_token = '37e2216caedb454ea5286aa1ee8d1044' OR name = 'Database Automated Backup' LIMIT 1",
+    )
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": e.to_string() })).into_response(),
+        )
+    })?;
+
+    let monitor = monitor_opt.ok_or_else(|| {
+        (
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "Database Automated Backup monitor not found" })).into_response(),
+        )
+    })?;
+
+    let (_, val) = super::heartbeat::execute_heartbeat_lifecycle(
+        state,
+        monitor,
+        None,
+        axum::body::Bytes::new(),
+    )
+    .await
+    .map_err(|(code, msg)| {
+        (
+            code,
+            Json(json!({ "error": msg })).into_response(),
+        )
+    })?;
+
+    Ok(Json(json!({
+        "status": "ok",
+        "message": "Backup heartbeat signal dispatched successfully",
+        "result": val
+    })))
+}
+
+// -----------------------------------------------------------------------------
+// 4. Analytics & Operator Report
+// -----------------------------------------------------------------------------
 
 pub async fn get_report(
     State(state): State<AppState>,
@@ -137,7 +540,6 @@ async fn build_report(pool: &DbPool) -> Result<Value, sqlx::Error> {
         } else if *monitors * 5 >= limit.max_monitors * 4 {
             near_limit += 1;
         }
-        // Checking faster than a minute suggests the team values high-frequency probes.
         if *min_interval > 0 && *min_interval < 60 {
             fast_interval += 1;
         }

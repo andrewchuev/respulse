@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Activity, Plus, Radio, Globe, Bell, AlertTriangle, Users, ChevronDown, Check, Sparkles, LogOut, KeyRound, CreditCard, BarChart3, LayoutDashboard, FileJson, Menu, X } from 'lucide-react';
+import { Activity, Plus, Radio, Globe, Bell, AlertTriangle, Users, ChevronDown, Check, Sparkles, LogOut, KeyRound, CreditCard, LayoutDashboard, FileJson, Menu, X, Shield } from 'lucide-react';
 import { Button } from './ui/button';
 import { UserProfile, UserRole } from '../types';
 
@@ -184,14 +184,14 @@ export const Header: React.FC<HeaderProps> = ({
           {isAdmin && (
             <button
               onClick={() => setCurrentView('admin')}
-              className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 currentView === 'admin'
-                  ? 'bg-background text-foreground shadow-sm border border-border/60'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-purple-500/20 text-purple-300 shadow-sm border border-purple-500/40'
+                  : 'text-purple-400 hover:text-purple-300 hover:bg-purple-500/10'
               }`}
             >
-              <BarChart3 className="h-3.5 w-3.5 shrink-0" />
-              <span>Report</span>
+              <Shield className="h-3.5 w-3.5 text-purple-400 shrink-0" />
+              <span>Super Admin</span>
             </button>
           )}
         </nav>
@@ -545,12 +545,12 @@ export const Header: React.FC<HeaderProps> = ({
                 }}
                 className={`col-span-2 flex items-center gap-2 p-2.5 rounded-lg transition-colors text-left ${
                   currentView === 'admin'
-                    ? 'bg-emerald-500/15 border border-emerald-500/30 text-white font-semibold'
-                    : 'bg-secondary/30 hover:bg-secondary/60 text-slate-300'
+                    ? 'bg-purple-500/20 border border-purple-500/40 text-purple-200 font-semibold'
+                    : 'bg-purple-950/20 hover:bg-purple-950/40 border border-purple-500/20 text-purple-300'
                 }`}
               >
-                <BarChart3 className="h-4 w-4 text-purple-400 shrink-0" />
-                <span>Operator Report</span>
+                <Shield className="h-4 w-4 text-purple-400 shrink-0" />
+                <span>Super-Admin Console</span>
               </button>
             )}
           </nav>
