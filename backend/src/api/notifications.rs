@@ -158,7 +158,39 @@ pub async fn update_channel(
     if let Some(new_config) = payload.config.as_ref() {
         validate_channel_config(new_config).await?;
     }
-    let config = payload.config.unwrap_or(existing.config);
+    let config = if let Some(mut new_cfg) = payload.config {
+        if let Some(new_obj) = new_cfg.as_object_mut() {
+            if let Some(existing_obj) = existing.config.as_object() {
+                // If Telegram bot_token is empty or masked, retain existing bot_token
+                if let Some(token_val) = new_obj.get("bot_token") {
+                    if token_val == "********" || token_val.as_str().map(|s| s.trim().is_empty()).unwrap_or(false) {
+                        if let Some(old_tok) = existing_obj.get("bot_token") {
+                            new_obj.insert("bot_token".to_string(), old_tok.clone());
+                        }
+                    }
+                }
+                // If Webhook secret is empty or masked, retain existing secret
+                if let Some(sec_val) = new_obj.get("secret") {
+                    if sec_val == "********" || sec_val.as_str().map(|s| s.trim().is_empty()).unwrap_or(false) {
+                        if let Some(old_sec) = existing_obj.get("secret") {
+                            new_obj.insert("secret".to_string(), old_sec.clone());
+                        }
+                    }
+                }
+                // If webhook_url was truncated, retain existing webhook_url
+                if let Some(url_val) = new_obj.get("webhook_url") {
+                    if url_val.as_str().map(|s| s.ends_with("...")).unwrap_or(false) {
+                        if let Some(old_url) = existing_obj.get("webhook_url") {
+                            new_obj.insert("webhook_url".to_string(), old_url.clone());
+                        }
+                    }
+                }
+            }
+        }
+        new_cfg
+    } else {
+        existing.config
+    };
     let is_active = payload.is_active.unwrap_or(existing.is_active);
     let filter_tags = payload.filter_tags.unwrap_or(existing.filter_tags);
 

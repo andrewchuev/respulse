@@ -17,6 +17,7 @@ import {
   Webhook,
   Plus,
   Play,
+  Pencil,
   Trash2,
   CheckCircle2,
   AlertTriangle,
@@ -28,6 +29,7 @@ import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { AddChannelModal } from './AddChannelModal';
+import { EditChannelModal } from './EditChannelModal';
 
 interface NotificationChannelsProps {
   currentUser?: UserProfile | null;
@@ -38,6 +40,7 @@ export const NotificationChannels: React.FC<NotificationChannelsProps> = ({ curr
   const [channels, setChannels] = useState<NotificationChannel[]>([]);
   const [logs, setLogs] = useState<AlertLogWithDetails[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingChannel, setEditingChannel] = useState<NotificationChannel | null>(null);
   const [loading, setLoading] = useState(true);
   const [testingId, setTestingId] = useState<string | null>(null);
   const [testFeedback, setTestFeedback] = useState<{ id: string; success: boolean; message: string } | null>(null);
@@ -66,6 +69,12 @@ export const NotificationChannels: React.FC<NotificationChannelsProps> = ({ curr
     await createChannel(payload);
     await loadData();
     setIsAddModalOpen(false);
+  };
+
+  const handleUpdate = async (id: string, payload: Partial<CreateChannelPayload>) => {
+    const updated = await updateChannel(id, payload);
+    setChannels((prev) => prev.map((c) => (c.id === id ? { ...c, ...updated } : c)));
+    await loadData();
   };
 
   const handleToggle = async (channel: NotificationChannel) => {
@@ -350,6 +359,16 @@ export const NotificationChannels: React.FC<NotificationChannelsProps> = ({ curr
                     <Button
                       size="icon"
                       variant="ghost"
+                      className="h-7 w-7 text-muted-foreground hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                      disabled={isViewer}
+                      title={isViewer ? 'Requires Engineer role or higher to edit channels' : 'Edit channel'}
+                      onClick={() => setEditingChannel(channel)}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
                       className="h-7 w-7 text-muted-foreground hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed"
                       disabled={isViewer}
                       title={isViewer ? 'Requires Engineer role or higher to delete channels' : 'Delete channel'}
@@ -470,6 +489,13 @@ export const NotificationChannels: React.FC<NotificationChannelsProps> = ({ curr
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSubmit={handleCreate}
+      />
+
+      <EditChannelModal
+        isOpen={Boolean(editingChannel)}
+        channel={editingChannel}
+        onClose={() => setEditingChannel(null)}
+        onSubmit={handleUpdate}
       />
     </div>
   );

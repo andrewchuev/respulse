@@ -35,7 +35,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
   const [activeTab, setActiveTab] = useState<'export' | 'import'>(defaultTab);
 
   // Export State
-  const [includeSecrets, setIncludeSecrets] = useState(false);
+  const [includeSecrets, setIncludeSecrets] = useState(currentUser?.role !== 'VIEWER');
   const [exportLoading, setExportLoading] = useState(false);
   const [exportData, setExportData] = useState<ResPulseExport | null>(null);
   const [copied, setCopied] = useState(false);
@@ -44,6 +44,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
   // Import State
   const [importJsonText, setImportJsonText] = useState('');
   const [parsedImport, setParsedImport] = useState<ResPulseExport | null>(null);
+  const [hasMaskedSecrets, setHasMaskedSecrets] = useState(false);
   const [parseError, setParseError] = useState<string | null>(null);
   const [conflictStrategy, setConflictStrategy] = useState<'skip' | 'overwrite' | 'create_copy'>('skip');
   const [importMonitors, setImportMonitors] = useState(true);
@@ -59,9 +60,12 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
       setActiveTab(defaultTab);
       setImportSummary(null);
       setParseError(null);
-      loadExport(includeSecrets);
+      setHasMaskedSecrets(false);
+      const withSecrets = currentUser?.role !== 'VIEWER';
+      setIncludeSecrets(withSecrets);
+      loadExport(withSecrets);
     }
-  }, [isOpen, defaultTab]);
+  }, [isOpen, defaultTab, currentUser?.role]);
 
   const loadExport = async (withSecrets: boolean) => {
     setExportLoading(true);
@@ -128,6 +132,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
     setParseError(null);
     setParsedImport(null);
     setImportSummary(null);
+    setHasMaskedSecrets(false);
 
     const trimmed = text.trim();
     if (!trimmed) return;
@@ -141,6 +146,12 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
         setParseError('Invalid format: file must contain "monitors" or "notification_channels" array.');
         return;
       }
+
+      const masked = channels.some((c: any) =>
+        c.config?.bot_token === '********' ||
+        (typeof c.config?.webhook_url === 'string' && c.config.webhook_url.endsWith('...'))
+      );
+      setHasMaskedSecrets(masked);
 
       setParsedImport({
         version: parsed.version || 1,
@@ -283,7 +294,16 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
             {/* JSON Preview */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span className="font-mono text-[11px]">JSON Payload Preview</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[11px]">JSON Payload Preview</span>
+                  <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border font-semibold ${
+                    includeSecrets
+                      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                      : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                  }`}>
+                    {includeSecrets ? '🔒 Credentials Included' : '🛡️ Credentials Masked'}
+                  </span>
+                </div>
                 <span className="text-[10px]">Version 1.0</span>
               </div>
               <div className="relative rounded-xl border border-white/10 bg-slate-950/80 p-3 overflow-hidden">
@@ -413,6 +433,17 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                     </span>
                   </label>
                 </div>
+
+                {/* Warning on Sanitized / Masked Secrets */}
+                {hasMaskedSecrets && (
+                  <div className="p-2.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 mt-0.5 text-amber-400 shrink-0" />
+                    <div className="text-[11px] leading-relaxed">
+                      <span className="font-semibold block text-amber-200">Sanitized Backup File</span>
+                      This file was exported without secrets (Telegram bot tokens or webhook URLs are masked with <code className="px-1 py-0.2 bg-black/40 rounded font-mono">********</code>). Channels will be imported, but you will need to edit them to provide real tokens before test alerts can be delivered.
+                    </div>
+                  </div>
+                )}
 
                 {/* Conflict Strategy Selector */}
                 <div className="pt-2 border-t border-emerald-500/20 space-y-1.5">

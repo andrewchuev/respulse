@@ -441,6 +441,34 @@ pub async fn import_config(
                 if let Some(id) = existing_id {
                     match strategy.as_str() {
                         "overwrite" => {
+                            let mut merged_config = item.config.clone();
+                            if let Some(merged_obj) = merged_config.as_object_mut() {
+                                let existing_cfg_val: Option<serde_json::Value> = sqlx::query_scalar(
+                                    "SELECT config FROM notification_channels WHERE id = $1"
+                                )
+                                .bind(id)
+                                .fetch_optional(&state.pool)
+                                .await
+                                .unwrap_or(None);
+
+                                if let Some(existing_cfg) = existing_cfg_val.and_then(|v| v.as_object().cloned()) {
+                                    if let Some(tok) = merged_obj.get("bot_token") {
+                                        if tok == "********" {
+                                            if let Some(old_tok) = existing_cfg.get("bot_token") {
+                                                merged_obj.insert("bot_token".to_string(), old_tok.clone());
+                                            }
+                                        }
+                                    }
+                                    if let Some(url) = merged_obj.get("webhook_url") {
+                                        if url.as_str().map(|s| s.ends_with("...")).unwrap_or(false) {
+                                            if let Some(old_url) = existing_cfg.get("webhook_url") {
+                                                merged_obj.insert("webhook_url".to_string(), old_url.clone());
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
                             let update_res = sqlx::query(
                                 r#"
                                 UPDATE notification_channels SET
@@ -450,7 +478,7 @@ pub async fn import_config(
                                 "#
                             )
                             .bind(item.channel_type.to_uppercase())
-                            .bind(item.config)
+                            .bind(merged_config)
                             .bind(item.is_active)
                             .bind(&item.filter_tags)
                             .bind(id)
@@ -465,6 +493,14 @@ pub async fn import_config(
                         }
                         "create_copy" => {
                             item.name = format!("{} (copy)", item.name);
+                            let is_masked = item.config.get("bot_token").map(|v| v == "********").unwrap_or(false)
+                                || item.config.get("webhook_url").and_then(|v| v.as_str()).map(|s| s.ends_with("...")).unwrap_or(false);
+                            if is_masked {
+                                summary.errors.push(format!(
+                                    "Channel '{}': imported from sanitized export with placeholder secrets. Please edit channel to set real credentials.",
+                                    item.name
+                                ));
+                            }
                             if let Ok(_) = insert_new_channel(&auth, &state, &item).await {
                                 summary.channels_imported += 1;
                             } else {
@@ -477,6 +513,14 @@ pub async fn import_config(
                         }
                     }
                 } else {
+                    let is_masked = item.config.get("bot_token").map(|v| v == "********").unwrap_or(false)
+                        || item.config.get("webhook_url").and_then(|v| v.as_str()).map(|s| s.ends_with("...")).unwrap_or(false);
+                    if is_masked {
+                        summary.errors.push(format!(
+                            "Channel '{}': imported from sanitized export with placeholder secrets. Please edit channel to set real credentials.",
+                            item.name
+                        ));
+                    }
                     match insert_new_channel(&auth, &state, &item).await {
                         Ok(_) => summary.channels_imported += 1,
                         Err(err_msg) => summary.errors.push(format!("Failed to insert channel '{}': {}", item.name, err_msg)),
