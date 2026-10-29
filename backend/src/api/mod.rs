@@ -1,6 +1,7 @@
 pub mod admin;
 pub mod auth;
 pub mod badge;
+pub mod export_import;
 pub mod fastspring;
 pub mod heartbeat;
 pub mod incidents;
@@ -53,6 +54,9 @@ pub fn create_router() -> Router<AppState> {
         .route("/notifications/:id", axum::routing::put(notifications::update_channel).delete(notifications::delete_channel))
         .route("/notifications/:id/test", axum::routing::post(notifications::test_channel))
         .route("/notifications/logs", get(notifications::list_alert_logs))
+        // Configuration Export & Import
+        .route("/config/export", get(export_import::export_config))
+        .route("/config/import", axum::routing::post(export_import::import_config))
         // Incidents
         .route("/incidents", get(incidents::list_incidents).post(incidents::create_manual_incident))
         .route("/incidents/:id", get(incidents::get_incident).put(incidents::update_incident))

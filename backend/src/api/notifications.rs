@@ -75,7 +75,7 @@ pub async fn list_channels(
 }
 
 /// Webhook-style channels post to a user-supplied URL, so it must not point at internal networks.
-async fn validate_channel_config(config: &serde_json::Value) -> Result<(), (StatusCode, String)> {
+pub async fn validate_channel_config(config: &serde_json::Value) -> Result<(), (StatusCode, String)> {
     if let Some(url) = config.get("webhook_url").and_then(|v| v.as_str()) {
         crate::net_guard::policy()
             .validate_url(url)

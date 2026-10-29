@@ -23,7 +23,7 @@ use tokio::sync::broadcast::Sender;
 use uuid::Uuid;
 
 /// Rejects targets that would let a monitor probe internal networks.
-async fn validate_monitor_target(monitor_type: &str, url: &str) -> Result<(), (StatusCode, String)> {
+pub async fn validate_monitor_target(monitor_type: &str, url: &str) -> Result<(), (StatusCode, String)> {
     let policy = net_guard::policy();
     let result = match monitor_type.to_uppercase().as_str() {
         "HEARTBEAT" => return Ok(()),

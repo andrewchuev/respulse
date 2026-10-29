@@ -371,3 +371,36 @@ export interface AuthResponse {
   token: string;
   user: UserProfile;
 }
+
+// -----------------------------------------------------------------------------
+// Export & Import Configuration Types
+// -----------------------------------------------------------------------------
+
+export interface ResPulseExport {
+  version: number;
+  exported_at: string;
+  app: string;
+  team_name?: string | null;
+  monitors: Partial<Monitor>[];
+  notification_channels: Partial<NotificationChannel>[];
+}
+
+export interface ImportConfigPayload {
+  monitors?: Partial<Monitor>[];
+  notification_channels?: Partial<NotificationChannel>[];
+  channels?: Partial<NotificationChannel>[];
+  conflict_strategy?: 'skip' | 'overwrite' | 'create_copy';
+  import_monitors?: boolean;
+  import_channels?: boolean;
+}
+
+export interface ImportSummary {
+  monitors_imported: number;
+  monitors_updated: number;
+  monitors_skipped: number;
+  channels_imported: number;
+  channels_updated: number;
+  channels_skipped: number;
+  errors: string[];
+}
+

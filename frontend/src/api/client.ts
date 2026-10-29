@@ -23,6 +23,9 @@ import {
   PaymentTransaction,
   PublicStatusPage,
   RegisterPayload,
+  ResPulseExport,
+  ImportConfigPayload,
+  ImportSummary,
   TeamMember,
   UpdateIncidentPayload,
   UpdateMonitorPayload,
@@ -584,4 +587,32 @@ export function createWebSocketConnection(onMessage: (data: any) => void) {
     clearTimeout(retryTimer);
     ws?.close();
   };
+}
+
+// -----------------------------------------------------------------------------
+// Configuration Export & Import API
+// -----------------------------------------------------------------------------
+
+export async function fetchExportConfig(includeSecrets: boolean = true): Promise<ResPulseExport> {
+  const res = await apiFetch(`${API_BASE}/config/export?include_secrets=${includeSecrets}`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || 'Failed to export configuration');
+  }
+  return res.json();
+}
+
+export async function importConfig(payload: ImportConfigPayload): Promise<ImportSummary> {
+  const res = await apiFetch(`${API_BASE}/config/import`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || 'Failed to import configuration');
+  }
+  return res.json();
 }

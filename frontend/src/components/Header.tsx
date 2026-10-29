@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Activity, Plus, Radio, Globe, Bell, AlertTriangle, Users, ChevronDown, Check, Sparkles, LogOut, KeyRound, CreditCard, BarChart3, LayoutDashboard } from 'lucide-react';
+import { Activity, Plus, Radio, Globe, Bell, AlertTriangle, Users, ChevronDown, Check, Sparkles, LogOut, KeyRound, CreditCard, BarChart3, LayoutDashboard, FileJson } from 'lucide-react';
 import { Button } from './ui/button';
 import { UserProfile, UserRole } from '../types';
 
@@ -16,6 +16,7 @@ interface HeaderProps {
   onOpenAuth?: (mode: 'login' | 'register') => void;
   onSignOut?: () => void;
   onOpenUpgradeModal?: () => void;
+  onOpenExportImport?: (tab: 'export' | 'import') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -31,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAuth,
   onSignOut,
   onOpenUpgradeModal,
+  onOpenExportImport,
 }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -285,6 +287,33 @@ export const Header: React.FC<HeaderProps> = ({
                         </div>
                       </div>
                       <span className="text-[10px] text-cyan-400 font-bold">&rarr;</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Configuration Export & Import Action */}
+                {onOpenExportImport && (
+                  <div className="p-2 pt-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        onOpenExportImport('export');
+                      }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl bg-slate-950/80 hover:bg-slate-800/80 border border-slate-800 text-xs text-left transition-colors group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <FileJson className="h-4 w-4 text-cyan-400" />
+                        <div>
+                          <div className="font-semibold text-white group-hover:text-cyan-300">
+                            Backup & Restore
+                          </div>
+                          <div className="text-[10px] text-muted-foreground font-mono">
+                            Export / Import Config
+                          </div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-slate-400 group-hover:text-cyan-400 font-bold">&rarr;</span>
                     </button>
                   </div>
                 )}

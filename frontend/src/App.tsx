@@ -37,6 +37,7 @@ import { legalReady } from './legal/content';
 import { AdminReport } from './components/AdminReport';
 import { VerifyEmailPage } from './components/VerifyEmailPage';
 import { FastSpringCheckoutModal } from './components/FastSpringCheckoutModal';
+import { ExportImportModal } from './components/ExportImportModal';
 
 type View = 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo' | 'terms' | 'privacy' | 'refund' | 'admin' | 'verify-email';
 
@@ -47,6 +48,8 @@ export function App() {
   const [editingMonitor, setEditingMonitor] = useState<MonitorWithStats | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isFastSpringModalOpen, setIsFastSpringModalOpen] = useState(false);
+  const [isExportImportModalOpen, setIsExportImportModalOpen] = useState(false);
+  const [exportImportDefaultTab, setExportImportDefaultTab] = useState<'export' | 'import'>('export');
 
   useEffect(() => {
     try {
@@ -125,6 +128,11 @@ export function App() {
   const planKey = currentUser?.team_plan === 'PRO' ? 'PRO' : 'FREE';
   // Checkout is hidden while the service is a free beta.
   const openUpgrade = billingEnabled ? () => setIsFastSpringModalOpen(true) : undefined;
+
+  const openExportImport = (tab: 'export' | 'import' = 'export') => {
+    setExportImportDefaultTab(tab);
+    setIsExportImportModalOpen(true);
+  };
 
   const openAuth = (mode: 'login' | 'register') => {
     setAuthModalMode(mode);
@@ -411,6 +419,7 @@ export function App() {
         onOpenAuth={openAuth}
         onSignOut={handleSignOut}
         onOpenUpgradeModal={openUpgrade}
+        onOpenExportImport={openExportImport}
       />
 
       {/* Viewer Mode Banner */}
@@ -425,7 +434,7 @@ export function App() {
         {loading ? (
           <SkeletonDashboard />
         ) : currentView === 'channels' ? (
-          <NotificationChannels currentUser={currentUser} />
+          <NotificationChannels currentUser={currentUser} onOpenExportImport={openExportImport} />
         ) : currentView === 'incidents' ? (
           <IncidentManagement currentUser={currentUser} />
         ) : currentView === 'admin' ? (
@@ -453,6 +462,7 @@ export function App() {
               onAddClick={() => setIsAddModalOpen(true)}
               onRefreshData={loadData}
               isViewer={isViewer}
+              onOpenExportImport={openExportImport}
             />
           </>
         )}
@@ -504,6 +514,16 @@ export function App() {
           loadData();
           loadUserData();
           changeView('dashboard');
+        }}
+      />
+
+      <ExportImportModal
+        isOpen={isExportImportModalOpen}
+        onClose={() => setIsExportImportModalOpen(false)}
+        currentUser={currentUser}
+        defaultTab={exportImportDefaultTab}
+        onImportSuccess={() => {
+          loadData();
         }}
       />
 

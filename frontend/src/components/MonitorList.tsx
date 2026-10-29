@@ -21,6 +21,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   SlidersHorizontal,
+  ArrowUpDown,
 } from 'lucide-react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
@@ -38,6 +39,7 @@ interface MonitorListProps {
   onAddClick: () => void;
   onRefreshData?: () => void;
   isViewer?: boolean;
+  onOpenExportImport?: (tab: 'export' | 'import') => void;
 }
 
 export const MonitorList: React.FC<MonitorListProps> = ({
@@ -51,6 +53,7 @@ export const MonitorList: React.FC<MonitorListProps> = ({
   onAddClick,
   onRefreshData,
   isViewer = false,
+  onOpenExportImport,
 }) => {
   // Search & Filter state
   const [search, setSearch] = useState('');
@@ -377,6 +380,20 @@ export const MonitorList: React.FC<MonitorListProps> = ({
                 <span className="hidden sm:inline text-[11px]">{isCompact ? 'Compact' : 'Comfortable'}</span>
               </button>
             </div>
+
+            {/* Export & Import Action Button */}
+            {onOpenExportImport && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onOpenExportImport('export')}
+                title="Export or Import monitors & alert configurations"
+                className="h-8 px-2.5 rounded-lg border-border/80 bg-secondary/40 hover:bg-secondary text-slate-300 hover:text-white flex items-center gap-1.5 text-xs font-medium shrink-0"
+              >
+                <ArrowUpDown className="h-3.5 w-3.5 text-emerald-400" />
+                <span className="hidden md:inline text-[11px]">Export / Import</span>
+              </Button>
+            )}
           </div>
         </div>
 
