@@ -27,7 +27,6 @@ import {
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { BetaPricing } from './BetaPricing';
-import { legalConfig } from '../legal/content';
 import { DEFAULT_APP_CONFIG } from '../api/client';
 import { PlanLimits } from '../types';
 
@@ -1197,65 +1196,36 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
       {/* 11. FOOTER */}
       {/* ------------------------------------------------------------- */}
       <footer className="border-t border-white/5 py-12 bg-slate-950 text-xs text-slate-400">
-        <div className="container mx-auto px-4 space-y-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-3">
-              <div className="h-7 w-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                <Activity className="h-4 w-4" />
-              </div>
-              <span className="font-bold text-white text-sm">ResPulse</span>
-              <span className="text-[11px] text-slate-500">
-                © {new Date().getFullYear()} ResPulse. Systems-grade synthetic monitoring.
-              </span>
+        <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-3">
+            <div className="h-7 w-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <Activity className="h-4 w-4" />
             </div>
-
-            <div className="flex flex-wrap items-center justify-center md:justify-end gap-5 font-mono text-[11px]">
-              <button onClick={onOpenDashboard} className="hover:text-emerald-400 transition-colors">
-                Console
-              </button>
-              <button onClick={onOpenStatusPage} className="hover:text-emerald-400 transition-colors">
-                Status Page
-              </button>
-              <a href="#faq" className="hover:text-emerald-400 transition-colors">
-                FAQ
-              </a>
-              <a href="/terms" className="hover:text-emerald-400 transition-colors">
-                Terms of Service
-              </a>
-              <a href="/privacy" className="hover:text-emerald-400 transition-colors">
-                Privacy Policy
-              </a>
-              <a href="/refund" className="hover:text-emerald-400 transition-colors">
-                Refund & Cancellation Policy
-              </a>
-            </div>
+            <span className="font-bold text-white text-sm">ResPulse</span>
+            <span className="text-[11px] text-slate-500">
+              © {new Date().getFullYear()} ResPulse. Systems-grade synthetic monitoring.
+            </span>
           </div>
 
-          <div className="pt-6 border-t border-white/5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-[11px] text-slate-400 font-mono">
-            <div>
-              <p className="text-slate-300 font-sans font-medium">
-                {legalConfig.operator}
-              </p>
-              <p className="text-slate-500 mt-1">
-                Tax ID (РНОКПП): <span className="text-slate-400 font-mono">{legalConfig.taxId}</span> · State Reg: <span className="text-slate-400 font-mono">{legalConfig.registrationNumber}</span>
-              </p>
-              <p className="text-slate-500 mt-0.5">
-                {legalConfig.operatorAddress} · Tel:{' '}
-                <a href={`tel:${legalConfig.phone.replace(/\s+/g, '')}`} className="text-emerald-400 hover:underline">
-                  {legalConfig.phone}
-                </a>{' '}
-                · Email:{' '}
-                <a href={`mailto:${legalConfig.supportEmail}`} className="text-emerald-400 hover:underline">
-                  {legalConfig.supportEmail}
-                </a>
-              </p>
-            </div>
-            <div className="flex items-center gap-2 shrink-0 text-slate-400">
-              <span className="text-[11px]">Payments secured by</span>
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                WayForPay
-              </span>
-            </div>
+          <div className="flex flex-wrap items-center justify-center md:justify-end gap-5 font-mono text-[11px]">
+            <button onClick={onOpenDashboard} className="hover:text-emerald-400 transition-colors">
+              Console
+            </button>
+            <button onClick={onOpenStatusPage} className="hover:text-emerald-400 transition-colors">
+              Status Page
+            </button>
+            <a href="#faq" className="hover:text-emerald-400 transition-colors">
+              FAQ
+            </a>
+            <a href="/terms" className="hover:text-emerald-400 transition-colors">
+              Terms of Service
+            </a>
+            <a href="/privacy" className="hover:text-emerald-400 transition-colors">
+              Privacy Policy
+            </a>
+            <a href="/refund" className="hover:text-emerald-400 transition-colors">
+              Refund & Cancellation Policy
+            </a>
           </div>
         </div>
       </footer>

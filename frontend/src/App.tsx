@@ -33,7 +33,6 @@ import { SkeletonDashboard } from './components/SkeletonDashboard';
 import { PromoLandingPage } from './components/PromoLandingPage';
 import { AuthModal } from './components/AuthModal';
 import { LegalPage } from './components/LegalPage';
-import { legalConfig } from './legal/content';
 import { AdminPanel } from './components/AdminPanel';
 import { VerifyEmailPage } from './components/VerifyEmailPage';
 import { WayForPayCheckoutModal } from './components/WayForPayCheckoutModal';
@@ -536,11 +535,6 @@ export function App() {
           <a href="/privacy" className="hover:text-emerald-400 transition-colors">Privacy Policy</a>
           <span>·</span>
           <a href="/refund" className="hover:text-emerald-400 transition-colors">Refund & Cancellation</a>
-        </p>
-        <p className="font-mono mt-2 text-[10px] text-muted-foreground/75">
-          {legalConfig.operator} · Tax ID (РНОКПП): {legalConfig.taxId} · State Reg: {legalConfig.registrationNumber} · {legalConfig.operatorAddress} ·{' '}
-          <a href={`tel:${legalConfig.phone.replace(/\s+/g, '')}`} className="hover:text-emerald-400">{legalConfig.phone}</a> ·{' '}
-          <a href={`mailto:${legalConfig.supportEmail}`} className="hover:text-emerald-400">{legalConfig.supportEmail}</a>
         </p>
       </footer>
     </div>
