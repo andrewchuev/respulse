@@ -33,7 +33,7 @@ import { SkeletonDashboard } from './components/SkeletonDashboard';
 import { PromoLandingPage } from './components/PromoLandingPage';
 import { AuthModal } from './components/AuthModal';
 import { LegalPage } from './components/LegalPage';
-import { legalReady } from './legal/content';
+import { legalConfig } from './legal/content';
 import { AdminPanel } from './components/AdminPanel';
 import { VerifyEmailPage } from './components/VerifyEmailPage';
 import { WayForPayCheckoutModal } from './components/WayForPayCheckoutModal';
@@ -530,13 +530,18 @@ export function App() {
 
       <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground">
         <p className="font-mono">ResPulse v1.0 — High-performance Synthetic Monitoring Engine in Rust</p>
-        {legalReady && (
-          <p className="font-mono mt-1 space-x-3">
-            <a href="/terms" className="hover:text-emerald-400 transition-colors">Terms</a>
-            <a href="/privacy" className="hover:text-emerald-400 transition-colors">Privacy</a>
-            {billingEnabled && <a href="/refund" className="hover:text-emerald-400 transition-colors">Refunds</a>}
-          </p>
-        )}
+        <p className="font-mono mt-2 space-x-3 text-[11px]">
+          <a href="/terms" className="hover:text-emerald-400 transition-colors">Terms of Service</a>
+          <span>·</span>
+          <a href="/privacy" className="hover:text-emerald-400 transition-colors">Privacy Policy</a>
+          <span>·</span>
+          <a href="/refund" className="hover:text-emerald-400 transition-colors">Refund & Cancellation</a>
+        </p>
+        <p className="font-mono mt-2 text-[10px] text-muted-foreground/75">
+          {legalConfig.operator} · Tax ID (РНОКПП): {legalConfig.taxId} · State Reg: {legalConfig.registrationNumber} · {legalConfig.operatorAddress} ·{' '}
+          <a href={`tel:${legalConfig.phone.replace(/\s+/g, '')}`} className="hover:text-emerald-400">{legalConfig.phone}</a> ·{' '}
+          <a href={`mailto:${legalConfig.supportEmail}`} className="hover:text-emerald-400">{legalConfig.supportEmail}</a>
+        </p>
       </footer>
     </div>
   );

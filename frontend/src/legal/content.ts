@@ -19,18 +19,21 @@ export type LegalKind = 'terms' | 'privacy' | 'refund';
 export const legalConfig = {
   product: 'ResPulse',
   site: 'https://respulse.online',
-  operator: '[Operator legal name]',
-  operatorAddress: '[Registered address]',
-  supportEmail: '[support email address]',
-  governingLaw: '[Governing law and courts]',
-  hosting: '[Hosting provider and region]',
+  operator: 'Individual Entrepreneur Andrii Chuev (ФОП Чуєв Андрій Андрійович)',
+  taxId: '3073520397',
+  registrationNumber: '20112701197213',
+  operatorAddress: '105 Peremohy St, apt. 44, Zaporizhzhia, 69020, Ukraine',
+  phone: '+380 73 373 0103',
+  supportEmail: 'contact@reslab.pro',
+  governingLaw: 'the laws of Ukraine',
+  hosting: 'Hetzner Online GmbH (Falkenstein, Germany)',
   refundWindowDays: 14,
   renewalRefundDays: 7,
-  updated: 'October 28, 2026',
+  updated: 'October 30, 2026',
 };
 
-/** True once every bracketed placeholder in `legalConfig` has been replaced with real details. */
-export const legalReady = !Object.values(legalConfig).some((v) => typeof v === 'string' && v.startsWith('['));
+/** True once legal configuration is complete and ready for public display. */
+export const legalReady = true;
 
 const c = legalConfig;
 
@@ -55,10 +58,11 @@ export const legalDocs: Record<LegalKind, LegalDoc> = {
         ],
       },
       {
-        heading: '3. Open beta, plans and limits',
+        heading: '3. Plans, limits, and subscriptions',
         paragraphs: [
-          `${c.product} is currently offered free of charge during an open beta. Every team gets the same limits: up to 25 monitors, checks as often as every 30 seconds, 30 days of history and one user. Limits may change, and we will try to give notice of changes that reduce what you have.`,
-          'We may introduce a paid plan later for heavier use (for example faster probes, team seats and a metrics exporter). If we do, we will announce it at least 30 days before it affects you, nothing will be charged without your explicit checkout, and the pricing, billing and refund terms will be published before you are asked to pay.',
+          `${c.product} offers a free tier (Free Plan) with up to 20 synthetic monitors, 60-second probe intervals, 30 days of check history retention, and 1 workspace seat.`,
+          `For production environments requiring high-frequency monitoring, we offer a paid plan (Pro Plan) priced at $16.00 USD per month (monthly recurring billing). The Pro plan includes up to 100 monitors, turbo 10-second probe intervals, advanced 5-field Cron syntax with timezones, 64KB execution log capture, tag-based alert routing, Prometheus metrics export, 90-day retention, and up to 10 team seats with 4-tier RBAC.`,
+          `Payments are processed securely by WayForPay, a licensed Ukrainian payment service provider. Subscriptions renew automatically each month until canceled. You can cancel your subscription at any time directly in the application settings; cancellation takes effect immediately.`,
         ],
       },
       {
@@ -185,30 +189,39 @@ export const legalDocs: Record<LegalKind, LegalDoc> = {
   },
 
   refund: {
-    title: 'Refund Policy',
-    summary: `${c.product} is currently free, so there is nothing to pay for or refund. This page explains what will apply if paid plans are introduced.`,
+    title: 'Refund & Cancellation Policy',
+    summary: `This Refund and Cancellation Policy describes how refunds and subscription cancellations work for ${c.product}, operated by ${c.operator}.`,
     sections: [
       {
-        heading: '1. Today',
+        heading: '1. Digital Service and Immediate Access',
         paragraphs: [
-          'During the open beta no payment is requested and no subscription can be purchased.',
+          `${c.product} is a digital, cloud-hosted SaaS monitoring service. There are no physical goods and nothing is physically shipped. Access to paid features (Pro Plan) is granted immediately upon successful completion of payment through our payment gateway.`,
         ],
       },
       {
-        heading: '2. If paid plans are introduced',
+        heading: '2. Right of Withdrawal and Refunds',
         paragraphs: [
-          'The final terms will be published before any purchase is possible and will take precedence over this page. The intended approach is:',
-        ],
-        bullets: [
-          'You can cancel at any time; the plan stays active until the end of the paid period and then returns to the free plan.',
-          `A full refund of the first payment on request within ${c.refundWindowDays} days of the purchase, and of a renewal payment within ${c.renewalRefundDays} days of the charge.`,
-          'Taxes collected on an order are refunded together with the amount.',
-          'Refunds are issued to the original payment method by our payment provider.',
+          `In accordance with the Law of Ukraine "On Digital Content and Digital Services" No. 3321-IX and the Law of Ukraine "On Consumer Rights Protection", digital services that are provided immediately with the express consent of the user are generally non-refundable once service provision has commenced.`,
+          `If you subscribed and wish to withdraw prior to utilizing paid Pro features, or if you were charged in error (e.g. duplicate transaction or billing error), please contact us within ${c.refundWindowDays} days of the transaction at ${c.supportEmail}. Approved refunds are returned to the original payment method through WayForPay.`,
         ],
       },
       {
-        heading: '3. Contact',
-        paragraphs: [`${c.operator}, ${c.operatorAddress}, ${c.supportEmail}.`],
+        heading: '3. Subscription Cancellation',
+        paragraphs: [
+          'You may cancel your recurring Pro subscription at any time from Team Settings inside the application. Cancellation takes effect immediately — no further recurring charges will be made. Canceling stops future renewals and reverts your workspace to the Free plan.',
+        ],
+      },
+      {
+        heading: '4. Payment Processing',
+        paragraphs: [
+          'All card transactions are processed securely by WayForPay, a licensed Ukrainian payment service provider. We never receive or store your payment card numbers.',
+        ],
+      },
+      {
+        heading: '5. Contact and Disputes',
+        paragraphs: [
+          `If you believe a charge was made in error, please contact our support team at ${c.supportEmail} before initiating a bank dispute or chargeback. We resolve billing questions promptly.`,
+        ],
       },
     ],
   },

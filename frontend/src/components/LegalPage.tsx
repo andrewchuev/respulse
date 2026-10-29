@@ -5,7 +5,7 @@ import { LegalKind, legalConfig, legalDocs, legalReady } from '../legal/content'
 const NAV: { kind: LegalKind; label: string; href: string }[] = [
   { kind: 'terms', label: 'Terms of Service', href: '/terms' },
   { kind: 'privacy', label: 'Privacy Policy', href: '/privacy' },
-  { kind: 'refund', label: 'Refund Policy', href: '/refund' },
+  { kind: 'refund', label: 'Refund & Cancellation Policy', href: '/refund' },
 ];
 
 export const LegalPage: React.FC<{ kind: LegalKind }> = ({ kind }) => {
@@ -76,6 +76,37 @@ export const LegalPage: React.FC<{ kind: LegalKind }> = ({ kind }) => {
               )}
             </section>
           ))}
+        </div>
+
+        {/* Merchant & Company Information (WayForPay requirement) */}
+        <div className="mt-12 pt-8 border-t border-white/10 bg-slate-900/50 p-6 rounded-xl border border-slate-800">
+          <h2 className="text-base font-bold text-white mb-3">Company information</h2>
+          <ul className="space-y-2 text-xs text-slate-300">
+            <li>
+              <strong className="text-white">Legal name:</strong> {legalConfig.operator}
+            </li>
+            <li>
+              <strong className="text-white">Tax ID (РНОКПП):</strong> {legalConfig.taxId}
+            </li>
+            <li>
+              <strong className="text-white">State registration number:</strong> {legalConfig.registrationNumber}
+            </li>
+            <li>
+              <strong className="text-white">Registered address:</strong> {legalConfig.operatorAddress}
+            </li>
+            <li>
+              <strong className="text-white">Phone:</strong>{' '}
+              <a href={`tel:${legalConfig.phone.replace(/\s+/g, '')}`} className="text-emerald-400 hover:underline font-mono">
+                {legalConfig.phone}
+              </a>
+            </li>
+            <li>
+              <strong className="text-white">Email:</strong>{' '}
+              <a href={`mailto:${legalConfig.supportEmail}`} className="text-emerald-400 hover:underline font-mono">
+                {legalConfig.supportEmail}
+              </a>
+            </li>
+          </ul>
         </div>
       </main>
 
