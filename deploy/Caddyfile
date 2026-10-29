@@ -10,6 +10,10 @@ mail.respulse.online {
     respond "ResPulse Mail Server Gateway" 200
 }
 
+grafana.respulse.online {
+    reverse_proxy grafana:3000
+}
+
 respulse.online {
     encode zstd gzip
 
