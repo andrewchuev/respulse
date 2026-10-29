@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Activity, Plus, Radio, Globe, Bell, AlertTriangle, Users, ChevronDown, Check, Sparkles, LogOut, KeyRound, CreditCard, BarChart3, LayoutDashboard, FileJson } from 'lucide-react';
+import { Activity, Plus, Radio, Globe, Bell, AlertTriangle, Users, ChevronDown, Check, Sparkles, LogOut, KeyRound, CreditCard, BarChart3, LayoutDashboard, FileJson, Menu, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { UserProfile, UserRole } from '../types';
 
@@ -35,6 +35,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenExportImport,
 }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on click outside
@@ -44,8 +45,17 @@ export const Header: React.FC<HeaderProps> = ({
         setIsUserMenuOpen(false);
       }
     }
+    function handleResize() {
+      if (window.innerWidth >= 1024) {
+        setIsMobileMenuOpen(false);
+      }
+    }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    window.addEventListener('resize', handleResize);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
   const isViewer = currentUser?.role === 'VIEWER';
@@ -83,19 +93,19 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-      <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between md:grid md:grid-cols-[auto_1fr_auto] gap-4">
+      <div className="w-full max-w-[1720px] mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 lg:gap-4">
         {/* Zone 1 (Left): Brand Identity */}
-        <div className="flex items-center gap-2.5 cursor-pointer group justify-self-start shrink-0" onClick={() => setCurrentView('dashboard')}>
+        <div className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group shrink-0" onClick={() => setCurrentView('dashboard')}>
           <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20 border border-emerald-500/35 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.25)] group-hover:scale-105 transition-all shrink-0">
             <Activity className="h-5 w-5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold tracking-tight text-lg bg-gradient-to-r from-white via-slate-100 to-emerald-300 bg-clip-text text-transparent">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="font-extrabold tracking-tight text-base sm:text-lg bg-gradient-to-r from-white via-slate-100 to-emerald-300 bg-clip-text text-transparent">
                 ResPulse
               </span>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-[0_0_8px_rgba(16,185,129,0.2)]">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse shadow-[0_0_5px_rgba(16,185,129,1)]"></span>
+              <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-[0_0_8px_rgba(16,185,129,0.2)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1 sm:mr-1.5 animate-pulse shadow-[0_0_5px_rgba(16,185,129,1)]"></span>
                 LIVE
               </span>
             </div>
@@ -104,10 +114,10 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Zone 2 (Center): Balanced Navigation Pill Bar */}
-        <nav className="hidden md:flex items-center justify-self-center gap-1 bg-secondary/50 p-1 rounded-xl border border-border/80 shadow-inner">
+        <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 bg-secondary/50 p-1 rounded-xl border border-border/80 shadow-inner">
           <button
             onClick={() => setCurrentView('dashboard')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
               currentView === 'dashboard'
                 ? 'bg-background text-foreground shadow-sm border border-border/60'
                 : 'text-muted-foreground hover:text-foreground'
@@ -118,7 +128,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => setCurrentView('channels')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
               currentView === 'channels'
                 ? 'bg-background text-foreground shadow-sm border border-border/60'
                 : 'text-muted-foreground hover:text-foreground'
@@ -129,7 +139,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => setCurrentView('incidents')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
               currentView === 'incidents'
                 ? 'bg-background text-foreground shadow-sm border border-border/60'
                 : 'text-muted-foreground hover:text-foreground'
@@ -140,7 +150,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => setCurrentView('team')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
               currentView === 'team'
                 ? 'bg-background text-foreground shadow-sm border border-border/60'
                 : 'text-muted-foreground hover:text-foreground'
@@ -151,7 +161,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => setCurrentView('status-page')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
               currentView === 'status-page'
                 ? 'bg-background text-foreground shadow-sm border border-border/60'
                 : 'text-muted-foreground hover:text-foreground'
@@ -162,7 +172,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => setCurrentView('promo')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
               currentView === 'promo'
                 ? 'bg-background text-foreground shadow-sm border border-border/60 text-amber-300'
                 : 'text-muted-foreground hover:text-amber-300'
@@ -174,7 +184,7 @@ export const Header: React.FC<HeaderProps> = ({
           {isAdmin && (
             <button
               onClick={() => setCurrentView('admin')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 currentView === 'admin'
                   ? 'bg-background text-foreground shadow-sm border border-border/60'
                   : 'text-muted-foreground hover:text-foreground'
@@ -187,23 +197,23 @@ export const Header: React.FC<HeaderProps> = ({
         </nav>
 
         {/* Zone 3 (Right): Monitoring Status, Upsell & User Actions */}
-        <div className="flex items-center justify-self-end gap-3 shrink-0">
-          <div className="hidden lg:flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 px-3 py-1.5 rounded-lg border border-border/50 shrink-0 whitespace-nowrap">
+        <div className="flex items-center justify-self-end gap-1.5 sm:gap-3 shrink-0">
+          <div className="hidden 2xl:flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 px-3 py-1.5 rounded-lg border border-border/50 shrink-0 whitespace-nowrap">
             <Radio className="h-3.5 w-3.5 text-emerald-400 animate-pulse shrink-0" />
             <span><span className="hidden xl:inline">Multi-node </span>Probing</span>
             <span className="text-foreground font-mono font-medium whitespace-nowrap">({totalActive} active)</span>
           </div>
 
-          {/* Upgrade to Pro CTA in Header */}
+          {/* Upgrade to Pro CTA in Header - shown only on large screens (xl+) to prevent tablet header overflow */}
           {currentUser?.team_plan === 'FREE' && onOpenUpgradeModal && (
             <Button
               size="sm"
               onClick={onOpenUpgradeModal}
-              className="hidden md:flex items-center gap-1.5 h-8 px-3 text-xs font-semibold bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 hover:from-emerald-400 hover:to-cyan-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] animate-pulse shrink-0"
+              className="hidden xl:flex items-center gap-1.5 h-8 px-3 text-xs font-semibold bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 hover:from-emerald-400 hover:to-cyan-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] animate-pulse shrink-0"
               title="Upgrade to Pro via FastSpring ($8/mo excl. VAT)"
             >
               <Sparkles className="h-3.5 w-3.5 text-amber-300" />
-              <span className="whitespace-nowrap">Upgrade to Pro ($8/mo + VAT)</span>
+              <span className="whitespace-nowrap">Upgrade to Pro</span>
             </Button>
           )}
 
@@ -219,7 +229,7 @@ export const Header: React.FC<HeaderProps> = ({
                 alt={currentUser?.name || 'User'}
                 className="h-6 w-6 rounded-full border border-border object-cover"
               />
-              <div className="hidden sm:flex flex-col">
+              <div className="hidden xl:flex flex-col">
                 <span className="text-xs font-medium text-white truncate max-w-[110px] leading-tight flex items-center gap-1">
                   {currentUser?.name || 'Loading...'}
                   <span className={`text-[8px] font-mono px-1 rounded font-bold ${
@@ -410,18 +420,176 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onOpenAddModal}
             size="sm"
             disabled={isViewer}
-            className={`font-medium shadow-lg shrink-0 ${
+            className={`font-medium shadow-lg shrink-0 px-2.5 sm:px-3 h-8 sm:h-9 ${
               isViewer
                 ? 'opacity-40 cursor-not-allowed bg-secondary text-muted-foreground'
                 : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/40'
             }`}
             title={isViewer ? 'Requires Engineer role or higher to create monitors' : 'Create new synthetic monitor'}
           >
-            <Plus className="h-4 w-4 mr-1.5 shrink-0" />
-            <span>Add Monitor</span>
+            <Plus className="h-4 w-4 sm:mr-1.5 shrink-0" />
+            <span className="hidden sm:inline">Add Monitor</span>
           </Button>
+
+          {/* Mobile & Tablet Hamburger Menu Button (< lg) */}
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="lg:hidden flex items-center justify-center h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-secondary/50 hover:bg-secondary border border-border/80 text-slate-300 hover:text-white transition-colors shrink-0"
+            aria-label="Toggle navigation menu"
+          >
+            {isMobileMenuOpen ? <X className="h-4 w-4 text-emerald-400" /> : <Menu className="h-4 w-4" />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile & Tablet Navigation Dropdown Menu (< lg) */}
+      {isMobileMenuOpen && (
+        <div className="lg:hidden border-t border-border/80 bg-slate-900/98 backdrop-blur-2xl px-3 sm:px-4 py-3 space-y-3 animate-in slide-in-from-top-2 duration-150 shadow-2xl">
+          <nav className="grid grid-cols-2 gap-1.5 text-xs font-medium">
+            <button
+              onClick={() => {
+                setCurrentView('dashboard');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`flex items-center gap-2 p-2.5 rounded-lg transition-colors text-left ${
+                currentView === 'dashboard'
+                  ? 'bg-emerald-500/15 border border-emerald-500/30 text-white font-semibold'
+                  : 'bg-secondary/30 hover:bg-secondary/60 text-slate-300'
+              }`}
+            >
+              <LayoutDashboard className="h-4 w-4 text-emerald-400 shrink-0" />
+              <span>Dashboard</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setCurrentView('channels');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`flex items-center gap-2 p-2.5 rounded-lg transition-colors text-left ${
+                currentView === 'channels'
+                  ? 'bg-emerald-500/15 border border-emerald-500/30 text-white font-semibold'
+                  : 'bg-secondary/30 hover:bg-secondary/60 text-slate-300'
+              }`}
+            >
+              <Bell className="h-4 w-4 text-emerald-400 shrink-0" />
+              <span>Alert Channels</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setCurrentView('incidents');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`flex items-center gap-2 p-2.5 rounded-lg transition-colors text-left ${
+                currentView === 'incidents'
+                  ? 'bg-emerald-500/15 border border-emerald-500/30 text-white font-semibold'
+                  : 'bg-secondary/30 hover:bg-secondary/60 text-slate-300'
+              }`}
+            >
+              <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
+              <span>Incidents & RCA</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setCurrentView('team');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`flex items-center gap-2 p-2.5 rounded-lg transition-colors text-left ${
+                currentView === 'team'
+                  ? 'bg-emerald-500/15 border border-emerald-500/30 text-white font-semibold'
+                  : 'bg-secondary/30 hover:bg-secondary/60 text-slate-300'
+              }`}
+            >
+              <Users className="h-4 w-4 text-blue-400 shrink-0" />
+              <span>Team & RBAC</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setCurrentView('status-page');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`flex items-center gap-2 p-2.5 rounded-lg transition-colors text-left ${
+                currentView === 'status-page'
+                  ? 'bg-emerald-500/15 border border-emerald-500/30 text-white font-semibold'
+                  : 'bg-secondary/30 hover:bg-secondary/60 text-slate-300'
+              }`}
+            >
+              <Globe className="h-4 w-4 text-cyan-400 shrink-0" />
+              <span>Public Status</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setCurrentView('promo');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`flex items-center gap-2 p-2.5 rounded-lg transition-colors text-left ${
+                currentView === 'promo'
+                  ? 'bg-emerald-500/15 border border-emerald-500/30 text-white font-semibold'
+                  : 'bg-secondary/30 hover:bg-secondary/60 text-slate-300'
+              }`}
+            >
+              <Sparkles className="h-4 w-4 text-amber-400 shrink-0" />
+              <span>Overview & Promo</span>
+            </button>
+
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  setCurrentView('admin');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`col-span-2 flex items-center gap-2 p-2.5 rounded-lg transition-colors text-left ${
+                  currentView === 'admin'
+                    ? 'bg-emerald-500/15 border border-emerald-500/30 text-white font-semibold'
+                    : 'bg-secondary/30 hover:bg-secondary/60 text-slate-300'
+                }`}
+              >
+                <BarChart3 className="h-4 w-4 text-purple-400 shrink-0" />
+                <span>Operator Report</span>
+              </button>
+            )}
+          </nav>
+
+          {/* Quick Mobile Action Bar */}
+          {(onOpenExportImport || (currentUser?.team_plan === 'FREE' && onOpenUpgradeModal)) && (
+            <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
+              {onOpenExportImport && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    onOpenExportImport('export');
+                  }}
+                  className="flex-1 h-8 text-xs border-slate-700 bg-slate-800/80 text-slate-200 gap-1.5"
+                >
+                  <FileJson className="h-3.5 w-3.5 text-cyan-400" />
+                  Backup & Restore
+                </Button>
+              )}
+
+              {currentUser?.team_plan === 'FREE' && onOpenUpgradeModal && (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    onOpenUpgradeModal();
+                  }}
+                  className="flex-1 h-8 text-xs font-semibold bg-gradient-to-r from-emerald-500 to-teal-600 text-white gap-1.5"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+                  Upgrade ($8/mo)
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </header>
   );
 };

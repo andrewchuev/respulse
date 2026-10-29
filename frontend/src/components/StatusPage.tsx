@@ -241,9 +241,9 @@ export const StatusPage: React.FC<StatusPageProps> = ({ onBack }) => {
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4 w-full sm:w-auto">
                           {/* Bars */}
-                          <div className="flex items-center gap-[2px] h-5 bg-background/50 px-1 py-0.5 rounded border border-border/40">
+                          <div className="flex items-center gap-[1.5px] sm:gap-[2px] h-5 bg-background/50 px-1 py-0.5 rounded border border-border/40">
                             {historyBars.map((b, i) => (
                               <div
                                 key={i}

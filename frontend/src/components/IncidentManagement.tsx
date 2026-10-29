@@ -129,14 +129,14 @@ export const IncidentManagement: React.FC<IncidentManagementProps> = ({ currentU
   return (
     <div className="space-y-6">
       {/* Top Header & Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <Card className="bg-card/40 border-border/60">
-          <CardContent className="p-4 flex items-center justify-between">
+          <CardContent className="p-3.5 sm:p-4 flex items-center justify-between">
             <div>
               <div className="text-[11px] uppercase font-mono tracking-wider text-muted-foreground">
                 Active Incidents
               </div>
-              <div className="text-2xl font-bold font-mono text-white mt-1">
+              <div className="text-xl sm:text-2xl font-bold font-mono text-white mt-1">
                 {ongoingIncidents.length}
               </div>
               <div className="text-[10px] text-muted-foreground mt-0.5">
@@ -144,7 +144,7 @@ export const IncidentManagement: React.FC<IncidentManagementProps> = ({ currentU
               </div>
             </div>
             <div
-              className={`h-10 w-10 rounded-xl flex items-center justify-center border ${
+              className={`h-9 w-9 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center border shrink-0 ${
                 ongoingIncidents.length > 0
                   ? 'bg-red-500/10 border-red-500/20 text-red-400 animate-pulse'
                   : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
@@ -160,38 +160,38 @@ export const IncidentManagement: React.FC<IncidentManagementProps> = ({ currentU
         </Card>
 
         <Card className="bg-card/40 border-border/60">
-          <CardContent className="p-4 flex items-center justify-between">
+          <CardContent className="p-3.5 sm:p-4 flex items-center justify-between">
             <div>
               <div className="text-[11px] uppercase font-mono tracking-wider text-muted-foreground">
                 Resolved Incidents
               </div>
-              <div className="text-2xl font-bold font-mono text-white mt-1">
+              <div className="text-xl sm:text-2xl font-bold font-mono text-white mt-1">
                 {resolvedIncidents.length}
               </div>
               <div className="text-[10px] text-muted-foreground mt-0.5">
                 Recorded incident history
               </div>
             </div>
-            <div className="h-10 w-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+            <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
               <CheckCircle2 className="h-5 w-5" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-card/40 border-border/60">
-          <CardContent className="p-4 flex items-center justify-between">
+          <CardContent className="p-3.5 sm:p-4 flex items-center justify-between">
             <div>
               <div className="text-[11px] uppercase font-mono tracking-wider text-muted-foreground">
                 Mean Time to Resolve (MTTR)
               </div>
-              <div className="text-2xl font-bold font-mono text-emerald-400 mt-1">
+              <div className="text-xl sm:text-2xl font-bold font-mono text-emerald-400 mt-1">
                 {formatDuration(avgDuration)}
               </div>
               <div className="text-[10px] text-muted-foreground mt-0.5">
                 Average recovery timeframe
               </div>
             </div>
-            <div className="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
               <Clock className="h-5 w-5" />
             </div>
           </CardContent>
@@ -210,8 +210,8 @@ export const IncidentManagement: React.FC<IncidentManagementProps> = ({ currentU
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="flex items-center bg-secondary/40 p-1 rounded-lg border border-border/60 text-xs">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-between sm:justify-start">
+          <div className="flex items-center bg-secondary/40 p-1 rounded-lg border border-border/60 text-xs shrink-0">
             {(['ALL', 'ONGOING', 'RESOLVED'] as const).map((st) => (
               <button
                 key={st}
@@ -227,30 +227,33 @@ export const IncidentManagement: React.FC<IncidentManagementProps> = ({ currentU
             ))}
           </div>
 
-          <Button
-            size="sm"
-            onClick={loadData}
-            variant="outline"
-            className="h-9 px-2.5 border-border/80 text-xs text-muted-foreground hover:text-white"
-            title="Refresh incident list"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              size="sm"
+              onClick={loadData}
+              variant="outline"
+              className="h-9 px-2.5 border-border/80 text-xs text-muted-foreground hover:text-white"
+              title="Refresh incident list"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+            </Button>
 
-          <Button
-            size="sm"
-            onClick={() => setIsDeclareModalOpen(true)}
-            disabled={isViewer}
-            className={`font-medium h-9 text-xs gap-1.5 ${
-              isViewer
-                ? 'opacity-40 cursor-not-allowed bg-secondary text-muted-foreground'
-                : 'bg-emerald-600 hover:bg-emerald-500 text-white'
-            }`}
-            title={isViewer ? 'Requires Engineer role or higher to declare incidents' : 'Declare Incident'}
-          >
-            <Plus className="h-4 w-4" />
-            Declare Incident
-          </Button>
+            <Button
+              size="sm"
+              onClick={() => setIsDeclareModalOpen(true)}
+              disabled={isViewer}
+              className={`font-medium h-9 text-xs gap-1.5 shrink-0 ${
+                isViewer
+                  ? 'opacity-40 cursor-not-allowed bg-secondary text-muted-foreground'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+              }`}
+              title={isViewer ? 'Requires Engineer role or higher to declare incidents' : 'Declare Incident'}
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Declare Incident</span>
+              <span className="sm:hidden">Declare</span>
+            </Button>
+          </div>
         </div>
       </div>
 

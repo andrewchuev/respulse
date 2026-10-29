@@ -164,51 +164,51 @@ export const NotificationChannels: React.FC<NotificationChannelsProps> = ({ curr
   return (
     <div className="space-y-6">
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <Card className="bg-card/60 backdrop-blur border-border/80">
-          <CardContent className="p-5 flex items-center justify-between">
+          <CardContent className="p-3.5 sm:p-5 flex items-center justify-between gap-2">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Configured Channels</p>
+              <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">Configured Channels</p>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl font-bold tracking-tight text-white">{channels.length}</span>
+                <span className="text-xl sm:text-2xl font-bold tracking-tight text-white">{channels.length}</span>
                 <span className="text-xs text-emerald-400 font-mono">
                   ({channels.filter((c) => c.is_active).length} active)
                 </span>
               </div>
             </div>
-            <div className="h-10 w-10 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+            <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 shrink-0">
               <Bell className="h-5 w-5" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-card/60 backdrop-blur border-border/80">
-          <CardContent className="p-5 flex items-center justify-between">
+          <CardContent className="p-3.5 sm:p-5 flex items-center justify-between gap-2">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Alerts Dispatched</p>
+              <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">Alerts Dispatched</p>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl font-bold tracking-tight text-emerald-400">{totalDelivered}</span>
+                <span className="text-xl sm:text-2xl font-bold tracking-tight text-emerald-400">{totalDelivered}</span>
                 <span className="text-xs text-muted-foreground">sent successfully</span>
               </div>
             </div>
-            <div className="h-10 w-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
               <CheckCircle2 className="h-5 w-5" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-card/60 backdrop-blur border-border/80">
-          <CardContent className="p-5 flex items-center justify-between">
+          <CardContent className="p-3.5 sm:p-5 flex items-center justify-between gap-2">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Delivery Rate</p>
+              <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">Delivery Rate</p>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl font-bold font-mono tracking-tight text-white">{successRate}%</span>
+                <span className="text-xl sm:text-2xl font-bold font-mono tracking-tight text-white">{successRate}%</span>
                 {totalFailed > 0 && (
                   <span className="text-xs text-red-400 font-mono">({totalFailed} failed)</span>
                 )}
               </div>
             </div>
-            <div className="h-10 w-10 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+            <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">
               <Radio className="h-5 w-5" />
             </div>
           </CardContent>
@@ -224,7 +224,7 @@ export const NotificationChannels: React.FC<NotificationChannelsProps> = ({ curr
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {onOpenExportImport && (
             <Button
               variant="outline"
@@ -233,7 +233,8 @@ export const NotificationChannels: React.FC<NotificationChannelsProps> = ({ curr
               className="h-9 gap-1.5 text-xs text-slate-300 hover:text-white"
             >
               <ArrowUpDown className="h-3.5 w-3.5 text-cyan-400" />
-              <span>Export / Import</span>
+              <span className="hidden sm:inline">Export / Import</span>
+              <span className="sm:hidden">Backup</span>
             </Button>
           )}
           <Button variant="outline" size="sm" onClick={loadData} className="h-9 gap-1.5 text-xs text-muted-foreground hover:text-white">

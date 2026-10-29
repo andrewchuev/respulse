@@ -21,6 +21,8 @@ import {
   SlidersHorizontal,
   BarChart3,
   Tag,
+  Menu,
+  X,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -69,6 +71,8 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
     setOpenFaq(openFaq === idx ? null : idx);
   };
 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-[#070b14] text-foreground font-sans relative overflow-x-hidden selection:bg-emerald-500 selection:text-black">
       {/* Dynamic Ambient Background Glow Mesh */}
@@ -115,11 +119,11 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
           </nav>
 
           {/* Header Actions */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-2.5">
             {onOpenAuth && (
               <button
                 onClick={() => onOpenAuth('login')}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/80 border border-slate-800/60 transition-all"
+                className="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/80 border border-slate-800/60 transition-all"
               >
                 Sign In
               </button>
@@ -128,13 +132,77 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
             <Button
               onClick={() => onOpenAuth ? onOpenAuth('register') : onOpenDashboard()}
               size="sm"
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-[0_0_20px_rgba(16,185,129,0.35)] gap-1.5"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-[0_0_20px_rgba(16,185,129,0.35)] gap-1.5 px-3"
             >
-              <span>Get Started Free</span>
+              <span className="hidden sm:inline">Get Started Free</span>
+              <span className="sm:hidden">Get Started</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </Button>
+
+            {/* Mobile Menu Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden flex items-center justify-center h-8 w-8 rounded-lg bg-slate-800/60 border border-slate-700/60 text-slate-300 hover:text-white transition-colors"
+              aria-label="Toggle navigation"
+            >
+              {isMobileMenuOpen ? <X className="h-4 w-4 text-emerald-400" /> : <Menu className="h-4 w-4" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Navigation Dropdown (< md) */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden border-t border-white/10 bg-[#070b14]/98 backdrop-blur-2xl px-4 py-3 space-y-2 animate-in slide-in-from-top-2 duration-150">
+            <nav className="flex flex-col space-y-1 text-sm font-medium">
+              <a
+                href="#features"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+              >
+                Features
+              </a>
+              <a
+                href="#protocols"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+              >
+                Protocols
+              </a>
+              <a
+                href="#rust-architecture"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+              >
+                Architecture
+              </a>
+              <a
+                href="#pricing"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+              >
+                Pricing
+              </a>
+              <a
+                href="#faq"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+              >
+                FAQ
+              </a>
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  onOpenStatusPage();
+                }}
+                className="p-2 rounded-lg text-left text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors flex items-center gap-2"
+              >
+                <Globe className="h-4 w-4 text-cyan-400" />
+                Public Status Page
+              </button>
+            </nav>
+          </div>
+        )}
       </header>
 
       {/* ------------------------------------------------------------- */}
