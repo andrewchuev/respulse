@@ -11,6 +11,7 @@ pub mod notifications;
 pub mod payments;
 pub mod stats;
 pub mod team;
+pub mod wayforpay;
 pub mod ws;
 
 use axum::routing::get;
@@ -34,6 +35,11 @@ pub fn create_router() -> Router<AppState> {
         .route("/team/members/:id/role", axum::routing::put(team::update_member_role))
         .route("/team/members/:id", axum::routing::delete(team::remove_member))
         .route("/team/plan", axum::routing::put(team::update_team_plan).post(team::update_team_plan))
+        // WayForPay Billing & Subscriptions
+        .route("/billing/status", get(wayforpay::get_billing_status))
+        .route("/billing/wayforpay/checkout", axum::routing::post(wayforpay::create_checkout_session))
+        .route("/billing/wayforpay/webhook", axum::routing::post(wayforpay::billing_webhook))
+        .route("/billing/wayforpay/cancel", axum::routing::post(wayforpay::cancel_subscription))
         // Payments & FastSpring Subscription
         .route("/payments/fastspring/config", get(payments::get_fastspring_config))
         .route("/payments/fastspring/confirm", axum::routing::post(payments::confirm_fastspring_payment))

@@ -70,6 +70,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("REQUIRE_EMAIL_VERIFICATION needs SMTP_HOST and SMTP_FROM to be configured".into());
     }
 
+    let wayforpay = api::wayforpay::WayForPayConfig::from_env(&settings.app_url).map(Arc::new);
+    if wayforpay.is_some() {
+        info!("WayForPay subscription billing initialized");
+    }
+
     let state = AppState {
         pool: pool.clone(),
         tx: tx.clone(),
@@ -79,6 +84,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         limits,
         settings,
         mailer,
+        wayforpay,
     };
 
     // Spawn probe background scheduler

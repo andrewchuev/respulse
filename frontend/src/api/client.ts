@@ -7,6 +7,7 @@ import {
   AppConfig,
   AlertLogWithDetails,
   AuthResponse,
+  BillingStatusResponse,
   BulkActionPayload,
   BulkActionResponse,
   ConfirmFastSpringPaymentPayload,
@@ -33,6 +34,7 @@ import {
   UpdateIncidentPayload,
   UpdateMonitorPayload,
   UserProfile,
+  WayForPayCheckoutResponse,
   UserRole,
 } from '../types';
 
@@ -582,6 +584,40 @@ export async function fetchAlertLogs(): Promise<AlertLogWithDetails[]> {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error('Failed to fetch alert delivery logs');
+  return res.json();
+}
+
+// Billing & WayForPay
+export async function createWayForPayCheckoutSession(): Promise<WayForPayCheckoutResponse> {
+  const res = await apiFetch(`${API_BASE}/billing/wayforpay/checkout`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ plan: 'PRO' }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || err.message || 'Failed to start WayForPay checkout');
+  }
+  return res.json();
+}
+
+export async function cancelWayForPaySubscription(): Promise<{ status: string; plan: string; message: string }> {
+  const res = await apiFetch(`${API_BASE}/billing/wayforpay/cancel`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || err.message || 'Failed to cancel subscription');
+  }
+  return res.json();
+}
+
+export async function fetchBillingStatus(): Promise<BillingStatusResponse> {
+  const res = await apiFetch(`${API_BASE}/billing/status`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to fetch billing status');
   return res.json();
 }
 

@@ -248,6 +248,20 @@ export interface UserProfile {
   permissions: string[];
 }
 
+export interface BillingStatusResponse {
+  plan: string;
+  subscription_status: string;
+  subscription_id?: string | null;
+  subscription_provider?: string | null;
+  billing_enabled: boolean;
+  is_configured: boolean;
+}
+
+export interface WayForPayCheckoutResponse {
+  url: string;
+  order_reference: string;
+}
+
 export interface FastSpringCheckoutConfig {
   store_id: string;
   is_test: boolean;

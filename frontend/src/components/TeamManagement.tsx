@@ -28,6 +28,7 @@ import {
   fetchTeamMembers,
   inviteTeamMember,
   updateMemberRole,
+  cancelWayForPaySubscription,
 } from '../api/client';
 
 interface TeamManagementProps {
@@ -50,11 +51,25 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
   const [payments, setPayments] = useState<PaymentTransaction[]>([]);
   const limitsForPlan = planLimits ?? (currentUser?.team_plan === 'PRO'
     ? { max_monitors: 100, min_interval_seconds: 10, max_members: 10, retention_days: 90 }
-    : { max_monitors: 25, min_interval_seconds: 30, max_members: 1, retention_days: 30 });
+    : { max_monitors: 20, min_interval_seconds: 60, max_members: 1, retention_days: 30 });
   const [showBillingHistory, setShowBillingHistory] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  const handleCancelSubscription = async () => {
+    if (!confirm('Are you sure you want to cancel your Pro subscription? Your organization will revert to the Free plan.')) {
+      return;
+    }
+    setError(null);
+    try {
+      const res = await cancelWayForPaySubscription();
+      setSuccessMsg(res.message);
+      if (onUserRefreshed) onUserRefreshed();
+    } catch (err: any) {
+      setError(err.message || 'Failed to cancel subscription');
+    }
+  };
 
   // Invite modal state
   const [isInviteOpen, setIsInviteOpen] = useState(false);
@@ -413,7 +428,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
               <p className="text-xs text-muted-foreground mt-0.5">
                 {billingEnabled ? (
                   <>
-                    Processed securely via <strong className="text-slate-300">FastSpring</strong> (Store: <code className="text-slate-400">reslab</code>). Price excludes applicable VAT/tax.
+                    Processed securely via <strong className="text-slate-300">WayForPay</strong>. Recurring monthly subscription ($16/mo), cancel anytime.
                   </>
                 ) : (
                   <>ResPulse is free during the open beta. If a paid plan is introduced later, you will be told well in advance.</>
@@ -436,11 +451,10 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={onOpenUpgradeModal}
-                className="border-slate-700 hover:bg-slate-800 text-xs text-slate-200 h-9 gap-1.5"
+                onClick={handleCancelSubscription}
+                className="border-red-900/60 hover:bg-red-950/40 text-xs text-red-300 h-9 gap-1.5"
               >
-                <CreditCard className="h-3.5 w-3.5 text-emerald-400" />
-                Manage FastSpring Subscription
+                Cancel Pro Subscription
               </Button>
             )}
 
@@ -482,7 +496,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
           <div className="pt-3 border-t border-border/50 space-y-2">
             <div className="text-xs font-semibold text-white font-mono flex items-center justify-between">
               <span>Payment Transaction History</span>
-              <span className="text-[10px] text-muted-foreground">Merchant: FastSpring (reslab)</span>
+              <span className="text-[10px] text-muted-foreground">Processor: WayForPay (respulse.online)</span>
             </div>
             <div className="border border-border/60 rounded-lg overflow-hidden">
               <table className="w-full text-left text-xs">

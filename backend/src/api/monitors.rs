@@ -43,6 +43,7 @@ pub struct AppState {
     pub limits: Arc<RateLimits>,
     pub settings: Arc<AppSettings>,
     pub mailer: Option<Arc<Mailer>>,
+    pub wayforpay: Option<Arc<crate::api::wayforpay::WayForPayConfig>>,
 }
 
 #[derive(FromRow)]

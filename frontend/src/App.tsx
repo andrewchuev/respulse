@@ -36,7 +36,7 @@ import { LegalPage } from './components/LegalPage';
 import { legalReady } from './legal/content';
 import { AdminPanel } from './components/AdminPanel';
 import { VerifyEmailPage } from './components/VerifyEmailPage';
-import { FastSpringCheckoutModal } from './components/FastSpringCheckoutModal';
+import { WayForPayCheckoutModal } from './components/WayForPayCheckoutModal';
 import { ExportImportModal } from './components/ExportImportModal';
 
 type View = 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo' | 'terms' | 'privacy' | 'refund' | 'admin' | 'verify-email';
@@ -47,15 +47,23 @@ export function App() {
   const [selectedMonitor, setSelectedMonitor] = useState<MonitorWithStats | null>(null);
   const [editingMonitor, setEditingMonitor] = useState<MonitorWithStats | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isFastSpringModalOpen, setIsFastSpringModalOpen] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [isExportImportModalOpen, setIsExportImportModalOpen] = useState(false);
   const [exportImportDefaultTab, setExportImportDefaultTab] = useState<'export' | 'import'>('export');
 
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('payment') === 'success' || params.get('upgrade') === '1') {
-        setIsFastSpringModalOpen(true);
+      if (params.get('checkout') === 'success' || params.get('payment') === 'success') {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('checkout');
+        url.searchParams.delete('payment');
+        window.history.replaceState({}, '', url.toString());
+        loadUserData();
+        loadData();
+      }
+      if (params.get('upgrade') === '1') {
+        setIsUpgradeModalOpen(true);
       }
     } catch {}
   }, []);
@@ -127,7 +135,7 @@ export function App() {
   const billingEnabled = appConfig.billing_enabled;
   const planKey = currentUser?.team_plan === 'PRO' ? 'PRO' : 'FREE';
   // Checkout is hidden while the service is a free beta.
-  const openUpgrade = billingEnabled ? () => setIsFastSpringModalOpen(true) : undefined;
+  const openUpgrade = billingEnabled ? () => setIsUpgradeModalOpen(true) : undefined;
 
   const openExportImport = (tab: 'export' | 'import' = 'export') => {
     setExportImportDefaultTab(tab);
@@ -374,13 +382,9 @@ export function App() {
           billingEnabled={billingEnabled}
           plans={appConfig.plans}
         />
-        <FastSpringCheckoutModal
-          isOpen={isFastSpringModalOpen}
-          onClose={() => setIsFastSpringModalOpen(false)}
-          onPlanUpgraded={() => {
-            loadData();
-            loadUserData();
-          }}
+        <WayForPayCheckoutModal
+          isOpen={isUpgradeModalOpen}
+          onClose={() => setIsUpgradeModalOpen(false)}
         />
         <AuthModal
           isOpen={isAuthModalOpen}
@@ -497,13 +501,9 @@ export function App() {
         isViewer={isViewer}
       />
 
-      <FastSpringCheckoutModal
-        isOpen={isFastSpringModalOpen}
-        onClose={() => setIsFastSpringModalOpen(false)}
-        onPlanUpgraded={() => {
-          loadData();
-          loadUserData();
-        }}
+      <WayForPayCheckoutModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
       />
 
       <AuthModal
