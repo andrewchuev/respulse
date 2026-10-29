@@ -85,24 +85,22 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
       <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-[#070b14]/85 backdrop-blur-xl">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           {/* Brand Logo */}
-          <div className="flex items-center gap-3 cursor-pointer group" onClick={onOpenDashboard}>
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-500/25 via-teal-500/10 to-cyan-500/25 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)] group-hover:scale-105 transition-all">
-              <Activity className="h-5 w-5" />
+          <div className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group shrink-0" onClick={onOpenDashboard}>
+            <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-gradient-to-br from-emerald-500/25 via-teal-500/10 to-cyan-500/25 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)] group-hover:scale-105 transition-all">
+              <Activity className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold tracking-tight text-lg bg-gradient-to-r from-white via-slate-100 to-emerald-300 bg-clip-text text-transparent">
-                  ResPulse
-                </span>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
-                  v1.0
-                </span>
-              </div>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="font-extrabold tracking-tight text-base sm:text-lg bg-gradient-to-r from-white via-slate-100 to-emerald-300 bg-clip-text text-transparent">
+                ResPulse
+              </span>
+              <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
+                v1.0
+              </span>
             </div>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="hidden md:flex items-center gap-6 text-xs font-medium text-slate-300">
+          {/* Navigation Links - shown only on lg+ (1024px+) to prevent tablet overcrowding */}
+          <nav className="hidden lg:flex items-center gap-6 text-xs font-medium text-slate-300">
             <a href="#features" className="hover:text-emerald-400 transition-colors">Features</a>
             <a href="#protocols" className="hover:text-emerald-400 transition-colors">Protocols</a>
             <a href="#rust-architecture" className="hover:text-emerald-400 transition-colors">Architecture</a>
@@ -118,11 +116,11 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
           </nav>
 
           {/* Header Actions */}
-          <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             {onOpenAuth && (
               <button
                 onClick={() => onOpenAuth('login')}
-                className="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/80 border border-slate-800/60 transition-all"
+                className="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/80 border border-slate-800/60 transition-all whitespace-nowrap"
               >
                 Sign In
               </button>
@@ -131,18 +129,18 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
             <Button
               onClick={() => onOpenAuth ? onOpenAuth('register') : onOpenDashboard()}
               size="sm"
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-[0_0_20px_rgba(16,185,129,0.35)] gap-1.5 px-3"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-[0_0_20px_rgba(16,185,129,0.35)] gap-1 sm:gap-1.5 px-2.5 sm:px-3 h-8 text-xs whitespace-nowrap"
             >
               <span className="hidden sm:inline">Get Started Free</span>
               <span className="sm:hidden">Get Started</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </Button>
 
-            {/* Mobile Menu Toggle Button */}
+            {/* Mobile / Tablet Menu Toggle Button - visible on < lg */}
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden flex items-center justify-center h-8 w-8 rounded-lg bg-slate-800/60 border border-slate-700/60 text-slate-300 hover:text-white transition-colors"
+              className="lg:hidden flex items-center justify-center h-8 w-8 rounded-lg bg-slate-800/60 border border-slate-700/60 text-slate-300 hover:text-white transition-colors shrink-0"
               aria-label="Toggle navigation"
             >
               {isMobileMenuOpen ? <X className="h-4 w-4 text-emerald-400" /> : <Menu className="h-4 w-4" />}
@@ -150,42 +148,42 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
           </div>
         </div>
 
-        {/* Mobile Navigation Dropdown (< md) */}
+        {/* Mobile / Tablet Navigation Dropdown (< lg) */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-white/10 bg-[#070b14]/98 backdrop-blur-2xl px-4 py-3 space-y-2 animate-in slide-in-from-top-2 duration-150">
+          <div className="lg:hidden border-t border-white/10 bg-[#070b14]/98 backdrop-blur-2xl px-4 py-4 space-y-3 animate-in slide-in-from-top-2 duration-150">
             <nav className="flex flex-col space-y-1 text-sm font-medium">
               <a
                 href="#features"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+                className="p-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
               >
                 Features
               </a>
               <a
                 href="#protocols"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+                className="p-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
               >
                 Protocols
               </a>
               <a
                 href="#rust-architecture"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+                className="p-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
               >
                 Architecture
               </a>
               <a
                 href="#pricing"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+                className="p-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
               >
                 Pricing
               </a>
               <a
                 href="#faq"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+                className="p-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
               >
                 FAQ
               </a>
@@ -194,12 +192,36 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
                   setIsMobileMenuOpen(false);
                   onOpenStatusPage();
                 }}
-                className="p-2 rounded-lg text-left text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors flex items-center gap-2"
+                className="p-2.5 rounded-lg text-left text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors flex items-center gap-2"
               >
                 <Globe className="h-4 w-4 text-cyan-400" />
                 Public Status Page
               </button>
             </nav>
+
+            {/* Quick Actions in Mobile Drawer */}
+            <div className="pt-2 border-t border-white/5 flex flex-col gap-2">
+              {onOpenAuth && (
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    onOpenAuth('login');
+                  }}
+                  className="w-full py-2.5 rounded-xl text-center text-xs font-semibold text-slate-300 hover:text-white bg-slate-900 border border-slate-800 transition-colors"
+                >
+                  Sign In
+                </button>
+              )}
+              <Button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  onOpenAuth ? onOpenAuth('register') : onOpenDashboard();
+                }}
+                className="w-full py-2.5 h-10 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.35)]"
+              >
+                Get Started Free &rarr;
+              </Button>
+            </div>
           </div>
         )}
       </header>
@@ -210,13 +232,13 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
       <section className="relative pt-20 pb-16 md:pt-28 md:pb-24 px-4 overflow-hidden">
         <div className="max-w-5xl mx-auto text-center space-y-6">
           {/* Pill Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs font-mono font-medium shadow-[0_0_15px_rgba(16,185,129,0.15)] animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <Zap className="h-3.5 w-3.5 text-emerald-400 animate-pulse" />
-            <span>Rust 1.82 Engine • Zero GC Pauses • Async Tokio Core</span>
+          <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 sm:py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[11px] sm:text-xs font-mono font-medium shadow-[0_0_15px_rgba(16,185,129,0.15)] animate-in fade-in slide-in-from-bottom-2 duration-300 max-w-full">
+            <Zap className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-emerald-400 shrink-0 animate-pulse" />
+            <span className="truncate sm:overflow-visible">Rust 1.82 Core • Zero GC • Async Tokio</span>
           </div>
 
           {/* Headline */}
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-white leading-[1.1] max-w-4xl mx-auto">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.15] sm:leading-[1.1] max-w-4xl mx-auto px-1 sm:px-0">
             Systems-Grade Synthetic Monitoring.
             <br />
             <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
@@ -225,18 +247,18 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
           </h1>
 
           {/* Subtitle */}
-          <p className="text-base sm:text-lg md:text-xl text-slate-400 max-w-2xl mx-auto font-normal leading-relaxed">
+          <p className="text-sm sm:text-base md:text-lg text-slate-400 max-w-2xl mx-auto font-normal leading-relaxed px-1 sm:px-0">
             Eliminate blind spots across your distributed infrastructure. ResPulse delivers sub-millisecond precision
             probing for HTTP/S, TCP sockets, TLS certificates, and worker heartbeats — backed by instant multi-channel alerting
             and collaborative RCA post-mortems.
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 sm:pt-4">
             <Button
               onClick={() => onOpenAuth ? onOpenAuth('register') : handlePrimaryCta()}
               size="lg"
-              className="w-full sm:w-auto h-12 px-8 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-[0_0_25px_rgba(16,185,129,0.4)] transition-all transform hover:scale-[1.02] gap-2"
+              className="w-full sm:w-auto h-12 px-7 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-[0_0_25px_rgba(16,185,129,0.4)] transition-all transform hover:scale-[1.02] gap-2"
             >
               <Sparkles className="h-4 w-4" />
               <span>Create Organization Free</span>
@@ -255,7 +277,7 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
           </div>
 
           {/* Key Value Metrics Strip */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 pt-8 max-w-4xl mx-auto text-left">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 sm:gap-3 pt-8 max-w-4xl mx-auto text-left">
             {[
               { val: '< 10 ms', label: 'Scheduler Precision', icon: Clock, color: 'text-emerald-400' },
               { val: '100% Rust', label: 'Zero GC Observability', icon: Cpu, color: 'text-cyan-400' },
@@ -271,11 +293,13 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
               return (
                 <div
                   key={i}
-                  className="p-3.5 rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur hover:border-white/10 transition-all"
+                  className={`p-3.5 rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur hover:border-white/10 transition-all ${
+                    i === 4 ? 'col-span-2 sm:col-span-1 md:col-span-1' : ''
+                  }`}
                 >
                   <Icon className={`h-4 w-4 ${stat.color} mb-1`} />
-                  <div className="text-lg font-bold font-mono text-white">{stat.val}</div>
-                  <div className="text-[11px] text-slate-400 leading-tight mt-0.5">{stat.label}</div>
+                  <div className="text-base sm:text-lg font-bold font-mono text-white leading-tight">{stat.val}</div>
+                  <div className="text-[10px] sm:text-[11px] text-slate-400 leading-tight mt-0.5">{stat.label}</div>
                 </div>
               );
             })}
@@ -290,19 +314,21 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
 
           <div className="relative rounded-2xl border border-white/10 bg-slate-900/90 shadow-2xl shadow-black/90 overflow-hidden backdrop-blur-2xl">
             {/* Mock Window Controls Header */}
-            <div className="px-4 py-3 bg-slate-950/80 border-b border-white/5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-red-500/80" />
-                <div className="h-3 w-3 rounded-full bg-amber-500/80" />
-                <div className="h-3 w-3 rounded-full bg-emerald-500/80" />
-                <span className="ml-2 text-xs font-mono text-slate-400">https://respulse.online/app</span>
+            <div className="px-3.5 sm:px-4 py-2.5 sm:py-3 bg-slate-950/80 border-b border-white/5 flex items-center justify-between">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-red-500/80" />
+                <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-amber-500/80" />
+                <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-emerald-500/80" />
+                <span className="ml-1 sm:ml-2 text-[11px] sm:text-xs font-mono text-slate-400 hidden sm:inline">https://respulse.online/app</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <span className="flex h-2 w-2 relative">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
                 </span>
-                <span className="text-[11px] font-mono text-emerald-400 font-medium">WebSocket Streaming (Live)</span>
+                <span className="text-[10px] sm:text-[11px] font-mono text-emerald-400 font-medium whitespace-nowrap">
+                  <span className="hidden sm:inline">WebSocket </span>Streaming (Live)
+                </span>
               </div>
             </div>
 
@@ -738,8 +764,8 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
           </div>
 
           {/* Benchmark Comparison Table */}
-          <div className="rounded-2xl border border-white/10 bg-slate-900/60 overflow-hidden shadow-2xl backdrop-blur">
-            <table className="w-full text-left text-xs sm:text-sm">
+          <div className="rounded-2xl border border-white/10 bg-slate-900/60 overflow-x-auto shadow-2xl backdrop-blur">
+            <table className="w-full min-w-[500px] md:min-w-0 text-left text-xs sm:text-sm">
               <thead className="bg-slate-950/80 border-b border-white/5 font-mono text-[11px] text-slate-400 uppercase">
                 <tr>
                   <th className="p-4 sm:p-5">Architectural Metric</th>
@@ -1197,17 +1223,19 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
       {/* ------------------------------------------------------------- */}
       <footer className="border-t border-white/5 py-12 bg-slate-950 text-xs text-slate-400">
         <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <div className="h-7 w-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+          <div className="flex flex-col sm:flex-row items-center gap-2.5 sm:gap-3 text-center sm:text-left">
+            <div className="h-7 w-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
               <Activity className="h-4 w-4" />
             </div>
-            <span className="font-bold text-white text-sm">ResPulse</span>
-            <span className="text-[11px] text-slate-500">
-              © {new Date().getFullYear()} ResPulse. Systems-grade synthetic monitoring.
-            </span>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-3">
+              <span className="font-bold text-white text-sm">ResPulse</span>
+              <span className="text-[11px] text-slate-500">
+                © {new Date().getFullYear()} ResPulse. Systems-grade synthetic monitoring.
+              </span>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center md:justify-end gap-5 font-mono text-[11px]">
+          <div className="flex flex-wrap items-center justify-center md:justify-end gap-x-5 gap-y-2.5 font-mono text-[11px]">
             <button onClick={onOpenDashboard} className="hover:text-emerald-400 transition-colors">
               Console
             </button>
