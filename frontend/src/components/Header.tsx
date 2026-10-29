@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Activity, Plus, Radio, Globe, Bell, AlertTriangle, Users, ChevronDown, Check, Sparkles, LogOut, KeyRound, CreditCard, BarChart3 } from 'lucide-react';
+import { Activity, Plus, Radio, Globe, Bell, AlertTriangle, Users, ChevronDown, Check, Sparkles, LogOut, KeyRound, CreditCard, BarChart3, LayoutDashboard } from 'lucide-react';
 import { Button } from './ui/button';
 import { UserProfile, UserRole } from '../types';
 
@@ -81,113 +81,115 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-5">
-          <div className="flex items-center gap-2.5 cursor-pointer group" onClick={() => setCurrentView('dashboard')}>
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20 border border-emerald-500/35 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.25)] group-hover:scale-105 transition-all">
-              <Activity className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold tracking-tight text-lg bg-gradient-to-r from-white via-slate-100 to-emerald-300 bg-clip-text text-transparent">
-                  ResPulse
-                </span>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-[0_0_8px_rgba(16,185,129,0.2)]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse shadow-[0_0_5px_rgba(16,185,129,1)]"></span>
-                  LIVE
-                </span>
-              </div>
-              <p className="text-[11px] text-muted-foreground hidden sm:block">Enterprise Synthetic Monitoring</p>
-            </div>
+      <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between md:grid md:grid-cols-[auto_1fr_auto] gap-4">
+        {/* Zone 1 (Left): Brand Identity */}
+        <div className="flex items-center gap-2.5 cursor-pointer group justify-self-start shrink-0" onClick={() => setCurrentView('dashboard')}>
+          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20 border border-emerald-500/35 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.25)] group-hover:scale-105 transition-all shrink-0">
+            <Activity className="h-5 w-5" />
           </div>
-
-          <nav className="hidden md:flex items-center gap-1 bg-secondary/50 p-1 rounded-xl border border-border/80">
-            <button
-              onClick={() => setCurrentView('dashboard')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                currentView === 'dashboard'
-                  ? 'bg-background text-foreground shadow-sm border border-border/60'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Dashboard
-            </button>
-            <button
-              onClick={() => setCurrentView('channels')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                currentView === 'channels'
-                  ? 'bg-background text-foreground shadow-sm border border-border/60'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Bell className="h-3.5 w-3.5" />
-              Alerts & Channels
-            </button>
-            <button
-              onClick={() => setCurrentView('incidents')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                currentView === 'incidents'
-                  ? 'bg-background text-foreground shadow-sm border border-border/60'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <AlertTriangle className="h-3.5 w-3.5" />
-              Incidents & RCA
-            </button>
-            <button
-              onClick={() => setCurrentView('team')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                currentView === 'team'
-                  ? 'bg-background text-foreground shadow-sm border border-border/60'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Users className="h-3.5 w-3.5" />
-              Team & RBAC
-            </button>
-            <button
-              onClick={() => setCurrentView('status-page')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                currentView === 'status-page'
-                  ? 'bg-background text-foreground shadow-sm border border-border/60'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Globe className="h-3.5 w-3.5" />
-              Public Status
-            </button>
-            <button
-              onClick={() => setCurrentView('promo')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                currentView === 'promo'
-                  ? 'bg-background text-foreground shadow-sm border border-border/60 text-amber-300'
-                  : 'text-muted-foreground hover:text-amber-300'
-              }`}
-            >
-              <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-              Overview & Promo
-            </button>
-            {isAdmin && (
-              <button
-                onClick={() => setCurrentView('admin')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  currentView === 'admin'
-                    ? 'bg-background text-foreground shadow-sm border border-border/60'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <BarChart3 className="h-3.5 w-3.5" />
-                Report
-              </button>
-            )}
-          </nav>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-extrabold tracking-tight text-lg bg-gradient-to-r from-white via-slate-100 to-emerald-300 bg-clip-text text-transparent">
+                ResPulse
+              </span>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-[0_0_8px_rgba(16,185,129,0.2)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse shadow-[0_0_5px_rgba(16,185,129,1)]"></span>
+                LIVE
+              </span>
+            </div>
+            <p className="text-[11px] text-muted-foreground hidden xl:block">Enterprise Synthetic Monitoring</p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="hidden lg:flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 px-3 py-1.5 rounded-lg border border-border/50">
-            <Radio className="h-3.5 w-3.5 text-emerald-400 animate-pulse" />
-            <span>Multi-node Probing</span>
-            <span className="text-foreground font-mono font-medium">({totalActive} active)</span>
+        {/* Zone 2 (Center): Balanced Navigation Pill Bar */}
+        <nav className="hidden md:flex items-center justify-self-center gap-1 bg-secondary/50 p-1 rounded-xl border border-border/80 shadow-inner">
+          <button
+            onClick={() => setCurrentView('dashboard')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              currentView === 'dashboard'
+                ? 'bg-background text-foreground shadow-sm border border-border/60'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <LayoutDashboard className="h-3.5 w-3.5 shrink-0" />
+            <span>Dashboard</span>
+          </button>
+          <button
+            onClick={() => setCurrentView('channels')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              currentView === 'channels'
+                ? 'bg-background text-foreground shadow-sm border border-border/60'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Bell className="h-3.5 w-3.5 shrink-0" />
+            <span>Alerts<span className="hidden xl:inline"> & Channels</span></span>
+          </button>
+          <button
+            onClick={() => setCurrentView('incidents')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              currentView === 'incidents'
+                ? 'bg-background text-foreground shadow-sm border border-border/60'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            <span>Incidents<span className="hidden xl:inline"> & RCA</span></span>
+          </button>
+          <button
+            onClick={() => setCurrentView('team')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              currentView === 'team'
+                ? 'bg-background text-foreground shadow-sm border border-border/60'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Users className="h-3.5 w-3.5 shrink-0" />
+            <span>Team<span className="hidden xl:inline"> & RBAC</span></span>
+          </button>
+          <button
+            onClick={() => setCurrentView('status-page')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              currentView === 'status-page'
+                ? 'bg-background text-foreground shadow-sm border border-border/60'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Globe className="h-3.5 w-3.5 shrink-0" />
+            <span><span className="hidden xl:inline">Public </span>Status</span>
+          </button>
+          <button
+            onClick={() => setCurrentView('promo')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              currentView === 'promo'
+                ? 'bg-background text-foreground shadow-sm border border-border/60 text-amber-300'
+                : 'text-muted-foreground hover:text-amber-300'
+            }`}
+          >
+            <Sparkles className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+            <span><span className="hidden xl:inline">Overview & </span>Promo</span>
+          </button>
+          {isAdmin && (
+            <button
+              onClick={() => setCurrentView('admin')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                currentView === 'admin'
+                  ? 'bg-background text-foreground shadow-sm border border-border/60'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <BarChart3 className="h-3.5 w-3.5 shrink-0" />
+              <span>Report</span>
+            </button>
+          )}
+        </nav>
+
+        {/* Zone 3 (Right): Monitoring Status, Upsell & User Actions */}
+        <div className="flex items-center justify-self-end gap-3 shrink-0">
+          <div className="hidden lg:flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 px-3 py-1.5 rounded-lg border border-border/50 shrink-0 whitespace-nowrap">
+            <Radio className="h-3.5 w-3.5 text-emerald-400 animate-pulse shrink-0" />
+            <span><span className="hidden xl:inline">Multi-node </span>Probing</span>
+            <span className="text-foreground font-mono font-medium whitespace-nowrap">({totalActive} active)</span>
           </div>
 
           {/* Upgrade to Pro CTA in Header */}
@@ -195,16 +197,16 @@ export const Header: React.FC<HeaderProps> = ({
             <Button
               size="sm"
               onClick={onOpenUpgradeModal}
-              className="hidden md:flex items-center gap-1.5 h-8 px-3 text-xs font-semibold bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 hover:from-emerald-400 hover:to-cyan-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] animate-pulse"
+              className="hidden md:flex items-center gap-1.5 h-8 px-3 text-xs font-semibold bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 hover:from-emerald-400 hover:to-cyan-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] animate-pulse shrink-0"
               title="Upgrade to Pro via FastSpring ($8/mo excl. VAT)"
             >
               <Sparkles className="h-3.5 w-3.5 text-amber-300" />
-              <span>Upgrade to Pro ($8/mo + VAT)</span>
+              <span className="whitespace-nowrap">Upgrade to Pro ($8/mo + VAT)</span>
             </Button>
           )}
 
           {/* User Profile / RBAC Switcher Dropdown */}
-          <div className="relative" ref={menuRef}>
+          <div className="relative shrink-0" ref={menuRef}>
             <button
               type="button"
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
@@ -379,15 +381,15 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onOpenAddModal}
             size="sm"
             disabled={isViewer}
-            className={`font-medium shadow-lg ${
+            className={`font-medium shadow-lg shrink-0 ${
               isViewer
                 ? 'opacity-40 cursor-not-allowed bg-secondary text-muted-foreground'
                 : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/40'
             }`}
             title={isViewer ? 'Requires Engineer role or higher to create monitors' : 'Create new synthetic monitor'}
           >
-            <Plus className="h-4 w-4 mr-1.5" />
-            Add Monitor
+            <Plus className="h-4 w-4 mr-1.5 shrink-0" />
+            <span>Add Monitor</span>
           </Button>
         </div>
       </div>
