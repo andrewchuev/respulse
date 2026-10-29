@@ -6,6 +6,10 @@ www.respulse.online {
     redir https://respulse.online{uri} permanent
 }
 
+mail.respulse.online {
+    respond "ResPulse Mail Server Gateway" 200
+}
+
 respulse.online {
     encode zstd gzip
 

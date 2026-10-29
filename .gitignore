@@ -14,3 +14,5 @@ frontend/.vite/
 *.log
 scratch/
 *.png
+mail-config/
+deploy/mail-config/
