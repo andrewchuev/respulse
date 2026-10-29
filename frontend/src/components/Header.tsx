@@ -204,19 +204,6 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="text-foreground font-mono font-medium whitespace-nowrap">({totalActive} active)</span>
           </div>
 
-          {/* Upgrade to Pro CTA in Header - shown only on large screens (xl+) to prevent tablet header overflow */}
-          {currentUser?.team_plan === 'FREE' && onOpenUpgradeModal && (
-            <Button
-              size="sm"
-              onClick={onOpenUpgradeModal}
-              className="hidden xl:flex items-center gap-1.5 h-8 px-3 text-xs font-semibold bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 hover:from-emerald-400 hover:to-cyan-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] animate-pulse shrink-0"
-              title="Upgrade to Pro ($16/mo excl. VAT)"
-            >
-              <Sparkles className="h-3.5 w-3.5 text-amber-300" />
-              <span className="whitespace-nowrap">Upgrade to Pro</span>
-            </Button>
-          )}
-
           {/* User Profile / RBAC Switcher Dropdown */}
           <div className="relative shrink-0" ref={menuRef}>
             <button
@@ -267,14 +254,14 @@ export const Header: React.FC<HeaderProps> = ({
                       className={`px-1.5 py-0.5 rounded text-[9px] font-bold hover:brightness-125 transition-all ${
                         currentUser?.team_plan === 'FREE' ? 'bg-slate-800 text-slate-400 border border-slate-700' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                       }`}
-                      title="Manage Pro subscription (FastSpring)"
+                      title="Manage Pro subscription (WayForPay)"
                     >
                       {currentUser?.team_plan || 'PRO'} PLAN
                     </button>
                   </div>
                 </div>
 
-                {/* FastSpring Subscription Action */}
+                {/* WayForPay Subscription Action */}
                 {onOpenUpgradeModal && (
                   <div className="p-2">
                     <button
@@ -288,11 +275,11 @@ export const Header: React.FC<HeaderProps> = ({
                         <CreditCard className="h-4 w-4 text-emerald-400" />
                         <div>
                           <div className="font-semibold text-white group-hover:text-emerald-300 flex items-center gap-1">
-                            {currentUser?.team_plan === 'PRO' ? 'FastSpring Billing' : 'Upgrade to Pro'}
-                            <span className="text-[10px] text-emerald-400 font-mono">$8/mo</span>
+                            {currentUser?.team_plan === 'PRO' ? 'Pro Subscription' : 'Upgrade to Pro'}
+                            <span className="text-[10px] text-emerald-400 font-mono">$16/mo</span>
                           </div>
                           <div className="text-[10px] text-muted-foreground font-mono truncate max-w-[170px]">
-                            Store: reslab (FastSpring)
+                            {currentUser?.team_plan === 'PRO' ? 'Manage via WayForPay' : 'WayForPay Checkout'}
                           </div>
                         </div>
                       </div>
@@ -570,20 +557,6 @@ export const Header: React.FC<HeaderProps> = ({
                 >
                   <FileJson className="h-3.5 w-3.5 text-cyan-400" />
                   Backup & Restore
-                </Button>
-              )}
-
-              {currentUser?.team_plan === 'FREE' && onOpenUpgradeModal && (
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    onOpenUpgradeModal();
-                  }}
-                  className="flex-1 h-8 text-xs font-semibold bg-gradient-to-r from-emerald-500 to-teal-600 text-white gap-1.5"
-                >
-                  <Sparkles className="h-3.5 w-3.5 text-amber-300" />
-                  Upgrade ($8/mo)
                 </Button>
               )}
             </div>
