@@ -434,7 +434,7 @@ export function App() {
         {loading ? (
           <SkeletonDashboard />
         ) : currentView === 'channels' ? (
-          <NotificationChannels currentUser={currentUser} onOpenExportImport={openExportImport} />
+          <NotificationChannels currentUser={currentUser} />
         ) : currentView === 'incidents' ? (
           <IncidentManagement currentUser={currentUser} />
         ) : currentView === 'admin' ? (
@@ -462,7 +462,6 @@ export function App() {
               onAddClick={() => setIsAddModalOpen(true)}
               onRefreshData={loadData}
               isViewer={isViewer}
-              onOpenExportImport={openExportImport}
             />
           </>
         )}

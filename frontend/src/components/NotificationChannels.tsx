@@ -23,7 +23,6 @@ import {
   AlertTriangle,
   RefreshCw,
   Radio,
-  ArrowUpDown,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
@@ -33,10 +32,9 @@ import { EditChannelModal } from './EditChannelModal';
 
 interface NotificationChannelsProps {
   currentUser?: UserProfile | null;
-  onOpenExportImport?: (tab: 'export' | 'import') => void;
 }
 
-export const NotificationChannels: React.FC<NotificationChannelsProps> = ({ currentUser, onOpenExportImport }) => {
+export const NotificationChannels: React.FC<NotificationChannelsProps> = ({ currentUser }) => {
   const [channels, setChannels] = useState<NotificationChannel[]>([]);
   const [logs, setLogs] = useState<AlertLogWithDetails[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -225,18 +223,6 @@ export const NotificationChannels: React.FC<NotificationChannelsProps> = ({ curr
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {onOpenExportImport && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onOpenExportImport('export')}
-              className="h-9 gap-1.5 text-xs text-slate-300 hover:text-white"
-            >
-              <ArrowUpDown className="h-3.5 w-3.5 text-cyan-400" />
-              <span className="hidden sm:inline">Export / Import</span>
-              <span className="sm:hidden">Backup</span>
-            </Button>
-          )}
           <Button variant="outline" size="sm" onClick={loadData} className="h-9 gap-1.5 text-xs text-muted-foreground hover:text-white">
             <RefreshCw className="h-3.5 w-3.5" />
             Refresh
