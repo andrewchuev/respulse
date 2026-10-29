@@ -138,7 +138,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-[460px] bg-slate-900/95 backdrop-blur-2xl border border-white/10 ring-1 ring-white/5 shadow-2xl shadow-black/90 p-6">
-          <DialogHeader className="text-center sm:text-center pb-2">
+          <DialogHeader className="text-center sm:text-center pb-2 pr-0 sm:pr-0">
             <div className="mx-auto mb-3 h-12 w-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
               <Mail className="h-6 w-6" />
             </div>
@@ -184,7 +184,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <div className="absolute -top-24 -left-24 w-48 h-48 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
 
-        <DialogHeader className="text-center sm:text-center pb-2">
+        <DialogHeader className="text-center sm:text-center pb-2 pr-0 sm:pr-0">
           <div className="mx-auto mb-3 h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 via-teal-500/15 to-cyan-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.25)]">
             <Activity className="h-6 w-6" />
           </div>

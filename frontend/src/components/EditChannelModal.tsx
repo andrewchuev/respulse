@@ -139,7 +139,7 @@ export const EditChannelModal: React.FC<EditChannelModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[560px] bg-slate-900/95 backdrop-blur-2xl border border-white/10 ring-1 ring-white/5 shadow-2xl shadow-black/90">
         <DialogHeader>
-          <DialogTitle className="text-lg font-semibold text-white flex items-center justify-between">
+          <DialogTitle className="text-lg font-semibold text-white flex items-center gap-2.5 flex-wrap">
             <span>Edit Notification Channel</span>
             <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
               isActive ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-400 border border-slate-700'
