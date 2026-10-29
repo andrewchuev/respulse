@@ -974,7 +974,7 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
 
             {/* Plan 2: Pro (Highlighted) */}
             <div className="rounded-2xl border border-emerald-500/50 bg-gradient-to-b from-slate-900/90 via-slate-900/80 to-emerald-950/30 p-7 flex flex-col justify-between backdrop-blur shadow-[0_0_35px_rgba(16,185,129,0.18)] relative ring-1 ring-emerald-500/30">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-500 text-black shadow-md shadow-emerald-500/20">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30 whitespace-nowrap text-center">
                 Recommended for Production
               </div>
 
