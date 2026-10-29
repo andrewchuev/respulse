@@ -18,6 +18,7 @@ const INTERVAL_OPTIONS: { value: number; label: string }[] = [
 interface EditMonitorModalProps {
   monitor: MonitorWithStats | null;
   isOpen: boolean;
+  isPro?: boolean;
   /** Fastest check interval the plan allows, in seconds. */
   minInterval?: number;
   onClose: () => void;
@@ -27,7 +28,8 @@ interface EditMonitorModalProps {
 export const EditMonitorModal: React.FC<EditMonitorModalProps> = ({
   monitor,
   isOpen,
-  minInterval = 30,
+  isPro = false,
+  minInterval = 60,
   onClose,
   onUpdated,
 }) => {
@@ -116,6 +118,10 @@ export const EditMonitorModal: React.FC<EditMonitorModalProps> = ({
     }
     if (!url.trim() && monitorType !== 'HEARTBEAT') {
       setError('Target URL or Host is required');
+      return;
+    }
+    if (monitorType === 'HEARTBEAT' && scheduleType === 'CRON' && !isPro) {
+      setError('Cron expressions and timezones are a Pro feature ($16/mo). Switch to Simple Interval or upgrade to Pro.');
       return;
     }
 
@@ -381,19 +387,29 @@ export const EditMonitorModal: React.FC<EditMonitorModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setScheduleType('CRON')}
-                      className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors ${
+                      className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors flex items-center gap-1.5 ${
                         scheduleType === 'CRON'
                           ? 'bg-emerald-600 text-white shadow-sm'
                           : 'text-muted-foreground hover:text-white'
                       }`}
                     >
-                      Cron Pattern
+                      <span>Cron Pattern</span>
+                      {!isPro && (
+                        <span className="text-[9px] font-mono px-1 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                          PRO
+                        </span>
+                      )}
                     </button>
                   </div>
                 </div>
 
                 {scheduleType === 'CRON' && (
                   <div className="space-y-2">
+                    {!isPro && (
+                      <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-200 leading-relaxed">
+                        <strong>ResPulse Pro Feature:</strong> Advanced 5-field Cron expressions and timezone scheduling are reserved for Pro ($16/mo). Switch to <strong>Simple Interval</strong> or upgrade your organization to Pro.
+                      </div>
+                    )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div>
                         <label className="text-[11px] font-medium text-slate-400 mb-1 block">

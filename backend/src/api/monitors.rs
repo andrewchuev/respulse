@@ -362,6 +362,15 @@ pub async fn create_monitor(
     let grace_seconds = payload.grace_seconds.unwrap_or(0);
     let slug = payload.slug.map(|s| s.trim().to_lowercase().replace(' ', "-")).filter(|s| !s.is_empty());
     let cron_expression = payload.cron_expression.map(|c| c.trim().to_string()).filter(|c| !c.is_empty());
+    if cron_expression.is_some() && team_plan != "PRO" {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            format!(
+                "Custom Cron expressions with timezone scheduling are a Pro feature.{}",
+                state.settings.upgrade_hint()
+            ),
+        ));
+    }
     let timezone = payload.timezone.unwrap_or_else(|| "UTC".to_string());
 
     let next_expected_at = if let Some(ref cron_str) = cron_expression {
@@ -450,6 +459,13 @@ pub async fn update_monitor(
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
     .ok_or((StatusCode::NOT_FOUND, "Monitor not found".to_string()))?;
 
+    let team_plan: String = sqlx::query_scalar("SELECT plan FROM teams WHERE id = $1")
+        .bind(auth.user.team_id)
+        .fetch_optional(&state.pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+        .unwrap_or_else(|| "FREE".to_string());
+
     if let Some(new_url) = payload.url.as_deref() {
         validate_monitor_target(&existing.monitor_type, new_url).await?;
     }
@@ -459,13 +475,6 @@ pub async fn update_monitor(
     let interval = payload.interval_seconds.unwrap_or(existing.interval_seconds);
 
     if let Some(req_interval) = payload.interval_seconds {
-        let team_plan: String = sqlx::query_scalar("SELECT plan FROM teams WHERE id = $1")
-            .bind(auth.user.team_id)
-            .fetch_optional(&state.pool)
-            .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
-            .unwrap_or_else(|| "FREE".to_string());
-
         let min_interval = plans::limits(&team_plan).min_interval_seconds;
         if req_interval < min_interval {
             return Err((
@@ -544,6 +553,15 @@ pub async fn update_monitor(
         }
         None => existing.cron_expression,
     };
+    if cron_expression.is_some() && team_plan != "PRO" {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            format!(
+                "Custom Cron expressions with timezone scheduling are a Pro feature.{}",
+                state.settings.upgrade_hint()
+            ),
+        ));
+    }
     let timezone = payload.timezone.unwrap_or(existing.timezone);
 
     let next_expected_at = if let Some(ref cron_str) = cron_expression {

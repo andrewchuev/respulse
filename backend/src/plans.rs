@@ -14,8 +14,8 @@ pub struct PlanLimits {
 }
 
 pub const FREE: PlanLimits = PlanLimits {
-    max_monitors: 25,
-    min_interval_seconds: 30,
+    max_monitors: 20,
+    min_interval_seconds: 60,
     max_members: 1,
     retention_days: 30,
 };
@@ -91,7 +91,8 @@ mod tests {
 
     #[test]
     fn free_limits_apply_unless_pro() {
-        assert_eq!(limits("FREE").max_monitors, 25);
+        assert_eq!(limits("FREE").max_monitors, 20);
+        assert_eq!(limits("FREE").min_interval_seconds, 60);
         assert_eq!(limits("PRO").min_interval_seconds, 10);
         assert_eq!(limits("anything-else").max_members, 1);
     }

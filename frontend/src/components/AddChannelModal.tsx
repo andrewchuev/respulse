@@ -7,12 +7,14 @@ import { Send, MessageSquare, Hash, Webhook } from 'lucide-react';
 
 interface AddChannelModalProps {
   isOpen: boolean;
+  isPro?: boolean;
   onClose: () => void;
   onSubmit: (payload: CreateChannelPayload) => Promise<void>;
 }
 
 export const AddChannelModal: React.FC<AddChannelModalProps> = ({
   isOpen,
+  isPro = false,
   onClose,
   onSubmit,
 }) => {
@@ -278,17 +280,27 @@ export const AddChannelModal: React.FC<AddChannelModalProps> = ({
 
           {/* Tag Routing Filter */}
           <div className="space-y-1.5 bg-slate-950/60 p-3 rounded-lg border border-slate-800/80">
-            <label className="text-xs font-medium text-slate-300 block">
-              Filter by Tags (Optional)
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-slate-300 block">
+                Filter by Tags
+              </label>
+              {!isPro && (
+                <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                  PRO FEATURE
+                </span>
+              )}
+            </div>
             <Input
-              placeholder="e.g. prod, database, critical"
+              placeholder={isPro ? "e.g. prod, database, critical" : "Available on Pro plan ($16/mo)"}
               value={filterTagsInput}
               onChange={(e) => setFilterTagsInput(e.target.value)}
-              className="h-8 text-xs font-mono bg-slate-900 border-slate-700/80 focus:border-emerald-500"
+              disabled={!isPro}
+              className="h-8 text-xs font-mono bg-slate-900 border-slate-700/80 focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
             />
             <p className="text-[10px] text-muted-foreground">
-              Leave blank to receive alerts for all monitors. If tags are specified, this channel only receives alerts for matching monitors.
+              {isPro
+                ? "Leave blank to receive alerts for all monitors. If tags are specified, this channel only receives alerts for matching monitors."
+                : "Route specific alerts (e.g. #database to DevOps) with Pro plan tag routing."}
             </p>
           </div>
 

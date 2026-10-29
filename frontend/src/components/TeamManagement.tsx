@@ -430,7 +430,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
                 className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs h-9 gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
               >
                 <Sparkles className="h-3.5 w-3.5 text-amber-300" />
-                Upgrade to Pro via FastSpring ($8/mo + VAT)
+                Upgrade to Pro ($16/mo)
               </Button>
             ) : (
               <Button

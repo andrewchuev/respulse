@@ -210,7 +210,7 @@ export const Header: React.FC<HeaderProps> = ({
               size="sm"
               onClick={onOpenUpgradeModal}
               className="hidden xl:flex items-center gap-1.5 h-8 px-3 text-xs font-semibold bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 hover:from-emerald-400 hover:to-cyan-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] animate-pulse shrink-0"
-              title="Upgrade to Pro via FastSpring ($8/mo excl. VAT)"
+              title="Upgrade to Pro ($16/mo excl. VAT)"
             >
               <Sparkles className="h-3.5 w-3.5 text-amber-300" />
               <span className="whitespace-nowrap">Upgrade to Pro</span>

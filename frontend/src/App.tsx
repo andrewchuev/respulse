@@ -472,12 +472,14 @@ export function App() {
         onClose={() => setIsAddModalOpen(false)}
         onSubmit={handleCreate}
         minInterval={appConfig.plans[planKey].min_interval_seconds}
+        isPro={planKey === 'PRO'}
       />
 
       <EditMonitorModal
         monitor={editingMonitor}
         isOpen={!!editingMonitor}
         minInterval={appConfig.plans[planKey].min_interval_seconds}
+        isPro={planKey === 'PRO'}
         onClose={() => setEditingMonitor(null)}
         onUpdated={(updated) => {
           loadData();

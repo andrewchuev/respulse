@@ -179,9 +179,15 @@ pub(crate) async fn execute_heartbeat_lifecycle(
     action: Option<String>,
     body: Bytes,
 ) -> Result<(StatusCode, Value), (StatusCode, String)> {
-    // Extract payload (up to 64KB)
+    // Extract payload (up to 64KB on Pro, 512B on Free)
     let payload = if !body.is_empty() {
-        let max_len = 65536;
+        let team_plan: String = sqlx::query_scalar("SELECT plan FROM teams WHERE id = $1")
+            .bind(monitor.team_id)
+            .fetch_optional(&state.pool)
+            .await
+            .unwrap_or(None)
+            .unwrap_or_else(|| "FREE".to_string());
+        let max_len = if team_plan == "PRO" { 65536 } else { 512 };
         let slice = if body.len() > max_len {
             &body[..max_len]
         } else {
@@ -190,6 +196,8 @@ pub(crate) async fn execute_heartbeat_lifecycle(
         let text = String::from_utf8_lossy(slice).trim().to_string();
         if text.is_empty() {
             None
+        } else if team_plan != "PRO" && body.len() > max_len {
+            Some(format!("{}\n[... Payload truncated at 512B on Free plan. Upgrade to Pro for full 64KB STDERR log capture]", text))
         } else {
             Some(text)
         }

@@ -9,11 +9,15 @@ interface BetaPricingProps {
 }
 
 const planned = [
-  '10-second probe intervals',
-  'Up to 100 monitors',
-  'Team workspace with up to 10 members and roles',
-  'Prometheus metrics exporter',
-  '90-day history',
+  'Turbo 10-second probe intervals',
+  'Up to 100 synthetic monitors',
+  'Advanced 5-field Cron expressions with timezones',
+  'Full 64KB STDERR / execution log capture',
+  'Team workspace with up to 10 members and 4-tier RBAC',
+  'Prometheus metrics exporter (/api/metrics)',
+  'Tag-based alert routing (filter_tags)',
+  '90-day retention and SRE post-mortems',
+  'Custom domain for status pages',
 ];
 
 /** Pricing section while the service is a free open beta and checkout is switched off. */
@@ -40,7 +44,7 @@ export const BetaPricing: React.FC<BetaPricingProps> = ({ limits, onGetStarted }
             <>
               Checks as often as every <strong>{limits.min_interval_seconds} seconds</strong>
             </>,
-            <>Heartbeat / cron monitoring with schedules and time zones</>,
+            <>Heartbeat monitoring with interval pings and status signals</>,
             <>Telegram, Discord, Slack &amp; webhook alerts</>,
             <>Public status page and SVG status badges</>,
             <>

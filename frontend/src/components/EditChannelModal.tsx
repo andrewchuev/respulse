@@ -7,6 +7,7 @@ import { Send, MessageSquare, Hash, Webhook, AlertTriangle, ShieldCheck } from '
 
 interface EditChannelModalProps {
   isOpen: boolean;
+  isPro?: boolean;
   onClose: () => void;
   channel: NotificationChannel | null;
   onSubmit: (id: string, payload: Partial<CreateChannelPayload>) => Promise<void>;
@@ -14,6 +15,7 @@ interface EditChannelModalProps {
 
 export const EditChannelModal: React.FC<EditChannelModalProps> = ({
   isOpen,
+  isPro = false,
   onClose,
   channel,
   onSubmit,
@@ -309,17 +311,27 @@ export const EditChannelModal: React.FC<EditChannelModalProps> = ({
 
           {/* Tag Routing Filter */}
           <div className="space-y-1.5 bg-slate-950/60 p-3 rounded-lg border border-slate-800/80">
-            <label className="text-xs font-medium text-slate-300 block">
-              Filter by Tags (Optional)
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-slate-300 block">
+                Filter by Tags
+              </label>
+              {!isPro && (
+                <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                  PRO FEATURE
+                </span>
+              )}
+            </div>
             <Input
-              placeholder="e.g. prod, database, critical"
+              placeholder={isPro ? "e.g. prod, database, critical" : "Available on Pro plan ($16/mo)"}
               value={filterTagsInput}
               onChange={(e) => setFilterTagsInput(e.target.value)}
-              className="h-8 text-xs font-mono bg-slate-900 border-slate-700/80 focus:border-emerald-500"
+              disabled={!isPro}
+              className="h-8 text-xs font-mono bg-slate-900 border-slate-700/80 focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
             />
             <p className="text-[10px] text-muted-foreground">
-              Comma-separated tags. Leave blank to receive alerts for all monitors.
+              {isPro
+                ? "Comma-separated tags. Leave blank to receive alerts for all monitors."
+                : "Route specific alerts (e.g. #database to DevOps) with Pro plan tag routing."}
             </p>
           </div>
 

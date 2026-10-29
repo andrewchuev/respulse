@@ -474,12 +474,14 @@ export const NotificationChannels: React.FC<NotificationChannelsProps> = ({ curr
 
       <AddChannelModal
         isOpen={isAddModalOpen}
+        isPro={currentUser?.team_plan === 'PRO'}
         onClose={() => setIsAddModalOpen(false)}
         onSubmit={handleCreate}
       />
 
       <EditChannelModal
         isOpen={Boolean(editingChannel)}
+        isPro={currentUser?.team_plan === 'PRO'}
         channel={editingChannel}
         onClose={() => setEditingChannel(null)}
         onSubmit={handleUpdate}

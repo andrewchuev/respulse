@@ -100,6 +100,23 @@ pub async fn create_channel(
     validate_channel_config(&payload.config).await?;
 
     let filter_tags = payload.filter_tags.unwrap_or_default();
+    if !filter_tags.is_empty() {
+        let team_plan: String = sqlx::query_scalar("SELECT plan FROM teams WHERE id = $1")
+            .bind(auth.user.team_id)
+            .fetch_optional(&state.pool)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+            .unwrap_or_else(|| "FREE".to_string());
+        if team_plan != "PRO" {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "Tag-based alert routing is a Pro feature.{}",
+                    state.settings.upgrade_hint()
+                ),
+            ));
+        }
+    }
 
     let channel = sqlx::query_as::<_, NotificationChannel>(
         r#"
@@ -193,6 +210,23 @@ pub async fn update_channel(
     };
     let is_active = payload.is_active.unwrap_or(existing.is_active);
     let filter_tags = payload.filter_tags.unwrap_or(existing.filter_tags);
+    if !filter_tags.is_empty() {
+        let team_plan: String = sqlx::query_scalar("SELECT plan FROM teams WHERE id = $1")
+            .bind(auth.user.team_id)
+            .fetch_optional(&state.pool)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+            .unwrap_or_else(|| "FREE".to_string());
+        if team_plan != "PRO" {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "Tag-based alert routing is a Pro feature.{}",
+                    state.settings.upgrade_hint()
+                ),
+            ));
+        }
+    }
 
     let updated = sqlx::query_as::<_, NotificationChannel>(
         r#"

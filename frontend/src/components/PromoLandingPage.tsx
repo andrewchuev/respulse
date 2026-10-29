@@ -905,7 +905,7 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
                 <div className="pt-4 border-t border-white/5 space-y-3 text-xs text-slate-300">
                   <div className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
-                    <span><strong>10 Synthetic Monitors</strong> (HTTP, SSL, TCP)</span>
+                    <span><strong>20 Synthetic Monitors</strong> (HTTP, SSL, TCP)</span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
@@ -913,7 +913,7 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
                   </div>
                   <div className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
-                    <span><strong>10 Heartbeat / Cron Jobs</strong> (Dead Man's Switch)</span>
+                    <span><strong>20 Heartbeat Monitors</strong> (Dead Man's Switch, Interval Pings)</span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
@@ -925,7 +925,7 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
                   </div>
                   <div className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
-                    <span>14-Day Latency &amp; Incident Retention</span>
+                    <span>30-Day Latency &amp; Incident Retention</span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
@@ -957,7 +957,7 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
                 <div>
                   <div className="text-xs font-mono text-emerald-400 uppercase tracking-wider">Pro Plan</div>
                   <div className="flex items-baseline gap-1.5 mt-1">
-                    <span className="text-4xl font-extrabold text-white">$8</span>
+                    <span className="text-4xl font-extrabold text-white">$16</span>
                     <span className="text-xs text-slate-400 font-mono">/ month (monthly billing)</span>
                   </div>
                   <div className="text-[11px] text-slate-400 font-mono mt-1">
@@ -983,7 +983,7 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
                   </div>
                   <div className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
-                    <span><strong>Unlimited Cron &amp; Background Tasks</strong> with Timezones</span>
+                    <span><strong>Advanced 5-Field Cron</strong> &amp; Timezone Scheduling</span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
@@ -1022,7 +1022,7 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
                 }}
                 className="w-full mt-8 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-[0_0_20px_rgba(16,185,129,0.35)]"
               >
-                Upgrade to Pro — $8/mo (excl. VAT)
+                Upgrade to Pro — $16/mo (excl. VAT)
               </Button>
             </div>
           </div>
@@ -1117,8 +1117,8 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
                 a: "Yes! ResPulse provides native /metrics and /api/metrics endpoints. Any Prometheus scraper or OpenTelemetry collector can gather platform gauges (monitor operational status, probe latencies, heartbeat durations, and active incidents) for visualization in your central Grafana dashboards."
               },
               {
-                q: billingEnabled ? "What is included in the $8/month Pro plan?" : "Is ResPulse free?",
-                a: billingEnabled ? "The Pro plan ($8.00 USD / month excl. VAT, cancel anytime) offers turbo 10-second probe intervals, up to 100 synthetic monitors, unlimited cron tasks with timezones, up to 10 team members with 4-tier RBAC, 90-day retention with SRE RCA post-mortems, Prometheus metric exports, tag-based alert routing, and custom domain status pages." : "Yes, ResPulse is free while it is in open beta, with generous limits for small teams and side projects. A paid plan with faster probes, team seats and a Prometheus exporter may come later; if it does, you will get advance notice and nothing will be charged without your explicit checkout.",
+                q: billingEnabled ? "What is included in the $16/month Pro plan?" : "Is ResPulse free?",
+                a: billingEnabled ? "The Pro plan ($16.00 USD / month excl. VAT, cancel anytime) offers turbo 10-second probe intervals, up to 100 synthetic monitors, advanced 5-field cron tasks with timezones, full 64KB STDERR log capture, up to 10 team members with 4-tier RBAC, 90-day retention with SRE RCA post-mortems, Prometheus metric exports, tag-based alert routing, and custom domain status pages." : "Yes, ResPulse is free while it is in open beta, with generous limits for small teams and side projects. A paid plan with faster probes, team seats and a Prometheus exporter may come later; if it does, you will get advance notice and nothing will be charged without your explicit checkout.",
               },
               {
                 q: "How does Role-Based Access Control (RBAC) enforce security?",
