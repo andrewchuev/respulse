@@ -1,4 +1,4 @@
-.PHONY: up down restart logs build ps seed clean release deploy deploy-direct backup-pull tauri-dev tauri-build tauri-android-init tauri-android-build tauri-android-release tauri-android-bundle
+.PHONY: up down restart logs build ps seed clean release deploy deploy-direct backup-pull tauri-dev tauri-build tauri-android-init tauri-android-build tauri-android-release tauri-android-bundle tauri-android-install
 
 up:
 	docker compose up -d
@@ -93,14 +93,18 @@ tauri-build:
 tauri-android-init:
 	PATH="/home/dev/android-ndk-r26d/toolchains/llvm/prebuilt/linux-x86_64/bin:$(HOME)/.cargo/bin:$$PATH" ANDROID_HOME="/home/dev/android-sdk" NDK_HOME="/home/dev/android-ndk-r26d" npx @tauri-apps/cli android init --ci --skip-targets-install
 
-tauri-android-build:
-	PATH="/home/dev/android-ndk-r26d/toolchains/llvm/prebuilt/linux-x86_64/bin:$(HOME)/.cargo/bin:$$PATH" ANDROID_HOME="/home/dev/android-sdk" NDK_HOME="/home/dev/android-ndk-r26d" npx @tauri-apps/cli android build --debug --target x86_64 --apk
-
 ANDROID_TARGET ?= aarch64
+
+tauri-android-build:
+	PATH="/home/dev/android-ndk-r26d/toolchains/llvm/prebuilt/linux-x86_64/bin:$(HOME)/.cargo/bin:$$PATH" ANDROID_HOME="/home/dev/android-sdk" NDK_HOME="/home/dev/android-ndk-r26d" npx @tauri-apps/cli android build --debug --target $(ANDROID_TARGET) --apk
 
 tauri-android-release:
 	PATH="/home/dev/android-ndk-r26d/toolchains/llvm/prebuilt/linux-x86_64/bin:$(HOME)/.cargo/bin:$$PATH" ANDROID_HOME="/home/dev/android-sdk" NDK_HOME="/home/dev/android-ndk-r26d" npx @tauri-apps/cli android build --target $(ANDROID_TARGET) --apk
 
 tauri-android-bundle:
 	PATH="/home/dev/android-ndk-r26d/toolchains/llvm/prebuilt/linux-x86_64/bin:$(HOME)/.cargo/bin:$$PATH" ANDROID_HOME="/home/dev/android-sdk" NDK_HOME="/home/dev/android-ndk-r26d" npx @tauri-apps/cli android build --target $(ANDROID_TARGET) --aab
+
+tauri-android-install:
+	cmd.exe /c "cd /d C:\Users\andre && C:\Users\andre\AppData\Local\Android\Sdk\platform-tools\adb.exe install -r \\\\wsl.localhost\\Debian$(CURDIR)\\src-tauri\\gen\\android\\app\\build\\outputs\\apk\\universal\\release\\app-universal-release.apk" < /dev/null
+
 

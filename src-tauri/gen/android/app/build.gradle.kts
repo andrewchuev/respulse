@@ -21,9 +21,28 @@ android {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
         applicationId = "online.respulse.app"
         minSdk = 24
-        targetSdk = 37
+        targetSdk = 35
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
+    }
+    signingConfigs {
+        create("release") {
+            val keyStorePath = project.findProperty("tauri.android.keyStore")?.toString()
+                ?: tauriProperties.getProperty("tauri.android.keyStore")
+            val keyStorePassword = project.findProperty("tauri.android.storePassword")?.toString()
+                ?: tauriProperties.getProperty("tauri.android.storePassword")
+            val keyAlias = project.findProperty("tauri.android.keyAlias")?.toString()
+                ?: tauriProperties.getProperty("tauri.android.keyAlias")
+            val keyPassword = project.findProperty("tauri.android.keyPassword")?.toString()
+                ?: tauriProperties.getProperty("tauri.android.keyPassword")
+
+            if (!keyStorePath.isNullOrEmpty() && file(keyStorePath).exists()) {
+                storeFile = file(keyStorePath)
+                storePassword = keyStorePassword
+                this.keyAlias = keyAlias
+                this.keyPassword = keyPassword
+            }
+        }
     }
     buildTypes {
         getByName("debug") {
@@ -40,6 +59,12 @@ android {
             }
         }
         getByName("release") {
+            val releaseSigning = signingConfigs.getByName("release")
+            if (releaseSigning.storeFile != null) {
+                signingConfig = releaseSigning
+            } else {
+                signingConfig = signingConfigs.getByName("debug")
+            }
             optimization {
                enable = true
             }
