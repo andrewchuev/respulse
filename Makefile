@@ -1,4 +1,4 @@
-.PHONY: up down restart logs build ps seed clean release deploy deploy-direct backup-pull
+.PHONY: up down restart logs build ps seed clean release deploy deploy-direct backup-pull tauri-dev tauri-build tauri-android-init tauri-android-build
 
 up:
 	docker compose up -d
@@ -82,3 +82,16 @@ backup-pull:
 	@mkdir -p -m 700 $(BACKUP_LOCAL)
 	scp -p $(PROD_HOST):$(PROD_DIR)/backups/db-*.dump $(BACKUP_LOCAL)/
 	@ls -1t $(BACKUP_LOCAL)/db-*.dump | head -3
+
+# --- Tauri 2 Cross-Platform Desktop & Mobile ---
+tauri-dev:
+	PATH="$(HOME)/.cargo/bin:$$PATH" npx @tauri-apps/cli dev
+
+tauri-build:
+	PATH="$(HOME)/.cargo/bin:$$PATH" npx @tauri-apps/cli build
+
+tauri-android-init:
+	PATH="$(HOME)/.cargo/bin:$$PATH" ANDROID_HOME="/mnt/c/Users/andre/AppData/Local/Android/Sdk" NDK_HOME="/mnt/c/Users/andre/AppData/Local/Android/Sdk/ndk/30.0.14904198" npx @tauri-apps/cli android init --ci --skip-targets-install
+
+tauri-android-build:
+	PATH="$(HOME)/.cargo/bin:$$PATH" ANDROID_HOME="/mnt/c/Users/andre/AppData/Local/Android/Sdk" NDK_HOME="/mnt/c/Users/andre/AppData/Local/Android/Sdk/ndk/30.0.14904198" npx @tauri-apps/cli android build

@@ -7,6 +7,7 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Activity, Clock, ShieldCheck, Copy, Check, Terminal, Play, AlertTriangle, Pencil } from 'lucide-react';
+import { SshConsolePanel } from './SshConsolePanel';
 
 interface MonitorDetailModalProps {
   monitor: MonitorWithStats | null;
@@ -23,10 +24,12 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
 }) => {
   const [details, setDetails] = useState<MonitorWithStats | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'metrics' | 'ssh'>('metrics');
 
   useEffect(() => {
     if (!monitor) return;
     setDetails(monitor);
+    setActiveTab('metrics');
     fetchMonitor(monitor.id).then(setDetails).catch(console.error);
   }, [monitor]);
 
@@ -104,7 +107,46 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
           </div>
         </DialogHeader>
 
-        <div className="space-y-6 pt-2">
+        {/* Tab Navigation: Metrics & Logs vs SSH SRE Triage */}
+        <div className="flex border-b border-slate-800 gap-4 text-xs font-medium pt-1">
+          <button
+            type="button"
+            onClick={() => setActiveTab('metrics')}
+            className={`pb-2.5 flex items-center gap-1.5 transition-colors border-b-2 -mb-px font-mono ${
+              activeTab === 'metrics'
+                ? 'border-emerald-500 text-white font-semibold'
+                : 'border-transparent text-slate-400 hover:text-white'
+            }`}
+          >
+            <Activity className="h-3.5 w-3.5 text-emerald-400" />
+            <span>Metrics & Probing Logs</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('ssh')}
+            className={`pb-2.5 flex items-center gap-1.5 transition-colors border-b-2 -mb-px font-mono ${
+              activeTab === 'ssh'
+                ? 'border-cyan-500 text-white font-semibold'
+                : 'border-transparent text-slate-400 hover:text-white'
+            }`}
+          >
+            <Terminal className="h-3.5 w-3.5 text-cyan-400" />
+            <span>SSH SRE Console</span>
+            {isDown && (
+              <span className="px-1.5 py-0.5 rounded text-[9px] bg-red-500/20 text-red-300 border border-red-500/40 animate-pulse font-bold">
+                INCIDENT TRIAGE
+              </span>
+            )}
+          </button>
+        </div>
+
+        {activeTab === 'ssh' ? (
+          <div className="pt-2">
+            <SshConsolePanel monitor={data} />
+          </div>
+        ) : (
+          <div className="space-y-6 pt-2">
           {/* Heartbeat Signals & Webhooks (Healthchecks.io compatible) */}
           {data.heartbeat_token && (
             <div className="bg-emerald-500/10 border border-emerald-500/20 p-3.5 rounded-xl space-y-3">
@@ -409,6 +451,7 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
             </div>
           </div>
         </div>
+        )}
       </DialogContent>
     </Dialog>
   );
