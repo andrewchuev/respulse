@@ -433,16 +433,6 @@ pub async fn cancel_subscription(
         ));
     }
 
-    let config = match &state.wayforpay {
-        Some(c) => c,
-        None => {
-            return Err((
-                StatusCode::SERVICE_UNAVAILABLE,
-                "WayForPay payment processing is not configured on this server".to_string(),
-            ))
-        }
-    };
-
     let team: (Option<String>, Option<String>) = sqlx::query_as(
         "SELECT subscription_id, subscription_provider FROM teams WHERE id = $1"
     )
@@ -452,36 +442,37 @@ pub async fn cancel_subscription(
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     let (subscription_id, provider) = team;
-    let order_reference = subscription_id
-        .filter(|s| !s.trim().is_empty())
-        .ok_or((StatusCode::BAD_REQUEST, "No active subscription found to cancel".to_string()))?;
 
-    if provider.as_deref() == Some("WAYFORPAY") && !config.merchant_password.is_empty() {
-        let cancel_req = json!({
-            "requestType": "REMOVE",
-            "merchantAccount": config.merchant_account,
-            "merchantPassword": config.merchant_password,
-            "orderReference": order_reference,
-        });
+    if let Some(config) = &state.wayforpay {
+        if let Some(order_reference) = subscription_id.filter(|s| !s.trim().is_empty()) {
+            if provider.as_deref() == Some("WAYFORPAY") && !config.merchant_password.is_empty() {
+                let cancel_req = json!({
+                    "requestType": "REMOVE",
+                    "merchantAccount": config.merchant_account,
+                    "merchantPassword": config.merchant_password,
+                    "orderReference": order_reference,
+                });
 
-        let client = reqwest::Client::new();
-        let res = client
-            .post(WAYFORPAY_REGULAR_API_URL)
-            .json(&cancel_req)
-            .send()
-            .await
-            .map_err(|e| (StatusCode::BAD_GATEWAY, format!("Failed to reach WayForPay regularApi: {}", e)))?;
+                let client = reqwest::Client::new();
+                let res = client
+                    .post(WAYFORPAY_REGULAR_API_URL)
+                    .json(&cancel_req)
+                    .send()
+                    .await
+                    .map_err(|e| (StatusCode::BAD_GATEWAY, format!("Failed to reach WayForPay regularApi: {}", e)))?;
 
-        let body: RegularApiResponse = res
-            .json()
-            .await
-            .map_err(|e| (StatusCode::BAD_GATEWAY, format!("Invalid regularApi JSON response: {}", e)))?;
+                let body: RegularApiResponse = res
+                    .json()
+                    .await
+                    .map_err(|e| (StatusCode::BAD_GATEWAY, format!("Invalid regularApi JSON response: {}", e)))?;
 
-        if body.reason_code != WAYFORPAY_REGULAR_API_OK && body.reason_code != WAYFORPAY_REGULAR_API_RULE_NOT_FOUND {
-            return Err((
-                StatusCode::BAD_REQUEST,
-                format!("WayForPay regularApi rejected REMOVE: {} (code {})", body.reason, body.reason_code),
-            ));
+                if body.reason_code != WAYFORPAY_REGULAR_API_OK && body.reason_code != WAYFORPAY_REGULAR_API_RULE_NOT_FOUND {
+                    return Err((
+                        StatusCode::BAD_REQUEST,
+                        format!("WayForPay regularApi rejected REMOVE: {} (code {})", body.reason, body.reason_code),
+                    ));
+                }
+            }
         }
     }
 

@@ -16,6 +16,7 @@ interface HeaderProps {
   onOpenAuth?: (mode: 'login' | 'register') => void;
   onSignOut?: () => void;
   onOpenUpgradeModal?: () => void;
+  onOpenManageSubscription?: () => void;
   onOpenExportImport?: (tab: 'export' | 'import') => void;
 }
 
@@ -32,6 +33,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAuth,
   onSignOut,
   onOpenUpgradeModal,
+  onOpenManageSubscription,
   onOpenExportImport,
 }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -249,12 +251,16 @@ export const Header: React.FC<HeaderProps> = ({
                     <button
                       onClick={() => {
                         setIsUserMenuOpen(false);
-                        onOpenUpgradeModal?.();
+                        if (currentUser?.team_plan === 'PRO') {
+                          onOpenManageSubscription ? onOpenManageSubscription() : onOpenUpgradeModal?.();
+                        } else {
+                          onOpenUpgradeModal?.();
+                        }
                       }}
                       className={`px-1.5 py-0.5 rounded text-[9px] font-bold hover:brightness-125 transition-all ${
                         currentUser?.team_plan === 'FREE' ? 'bg-slate-800 text-slate-400 border border-slate-700' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                       }`}
-                      title="Manage Pro subscription (WayForPay)"
+                      title={currentUser?.team_plan === 'PRO' ? "Manage Pro subscription (WayForPay)" : "Upgrade to Pro (WayForPay)"}
                     >
                       {currentUser?.team_plan || 'PRO'} PLAN
                     </button>
@@ -262,12 +268,16 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
 
                 {/* WayForPay Subscription Action */}
-                {onOpenUpgradeModal && (
+                {(currentUser?.team_plan === 'PRO' ? onOpenManageSubscription || onOpenUpgradeModal : onOpenUpgradeModal) && (
                   <div className="p-2">
                     <button
                       onClick={() => {
                         setIsUserMenuOpen(false);
-                        onOpenUpgradeModal();
+                        if (currentUser?.team_plan === 'PRO') {
+                          onOpenManageSubscription ? onOpenManageSubscription() : onOpenUpgradeModal?.();
+                        } else {
+                          onOpenUpgradeModal?.();
+                        }
                       }}
                       className="w-full flex items-center justify-between p-2 rounded-xl bg-slate-950/80 hover:bg-slate-800/80 border border-slate-800 text-xs text-left transition-colors group"
                     >
@@ -279,7 +289,7 @@ export const Header: React.FC<HeaderProps> = ({
                             <span className="text-[10px] text-emerald-400 font-mono">$16/mo</span>
                           </div>
                           <div className="text-[10px] text-muted-foreground font-mono truncate max-w-[170px]">
-                            {currentUser?.team_plan === 'PRO' ? 'Manage via WayForPay' : 'WayForPay Checkout'}
+                            {currentUser?.team_plan === 'PRO' ? 'Active · Manage via WayForPay' : 'WayForPay Checkout'}
                           </div>
                         </div>
                       </div>

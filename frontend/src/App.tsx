@@ -36,6 +36,7 @@ import { LegalPage } from './components/LegalPage';
 import { AdminPanel } from './components/AdminPanel';
 import { VerifyEmailPage } from './components/VerifyEmailPage';
 import { WayForPayCheckoutModal } from './components/WayForPayCheckoutModal';
+import { ManageSubscriptionModal } from './components/ManageSubscriptionModal';
 import { ExportImportModal } from './components/ExportImportModal';
 
 type View = 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo' | 'terms' | 'privacy' | 'refund' | 'admin' | 'verify-email';
@@ -47,6 +48,7 @@ export function App() {
   const [editingMonitor, setEditingMonitor] = useState<MonitorWithStats | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [isManageSubscriptionModalOpen, setIsManageSubscriptionModalOpen] = useState(false);
   const [isExportImportModalOpen, setIsExportImportModalOpen] = useState(false);
   const [exportImportDefaultTab, setExportImportDefaultTab] = useState<'export' | 'import'>('export');
 
@@ -140,11 +142,17 @@ export function App() {
         if (!currentUser) {
           setPendingUpgradeAfterAuth(true);
           openAuth('register');
+        } else if (currentUser.team_plan === 'PRO') {
+          setIsManageSubscriptionModalOpen(true);
         } else {
           setIsUpgradeModalOpen(true);
         }
       }
     : undefined;
+
+  const openManageSubscription = () => {
+    setIsManageSubscriptionModalOpen(true);
+  };
 
   const openExportImport = (tab: 'export' | 'import' = 'export') => {
     setExportImportDefaultTab(tab);
@@ -452,6 +460,7 @@ export function App() {
         onOpenAuth={openAuth}
         onSignOut={handleSignOut}
         onOpenUpgradeModal={openUpgrade}
+        onOpenManageSubscription={openManageSubscription}
         onOpenExportImport={openExportImport}
       />
 
@@ -477,6 +486,7 @@ export function App() {
             currentUser={currentUser}
             onUserRefreshed={loadUserData}
             onOpenUpgradeModal={openUpgrade}
+            onOpenManageSubscription={openManageSubscription}
             billingEnabled={billingEnabled}
             planLimits={appConfig.plans[planKey]}
           />
@@ -533,6 +543,16 @@ export function App() {
       <WayForPayCheckoutModal
         isOpen={isUpgradeModalOpen}
         onClose={() => setIsUpgradeModalOpen(false)}
+      />
+
+      <ManageSubscriptionModal
+        isOpen={isManageSubscriptionModalOpen}
+        onClose={() => setIsManageSubscriptionModalOpen(false)}
+        currentUser={currentUser}
+        onSubscriptionCanceled={() => {
+          loadUserData();
+          loadData();
+        }}
       />
 
       <AuthModal

@@ -35,6 +35,7 @@ interface TeamManagementProps {
   currentUser: UserProfile | null;
   onUserRefreshed?: () => void;
   onOpenUpgradeModal?: () => void;
+  onOpenManageSubscription?: () => void;
   /** False during the free beta: no prices, no checkout. */
   billingEnabled?: boolean;
   planLimits?: PlanLimits;
@@ -44,6 +45,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
   currentUser,
   onUserRefreshed,
   onOpenUpgradeModal,
+  onOpenManageSubscription,
   billingEnabled = true,
   planLimits,
 }) => {
@@ -451,10 +453,11 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={handleCancelSubscription}
-                className="border-red-900/60 hover:bg-red-950/40 text-xs text-red-300 h-9 gap-1.5"
+                onClick={onOpenManageSubscription || handleCancelSubscription}
+                className="border-slate-700 hover:bg-slate-800 text-xs text-slate-200 h-9 gap-1.5"
               >
-                Cancel Pro Subscription
+                <CreditCard className="h-3.5 w-3.5 text-emerald-400" />
+                Manage Pro Subscription
               </Button>
             )}
 
