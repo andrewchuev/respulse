@@ -416,8 +416,8 @@ export const MonitorList: React.FC<MonitorListProps> = ({
 
       {/* Bulk Selection Header / Page Info Bar */}
       {filtered.length > 0 && (
-        <div className="flex items-center justify-between px-2 text-xs text-muted-foreground">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-3 px-1 sm:px-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             {/* Page selection checkbox */}
             <button
               onClick={handleSelectPage}
@@ -442,7 +442,7 @@ export const MonitorList: React.FC<MonitorListProps> = ({
                 onClick={handleSelectAllFiltered}
                 className="text-[11px] text-emerald-400 hover:underline"
               >
-                Select all {filtered.length} monitors
+                Select all {filtered.length}
               </button>
             )}
 
@@ -457,15 +457,14 @@ export const MonitorList: React.FC<MonitorListProps> = ({
           </div>
 
           {/* Counts & Density Info */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 text-[11px] sm:text-xs">
             <span>
-              Showing {filtered.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}–
-              {Math.min(currentPage * pageSize, filtered.length)} of {filtered.length}
+              Showing {filtered.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filtered.length)} of {filtered.length}
             </span>
 
             {/* Page size selector */}
             <div className="flex items-center gap-1">
-              <span className="text-[11px]">Per page:</span>
+              <span className="text-[10px] sm:text-[11px]">Per page:</span>
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}

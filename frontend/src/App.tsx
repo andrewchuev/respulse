@@ -278,7 +278,7 @@ export function App() {
 
     // In mobile, if biometric lock is turned on, ask for fingerprint verification on app launch
     if (isTauri() && isBiometricEnabledLocally()) {
-      promptBiometricAuth('Вход в ResPulse по отпечатку пальца').then((verified) => {
+      promptBiometricAuth('Confirm fingerprint to sign in to ResPulse').then((verified) => {
         if (verified) {
           loadUserData();
           loadData();
@@ -533,7 +533,7 @@ export function App() {
         </div>
       )}
 
-      <main className="flex-1 container mx-auto px-4 py-8">
+      <main className="flex-1 container mx-auto px-2.5 sm:px-4 py-4 sm:py-8">
         {loading ? (
           <SkeletonDashboard />
         ) : currentView === 'channels' ? (
@@ -641,16 +641,18 @@ export function App() {
         }}
       />
 
-      <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground">
-        <p className="font-mono">ResPulse v1.0 — High-performance Synthetic Monitoring Engine in Rust</p>
-        <p className="font-mono mt-2 space-x-3 text-[11px]">
-          <a href="/terms" className="hover:text-emerald-400 transition-colors">Terms of Service</a>
-          <span>·</span>
-          <a href="/privacy" className="hover:text-emerald-400 transition-colors">Privacy Policy</a>
-          <span>·</span>
-          <a href="/refund" className="hover:text-emerald-400 transition-colors">Refund & Cancellation</a>
-        </p>
-      </footer>
+      {!isTauri() && (
+        <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground">
+          <p className="font-mono">ResPulse v1.0 — High-performance Synthetic Monitoring Engine in Rust</p>
+          <p className="font-mono mt-2 space-x-3 text-[11px]">
+            <a href="/terms" className="hover:text-emerald-400 transition-colors">Terms of Service</a>
+            <span>·</span>
+            <a href="/privacy" className="hover:text-emerald-400 transition-colors">Privacy Policy</a>
+            <span>·</span>
+            <a href="/refund" className="hover:text-emerald-400 transition-colors">Refund & Cancellation</a>
+          </p>
+        </footer>
+      )}
     </div>
   );
 }

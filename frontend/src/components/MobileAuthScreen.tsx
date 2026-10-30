@@ -84,10 +84,10 @@ export const MobileAuthScreen: React.FC<MobileAuthScreenProps> = ({
     try {
       const savedToken = getSavedBiometricSession();
       if (!savedToken) {
-        throw new Error('Сохраненная сессия не найдена. Пожалуйста, выполните вход по паролю.');
+        throw new Error('Saved session not found. Please sign in with your password.');
       }
 
-      const passed = await promptBiometricAuth('Вход в ResPulse по отпечатку пальца');
+      const passed = await promptBiometricAuth('Confirm fingerprint to sign in to ResPulse');
       if (!passed) {
         setLoading(false);
         return;
@@ -97,7 +97,7 @@ export const MobileAuthScreen: React.FC<MobileAuthScreenProps> = ({
       const user = await fetchCurrentUser();
       onSuccess(user);
     } catch (err: any) {
-      setError(err?.message || 'Не удалось выполнить биометрический вход');
+      setError(err?.message || 'Biometric authentication failed');
     } finally {
       setLoading(false);
     }
@@ -128,7 +128,7 @@ export const MobileAuthScreen: React.FC<MobileAuthScreenProps> = ({
           const user = await fetchCurrentUser();
           onSuccess(user);
         } else {
-          setError('Письмо с подтверждением отправлено на ваш email.');
+          setError('Confirmation email sent to your address.');
         }
       } else {
         const res = await loginUser({ email, password });
@@ -146,7 +146,7 @@ export const MobileAuthScreen: React.FC<MobileAuthScreenProps> = ({
         onSuccess(user);
       }
     } catch (err: any) {
-      setError(err?.message || 'Ошибка авторизации. Проверьте данные.');
+      setError(err?.message || 'Authentication failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -162,7 +162,7 @@ export const MobileAuthScreen: React.FC<MobileAuthScreenProps> = ({
       }
       onSuccess(user);
     } catch (err: any) {
-      setError(err?.message || 'Не удалось переключить демо-пользователя');
+      setError(err?.message || 'Failed to switch demo user');
     } finally {
       setLoading(false);
     }
@@ -189,7 +189,7 @@ export const MobileAuthScreen: React.FC<MobileAuthScreenProps> = ({
           </span>
         </div>
         <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-          Мониторинг инфраструктуры и мгновенное реагирование
+          Infrastructure monitoring and rapid incident response
         </p>
       </div>
 
@@ -200,10 +200,10 @@ export const MobileAuthScreen: React.FC<MobileAuthScreenProps> = ({
           <div className="bg-emerald-950/20 border border-emerald-500/30 rounded-xl p-4 text-center space-y-3">
             <div className="flex items-center justify-center gap-2 text-emerald-400 text-sm font-semibold">
               <Fingerprint className="h-5 w-5 animate-pulse" />
-              <span>Быстрый вход по отпечатку</span>
+              <span>Quick Biometric Sign-In</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Используйте сканер отпечатка пальца для моментального доступа
+              Use fingerprint scanner for instant console access
             </p>
             <Button
               type="button"
@@ -212,14 +212,14 @@ export const MobileAuthScreen: React.FC<MobileAuthScreenProps> = ({
               className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium shadow-[0_0_15px_rgba(16,185,129,0.3)] flex items-center justify-center gap-2 h-11"
             >
               <Fingerprint className="h-5 w-5" />
-              {loading ? 'Проверка...' : 'Войти по отпечатку'}
+              {loading ? 'Verifying...' : 'Sign In with Fingerprint'}
             </Button>
             <div className="relative my-2">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-border/60" />
               </div>
               <div className="relative flex justify-center text-[10px] uppercase font-mono tracking-wider">
-                <span className="bg-card px-2 text-muted-foreground">или по паролю</span>
+                <span className="bg-card px-2 text-muted-foreground">or use password</span>
               </div>
             </div>
           </div>
@@ -239,7 +239,7 @@ export const MobileAuthScreen: React.FC<MobileAuthScreenProps> = ({
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            Вход в аккаунт
+            Sign In
           </button>
           <button
             type="button"
@@ -253,7 +253,7 @@ export const MobileAuthScreen: React.FC<MobileAuthScreenProps> = ({
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            Создать аккаунт
+            Create Account
           </button>
         </div>
 
@@ -269,7 +269,7 @@ export const MobileAuthScreen: React.FC<MobileAuthScreenProps> = ({
               <div className="space-y-1">
                 <label className="text-xs font-medium text-foreground/80 flex items-center gap-1.5">
                   <Shield className="h-3.5 w-3.5 text-emerald-400" />
-                  Название компании / проекта
+                  Company / Project Name
                 </label>
                 <Input
                   required
@@ -283,11 +283,11 @@ export const MobileAuthScreen: React.FC<MobileAuthScreenProps> = ({
               <div className="space-y-1">
                 <label className="text-xs font-medium text-foreground/80 flex items-center gap-1.5">
                   <User className="h-3.5 w-3.5 text-emerald-400" />
-                  Ваше имя
+                  Your Name
                 </label>
                 <Input
                   required
-                  placeholder="Алексей"
+                  placeholder="Alex"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="bg-secondary/40 border-border/70 h-10 text-sm"
@@ -299,7 +299,7 @@ export const MobileAuthScreen: React.FC<MobileAuthScreenProps> = ({
           <div className="space-y-1">
             <label className="text-xs font-medium text-foreground/80 flex items-center gap-1.5">
               <Mail className="h-3.5 w-3.5 text-emerald-400" />
-              Электронная почта
+              Email Address
             </label>
             <Input
               required
@@ -316,7 +316,7 @@ export const MobileAuthScreen: React.FC<MobileAuthScreenProps> = ({
           <div className="space-y-1">
             <label className="text-xs font-medium text-foreground/80 flex items-center gap-1.5">
               <Lock className="h-3.5 w-3.5 text-emerald-400" />
-              Пароль
+              Password
             </label>
             <div className="relative">
               <Input
@@ -347,7 +347,7 @@ export const MobileAuthScreen: React.FC<MobileAuthScreenProps> = ({
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="rounded border-border text-emerald-500 focus:ring-emerald-500 bg-secondary/50 h-4 w-4"
               />
-              <span>Запомнить сессию на телефоне</span>
+              <span>Remember session on this device</span>
             </label>
 
             {biometricAvailable && (
@@ -360,7 +360,7 @@ export const MobileAuthScreen: React.FC<MobileAuthScreenProps> = ({
                 />
                 <span className="flex items-center gap-1">
                   <Fingerprint className="h-3.5 w-3.5" />
-                  Включить вход по отпечатку пальца
+                  Enable fingerprint login
                 </span>
               </label>
             )}
@@ -372,15 +372,15 @@ export const MobileAuthScreen: React.FC<MobileAuthScreenProps> = ({
             className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium h-11 text-sm shadow-[0_0_15px_rgba(16,185,129,0.25)] flex items-center justify-center gap-2 mt-2"
           >
             {loading ? (
-              <span>Обработка...</span>
+              <span>Processing...</span>
             ) : mode === 'login' ? (
               <>
-                <span>Войти в консоль</span>
+                <span>Sign In to Console</span>
                 <ArrowRight className="h-4 w-4" />
               </>
             ) : (
               <>
-                <span>Создать аккаунт</span>
+                <span>Create Account</span>
                 <Sparkles className="h-4 w-4" />
               </>
             )}
@@ -392,7 +392,7 @@ export const MobileAuthScreen: React.FC<MobileAuthScreenProps> = ({
           <div className="pt-3 border-t border-border/60">
             <p className="text-[11px] font-mono uppercase text-muted-foreground mb-2 flex items-center gap-1.5">
               <Users className="h-3.5 w-3.5 text-emerald-400" />
-              Быстрый вход для демо:
+              Quick Demo Sign-In:
             </p>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <Button

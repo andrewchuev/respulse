@@ -39,7 +39,12 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
   const isUp = data.status === 'UP';
   const isDown = data.status === 'DOWN';
 
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://respulse.online';
+  const publicBase =
+    typeof window !== 'undefined' &&
+    !window.location.origin.includes('localhost') &&
+    !window.location.origin.includes('tauri')
+      ? window.location.origin
+      : 'https://respulse.online';
 
   const copyText = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -47,11 +52,11 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  const heartbeatBase = data.heartbeat_token ? `${origin}/api/heartbeat/${data.heartbeat_token}` : '';
+  const heartbeatBase = data.heartbeat_token ? `${publicBase}/api/heartbeat/${data.heartbeat_token}` : '';
 
   return (
     <Dialog open={!!monitor} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] bg-slate-900/95 backdrop-blur-2xl border border-white/10 ring-1 ring-white/5 shadow-2xl shadow-black/90 max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:max-w-[700px] bg-slate-900/95 backdrop-blur-2xl border border-white/10 ring-1 ring-white/5 shadow-2xl shadow-black/90 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto overflow-x-hidden p-3.5 sm:p-6 top-[52%] sm:top-[50%]">
         <DialogHeader>
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -108,33 +113,39 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
         </DialogHeader>
 
         {/* Tab Navigation: Metrics & Logs vs SSH SRE Triage */}
-        <div className="flex border-b border-slate-800 gap-4 text-xs font-medium pt-1">
+        <div className="flex border-b border-slate-800 gap-2 sm:gap-4 text-xs font-medium pt-1 overflow-x-auto no-scrollbar whitespace-nowrap">
           <button
             type="button"
             onClick={() => setActiveTab('metrics')}
-            className={`pb-2.5 flex items-center gap-1.5 transition-colors border-b-2 -mb-px font-mono ${
+            className={`pb-2.5 flex items-center gap-1.5 transition-colors border-b-2 -mb-px font-mono shrink-0 ${
               activeTab === 'metrics'
                 ? 'border-emerald-500 text-white font-semibold'
                 : 'border-transparent text-slate-400 hover:text-white'
             }`}
           >
-            <Activity className="h-3.5 w-3.5 text-emerald-400" />
-            <span>Metrics & Probing Logs</span>
+            <Activity className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+            <span>
+              <span className="sm:hidden">Metrics & Logs</span>
+              <span className="hidden sm:inline">Metrics & Probing Logs</span>
+            </span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('ssh')}
-            className={`pb-2.5 flex items-center gap-1.5 transition-colors border-b-2 -mb-px font-mono ${
+            className={`pb-2.5 flex items-center gap-1.5 transition-colors border-b-2 -mb-px font-mono shrink-0 ${
               activeTab === 'ssh'
                 ? 'border-cyan-500 text-white font-semibold'
                 : 'border-transparent text-slate-400 hover:text-white'
             }`}
           >
-            <Terminal className="h-3.5 w-3.5 text-cyan-400" />
-            <span>SSH SRE Console</span>
+            <Terminal className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+            <span>
+              <span className="sm:hidden">SSH Console</span>
+              <span className="hidden sm:inline">SSH SRE Console</span>
+            </span>
             {isDown && (
-              <span className="px-1.5 py-0.5 rounded text-[9px] bg-red-500/20 text-red-300 border border-red-500/40 animate-pulse font-bold">
+              <span className="px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] bg-red-500/20 text-red-300 border border-red-500/40 animate-pulse font-bold">
                 INCIDENT TRIAGE
               </span>
             )}
@@ -286,31 +297,31 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
           )}
 
           {/* Public SVG Status Badge */}
-          <div className="bg-slate-950/80 border border-slate-800 p-3.5 rounded-xl space-y-3">
+          <div className="bg-slate-950/80 border border-slate-800 p-3 sm:p-3.5 rounded-xl space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-white flex items-center gap-1.5 font-mono">
                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
                 Live Status Badge (SVG)
               </span>
-              <span className="text-[10px] font-mono text-muted-foreground">
+              <span className="text-[10px] font-mono text-muted-foreground hidden sm:inline">
                 Embeddable in GitHub READMEs &amp; Dashboards
               </span>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-2.5 bg-black/40 rounded-lg border border-slate-800">
-              <div className="flex items-center gap-3 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-2.5 bg-black/40 rounded-lg border border-slate-800">
+              <div className="flex items-center gap-2.5 min-w-0 max-w-full">
                 <img
-                  src={`${origin}/api/badge/${data.heartbeat_token || data.id}.svg`}
+                  src={`${publicBase}/api/badge/${data.heartbeat_token || data.id}.svg`}
                   alt={`${data.name} Status Badge`}
                   className="h-5 flex-shrink-0"
                 />
                 <span className="text-[10px] font-mono text-slate-400 truncate">
-                  {`${origin}/api/badge/${data.heartbeat_token || data.id}.svg`}
+                  {`${publicBase}/api/badge/${data.heartbeat_token || data.id}.svg`}
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 flex-shrink-0">
+              <div className="flex items-center gap-1.5 flex-shrink-0 self-end sm:self-auto">
                 <button
-                  onClick={() => copyText(`![${data.name}](${origin}/api/badge/${data.heartbeat_token || data.id}.svg)`, 'badge_md')}
+                  onClick={() => copyText(`![${data.name}](${publicBase}/api/badge/${data.heartbeat_token || data.id}.svg)`, 'badge_md')}
                   className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-slate-200 hover:text-white flex items-center gap-1 transition"
                   title="Copy Markdown embed snippet"
                 >
@@ -318,7 +329,7 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
                   {copiedKey === 'badge_md' ? 'Copied MD' : 'Copy MD'}
                 </button>
                 <button
-                  onClick={() => copyText(`${origin}/api/badge/${data.heartbeat_token || data.id}.svg`, 'badge_url')}
+                  onClick={() => copyText(`${publicBase}/api/badge/${data.heartbeat_token || data.id}.svg`, 'badge_url')}
                   className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-slate-300 hover:text-white flex items-center gap-1 transition"
                   title="Copy direct SVG URL"
                 >
@@ -330,18 +341,18 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
           </div>
 
           {/* Stats Bar */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-slate-950/60 border border-slate-800/80 p-3 rounded-xl text-center shadow-inner">
-              <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block">24h Uptime</span>
-              <span className="text-lg font-bold font-mono text-emerald-400">{data.uptime_24h.toFixed(1)}%</span>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="bg-slate-950/60 border border-slate-800/80 p-2 sm:p-3 rounded-xl text-center shadow-inner">
+              <span className="text-[9px] sm:text-[11px] uppercase tracking-wider text-muted-foreground font-medium block truncate">24h Uptime</span>
+              <span className="text-sm sm:text-lg font-bold font-mono text-emerald-400">{data.uptime_24h.toFixed(1)}%</span>
             </div>
-            <div className="bg-slate-950/60 border border-slate-800/80 p-3 rounded-xl text-center shadow-inner">
-              <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block">7d Uptime</span>
-              <span className="text-lg font-bold font-mono text-emerald-400">{data.uptime_7d.toFixed(1)}%</span>
+            <div className="bg-slate-950/60 border border-slate-800/80 p-2 sm:p-3 rounded-xl text-center shadow-inner">
+              <span className="text-[9px] sm:text-[11px] uppercase tracking-wider text-muted-foreground font-medium block truncate">7d Uptime</span>
+              <span className="text-sm sm:text-lg font-bold font-mono text-emerald-400">{data.uptime_7d.toFixed(1)}%</span>
             </div>
-            <div className="bg-slate-950/60 border border-slate-800/80 p-3 rounded-xl text-center shadow-inner">
-              <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block">Current Latency</span>
-              <span className="text-lg font-bold font-mono text-white">{formatMs(data.last_response_time_ms)}</span>
+            <div className="bg-slate-950/60 border border-slate-800/80 p-2 sm:p-3 rounded-xl text-center shadow-inner">
+              <span className="text-[9px] sm:text-[11px] uppercase tracking-wider text-muted-foreground font-medium block truncate">Latency</span>
+              <span className="text-sm sm:text-lg font-bold font-mono text-white truncate block">{formatMs(data.last_response_time_ms)}</span>
             </div>
           </div>
 
@@ -407,7 +418,7 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
               <ShieldCheck className="h-3.5 w-3.5 text-blue-400" />
               Recent Probing Logs
             </h4>
-            <div className="border border-border/80 rounded-lg overflow-hidden">
+            <div className="border border-border/80 rounded-lg overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-secondary/40 text-muted-foreground border-b border-border/80 font-mono text-[11px]">
                   <tr>

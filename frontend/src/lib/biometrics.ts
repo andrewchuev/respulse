@@ -33,14 +33,14 @@ export async function getBiometricStatus(): Promise<BiometricStatus> {
 /**
  * Prompts the user with the native system fingerprint / biometric dialog.
  */
-export async function promptBiometricAuth(reason = 'Подтвердите личность для входа в ResPulse'): Promise<boolean> {
+export async function promptBiometricAuth(reason = 'Confirm fingerprint to sign in to ResPulse'): Promise<boolean> {
   if (!isTauri()) return false;
   try {
     await authenticate(reason, {
       title: 'ResPulse',
-      subtitle: 'Вход по отпечатку пальца',
+      subtitle: 'Fingerprint Authentication',
       allowDeviceCredential: true,
-      cancelTitle: 'Отмена',
+      cancelTitle: 'Cancel',
     });
     return true;
   } catch (err) {

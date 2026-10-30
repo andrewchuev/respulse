@@ -56,7 +56,7 @@ export const Header: React.FC<HeaderProps> = ({
       setBiometricEnabledLocally(false);
       setIsBioEnabled(false);
     } else {
-      const ok = await promptBiometricAuth('Подтвердите отпечаток для включения быстрого входа');
+      const ok = await promptBiometricAuth('Confirm fingerprint to enable biometric login');
       if (ok) {
         setBiometricEnabledLocally(true, getAuthToken());
         setIsBioEnabled(true);
@@ -118,7 +118,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70 pt-[env(safe-area-inset-top,0px)]">
+    <header className={`sticky top-0 z-40 w-full border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70 ${isTauri() ? 'pt-9 sm:pt-0' : 'pt-[env(safe-area-inset-top,0px)]'}`}>
       <div className="w-full max-w-[1720px] mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 lg:gap-4">
         {/* Zone 1 (Left): Brand Identity */}
         <div className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group shrink-0" onClick={() => setCurrentView('dashboard')}>
@@ -403,7 +403,7 @@ export const Header: React.FC<HeaderProps> = ({
                     >
                       <span className="flex items-center gap-2">
                         <Fingerprint className="h-4 w-4 text-emerald-400" />
-                        <span>Вход по отпечатку</span>
+                        <span>Fingerprint Login</span>
                       </span>
                       <span
                         className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold ${
@@ -412,7 +412,7 @@ export const Header: React.FC<HeaderProps> = ({
                             : 'bg-slate-700/40 text-slate-400 border border-slate-600/30'
                         }`}
                       >
-                        {isBioEnabled ? 'ВКЛ' : 'ВЫКЛ'}
+                        {isBioEnabled ? 'ON' : 'OFF'}
                       </span>
                     </button>
                   </div>
@@ -595,10 +595,10 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <span className="flex items-center gap-2">
                   <Fingerprint className="h-4 w-4 text-emerald-400 shrink-0" />
-                  <span>Вход по отпечатку</span>
+                  <span>Fingerprint Login</span>
                 </span>
                 <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold ${isBioEnabled ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-700/40 text-slate-400'}`}>
-                  {isBioEnabled ? 'ВКЛ' : 'ВЫКЛ'}
+                  {isBioEnabled ? 'ON' : 'OFF'}
                 </span>
               </button>
             )}
