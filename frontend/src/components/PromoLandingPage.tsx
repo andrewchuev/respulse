@@ -417,7 +417,7 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
           </div>
 
           {/* Interactive Protocol Selector Tabs */}
-          <div className="flex items-center justify-center gap-2 overflow-x-auto pb-2 mb-8">
+          <div className="flex flex-col md:flex-row md:flex-wrap items-stretch md:items-center justify-center gap-2 mb-8">
             {[
               { id: 'http', label: 'HTTP / REST APIs', icon: Activity },
               { id: 'tcp', label: 'TCP Socket & DBs', icon: Server },
@@ -432,13 +432,13 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
                 <button
                   key={tab.id}
                   onClick={() => setActiveProtocol(tab.id as any)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all flex-shrink-0 ${
+                  className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-medium transition-all w-full md:w-auto justify-start md:justify-center ${
                     isActive
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.2)] font-semibold'
                       : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
                   }`}
                 >
-                  <Icon className={`h-3.5 w-3.5 ${isActive ? 'text-emerald-400' : ''}`} />
+                  <Icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-emerald-400' : ''}`} />
                   <span>{tab.label}</span>
                 </button>
               );
