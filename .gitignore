@@ -16,3 +16,4 @@ scratch/
 *.png
 mail-config/
 deploy/mail-config/
+.idea/

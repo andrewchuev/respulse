@@ -91,7 +91,7 @@ tauri-build:
 	PATH="$(HOME)/.cargo/bin:$$PATH" npx @tauri-apps/cli build
 
 tauri-android-init:
-	PATH="$(HOME)/.cargo/bin:$$PATH" ANDROID_HOME="/mnt/c/Users/andre/AppData/Local/Android/Sdk" NDK_HOME="/mnt/c/Users/andre/AppData/Local/Android/Sdk/ndk/30.0.14904198" npx @tauri-apps/cli android init --ci --skip-targets-install
+	PATH="/home/dev/android-ndk-r26d/toolchains/llvm/prebuilt/linux-x86_64/bin:$(HOME)/.cargo/bin:$$PATH" ANDROID_HOME="/home/dev/android-sdk" NDK_HOME="/home/dev/android-ndk-r26d" npx @tauri-apps/cli android init --ci --skip-targets-install
 
 tauri-android-build:
-	PATH="$(HOME)/.cargo/bin:$$PATH" ANDROID_HOME="/mnt/c/Users/andre/AppData/Local/Android/Sdk" NDK_HOME="/mnt/c/Users/andre/AppData/Local/Android/Sdk/ndk/30.0.14904198" npx @tauri-apps/cli android build
+	PATH="/home/dev/android-ndk-r26d/toolchains/llvm/prebuilt/linux-x86_64/bin:$(HOME)/.cargo/bin:$$PATH" ANDROID_HOME="/home/dev/android-sdk" NDK_HOME="/home/dev/android-ndk-r26d" npx @tauri-apps/cli android build --debug --target x86_64 --apk

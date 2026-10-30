@@ -38,7 +38,8 @@ import {
   UserRole,
 } from '../types';
 
-const API_BASE = '/api';
+const isTauriEnv = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+const API_BASE = ((import.meta as unknown as { env?: { VITE_API_BASE?: string } }).env?.VITE_API_BASE) || (isTauriEnv ? 'https://respulse.online/api' : '/api');
 
 const TOKEN_KEY = 'respulse_jwt_token';
 

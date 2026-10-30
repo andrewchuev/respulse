@@ -19,8 +19,8 @@ use rate_limit::RateLimits;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::broadcast;
-use axum::http::{header, HeaderValue, Method};
-use tower_http::cors::{AllowOrigin, CorsLayer};
+use axum::http::{HeaderValue, Method};
+use tower_http::cors::{AllowOrigin, Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::{info, warn};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -123,30 +123,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-/// Builds a CORS layer from `CORS_ALLOWED_ORIGINS` (comma-separated origins); `None` when unset.
+/// Builds a CORS layer from `CORS_ALLOWED_ORIGINS` (comma-separated origins) or defaults for Tauri desktop & mobile clients.
 fn cors_layer_from_env() -> Option<CorsLayer> {
-    let raw = std::env::var("CORS_ALLOWED_ORIGINS").ok()?;
-    let origins: Vec<HeaderValue> = raw
-        .split(',')
-        .map(str::trim)
-        .filter(|o| !o.is_empty())
-        .filter_map(|o| match HeaderValue::from_str(o) {
-            Ok(v) => Some(v),
-            Err(_) => {
-                warn!("Ignoring invalid CORS origin: {}", o);
-                None
+    let mut origins: Vec<HeaderValue> = vec![
+        HeaderValue::from_static("http://tauri.localhost"),
+        HeaderValue::from_static("https://tauri.localhost"),
+        HeaderValue::from_static("tauri://localhost"),
+    ];
+
+    if let Ok(raw) = std::env::var("CORS_ALLOWED_ORIGINS") {
+        for o in raw.split(',').map(str::trim).filter(|o| !o.is_empty()) {
+            match HeaderValue::from_str(o) {
+                Ok(v) => origins.push(v),
+                Err(_) => warn!("Ignoring invalid CORS origin: {}", o),
             }
-        })
-        .collect();
-    if origins.is_empty() {
-        return None;
+        }
     }
 
     info!("CORS enabled for {} origin(s)", origins.len());
     Some(
         CorsLayer::new()
             .allow_origin(AllowOrigin::list(origins))
-            .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS])
-            .allow_headers([header::AUTHORIZATION, header::CONTENT_TYPE]),
+            .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS, Method::PATCH])
+            .allow_headers(Any),
     )
 }
