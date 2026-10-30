@@ -38,8 +38,11 @@ import { VerifyEmailPage } from './components/VerifyEmailPage';
 import { WayForPayCheckoutModal } from './components/WayForPayCheckoutModal';
 import { ManageSubscriptionModal } from './components/ManageSubscriptionModal';
 import { ExportImportModal } from './components/ExportImportModal';
+import { MobileAuthScreen } from './components/MobileAuthScreen';
+import { isTauri } from './lib/sshClient';
+import { isBiometricEnabledLocally, promptBiometricAuth } from './lib/biometrics';
 
-type View = 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo' | 'terms' | 'privacy' | 'refund' | 'admin' | 'verify-email';
+type View = 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo' | 'terms' | 'privacy' | 'refund' | 'admin' | 'verify-email' | 'login';
 
 export function App() {
   const [monitors, setMonitors] = useState<MonitorWithStats[]>([]);
@@ -74,6 +77,19 @@ export function App() {
       const view = params.get('view');
       const path = window.location.pathname.toLowerCase();
 
+      // In Tauri / mobile application flow, bypass promo completely
+      if (isTauri()) {
+        const token = getAuthToken();
+        if (token) {
+          if (view === 'channels' || path === '/channels') return 'channels';
+          if (view === 'incidents' || path === '/incidents') return 'incidents';
+          if (view === 'team' || path === '/team') return 'team';
+          if (view === 'status' || view === 'status-page' || path === '/status' || path === '/status-page') return 'status-page';
+          return 'dashboard';
+        }
+        return 'login';
+      }
+
       if (view === 'dashboard' || view === 'app' || path === '/app' || path === '/dashboard') return 'dashboard';
       if (view === 'channels' || path === '/channels') return 'channels';
       if (view === 'incidents' || path === '/incidents') return 'incidents';
@@ -87,7 +103,7 @@ export function App() {
       if (view === 'promo' || path === '/promo') return 'promo';
       if (path === '/' || path === '') return 'promo';
     } catch {}
-    return 'promo';
+    return isTauri() ? (getAuthToken() ? 'dashboard' : 'login') : 'promo';
   };
 
   const [currentView, setCurrentView] = useState<View>(getViewFromLocation);
@@ -98,13 +114,18 @@ export function App() {
   const changeView = (requested: View) => {
     let newView = requested;
     if (requiresAuth(newView) && !getAuthToken()) {
-      openAuth('login');
-      newView = 'promo';
+      if (isTauri()) {
+        newView = 'login';
+      } else {
+        openAuth('login');
+        newView = 'promo';
+      }
     }
     setCurrentView(newView);
     try {
       let targetPath = '/';
-      if (newView === 'promo') targetPath = '/';
+      if (newView === 'login') targetPath = '/login';
+      else if (newView === 'promo') targetPath = '/';
       else if (newView === 'dashboard') targetPath = '/app';
       else if (newView === 'status-page') targetPath = '/status';
       else targetPath = `/${newView}`;
@@ -118,7 +139,11 @@ export function App() {
   useEffect(() => {
     const handlePopState = () => {
       const view = getViewFromLocation();
-      setCurrentView(requiresAuth(view) && !getAuthToken() ? 'promo' : view);
+      if (requiresAuth(view) && !getAuthToken()) {
+        setCurrentView(isTauri() ? 'login' : 'promo');
+      } else {
+        setCurrentView(view);
+      }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -194,7 +219,7 @@ export function App() {
   const handleSignOut = () => {
     clearAuthSession();
     setCurrentUser(null);
-    changeView('promo');
+    changeView(isTauri() ? 'login' : 'promo');
   };
 
   const loadUserData = async () => {
@@ -225,25 +250,52 @@ export function App() {
   useEffect(() => {
     fetchAuthConfig().then(setAppConfig);
 
-    // Any 401 from the API means the session is gone: return to the landing page and ask to sign in.
+    // Any 401 from the API means the session is gone
     const unsubscribe = onUnauthorized(() => {
       setCurrentUser(null);
       setAvailableUsers([]);
-      changeView('promo');
-      openAuth('login');
+      if (isTauri()) {
+        changeView('login');
+      } else {
+        changeView('promo');
+        openAuth('login');
+      }
     });
     return unsubscribe;
   }, []);
 
   useEffect(() => {
-    if (!getAuthToken()) {
+    const token = getAuthToken();
+    if (!token) {
       setLoading(false);
-      // Deep link to a protected view without a session: bounce to the landing page and open sign-in.
-      if (requiresAuth(currentView)) changeView(currentView);
+      if (isTauri()) {
+        setCurrentView('login');
+      } else if (requiresAuth(currentView)) {
+        changeView(currentView);
+      }
       return;
     }
+
+    // In mobile, if biometric lock is turned on, ask for fingerprint verification on app launch
+    if (isTauri() && isBiometricEnabledLocally()) {
+      promptBiometricAuth('Вход в ResPulse по отпечатку пальца').then((verified) => {
+        if (verified) {
+          loadUserData();
+          loadData();
+          setCurrentView('dashboard');
+        } else {
+          setLoading(false);
+          setCurrentView('login');
+        }
+      });
+      return;
+    }
+
     loadUserData();
     loadData();
+    if (isTauri()) {
+      setCurrentView('dashboard');
+    }
   }, []);
 
   // The operator link only appears for emails the server lists in ADMIN_EMAILS.
@@ -370,6 +422,15 @@ export function App() {
 
   if (currentView === 'terms' || currentView === 'privacy' || currentView === 'refund') {
     return <LegalPage kind={currentView} />;
+  }
+
+  if (currentView === 'login' || (isTauri() && (currentView === 'promo' || !getAuthToken()))) {
+    return (
+      <MobileAuthScreen
+        demoMode={demoMode}
+        onSuccess={handleAuthSuccess}
+      />
+    );
   }
 
   if (currentView === 'status-page') {

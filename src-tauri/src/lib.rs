@@ -8,6 +8,7 @@ pub fn run() {
         .level(log::LevelFilter::Info)
         .build(),
     )
+    .plugin(tauri_plugin_biometric::init())
     .invoke_handler(tauri::generate_handler![
       ssh::ssh_test_connection,
       ssh::ssh_execute_command,

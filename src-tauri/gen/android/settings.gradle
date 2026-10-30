@@ -1,3 +1,6 @@
 include ':app'
 
+include ':tauri-plugin-biometric'
+project(':tauri-plugin-biometric').projectDir = new File("/home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-plugin-biometric-2.5.0/android")
+
 apply from: 'tauri.settings.gradle'

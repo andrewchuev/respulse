@@ -1,7 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Activity, Plus, Radio, Globe, Bell, AlertTriangle, Users, ChevronDown, Check, Sparkles, LogOut, KeyRound, CreditCard, LayoutDashboard, FileJson, Menu, X, Shield } from 'lucide-react';
+import { Activity, Plus, Radio, Globe, Bell, AlertTriangle, Users, ChevronDown, Check, Sparkles, LogOut, KeyRound, CreditCard, LayoutDashboard, FileJson, Menu, X, Shield, Fingerprint } from 'lucide-react';
 import { Button } from './ui/button';
 import { UserProfile, UserRole } from '../types';
+import { isTauri } from '../lib/sshClient';
+import { getBiometricStatus, isBiometricEnabledLocally, promptBiometricAuth, setBiometricEnabledLocally } from '../lib/biometrics';
+import { getAuthToken } from '../api/client';
 
 interface HeaderProps {
   currentView: 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo' | 'admin';
@@ -38,7 +41,28 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [hasBioHardware, setHasBioHardware] = useState(false);
+  const [isBioEnabled, setIsBioEnabled] = useState(isBiometricEnabledLocally);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isTauri()) {
+      getBiometricStatus().then((s) => setHasBioHardware(s.isAvailable));
+    }
+  }, []);
+
+  const handleToggleBiometric = async () => {
+    if (isBioEnabled) {
+      setBiometricEnabledLocally(false);
+      setIsBioEnabled(false);
+    } else {
+      const ok = await promptBiometricAuth('Подтвердите отпечаток для включения быстрого входа');
+      if (ok) {
+        setBiometricEnabledLocally(true, getAuthToken());
+        setIsBioEnabled(true);
+      }
+    }
+  };
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -94,7 +118,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+    <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70 pt-[env(safe-area-inset-top,0px)]">
       <div className="w-full max-w-[1720px] mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 lg:gap-4">
         {/* Zone 1 (Left): Brand Identity */}
         <div className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group shrink-0" onClick={() => setCurrentView('dashboard')}>
@@ -172,17 +196,19 @@ export const Header: React.FC<HeaderProps> = ({
             <Globe className="h-3.5 w-3.5 shrink-0" />
             <span><span className="hidden xl:inline">Public </span>Status</span>
           </button>
-          <button
-            onClick={() => setCurrentView('promo')}
-            className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              currentView === 'promo'
-                ? 'bg-background text-foreground shadow-sm border border-border/60 text-amber-300'
-                : 'text-muted-foreground hover:text-amber-300'
-            }`}
-          >
-            <Sparkles className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-            <span><span className="hidden xl:inline">Overview & </span>Promo</span>
-          </button>
+          {!isTauri() && (
+            <button
+              onClick={() => setCurrentView('promo')}
+              className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                currentView === 'promo'
+                  ? 'bg-background text-foreground shadow-sm border border-border/60 text-amber-300'
+                  : 'text-muted-foreground hover:text-amber-300'
+              }`}
+            >
+              <Sparkles className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+              <span><span className="hidden xl:inline">Overview & </span>Promo</span>
+            </button>
+          )}
           {isAdmin && (
             <button
               onClick={() => setCurrentView('admin')}
@@ -368,6 +394,30 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
                 )}
 
+                {isTauri() && hasBioHardware && (
+                  <div className="p-2 border-t border-white/5">
+                    <button
+                      type="button"
+                      onClick={handleToggleBiometric}
+                      className="w-full flex items-center justify-between p-2 rounded-xl text-xs bg-slate-900/60 hover:bg-slate-800/80 border border-slate-700/50 transition-all text-slate-300"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Fingerprint className="h-4 w-4 text-emerald-400" />
+                        <span>Вход по отпечатку</span>
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold ${
+                          isBioEnabled
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                            : 'bg-slate-700/40 text-slate-400 border border-slate-600/30'
+                        }`}
+                      >
+                        {isBioEnabled ? 'ВКЛ' : 'ВЫКЛ'}
+                      </span>
+                    </button>
+                  </div>
+                )}
+
                 <div className="p-1.5 pt-2 flex items-center justify-between border-t border-white/5">
                   <button
                     type="button"
@@ -519,20 +569,39 @@ export const Header: React.FC<HeaderProps> = ({
               <span>Public Status</span>
             </button>
 
-            <button
-              onClick={() => {
-                setCurrentView('promo');
-                setIsMobileMenuOpen(false);
-              }}
-              className={`flex items-center gap-2 p-2.5 rounded-lg transition-colors text-left ${
-                currentView === 'promo'
-                  ? 'bg-emerald-500/15 border border-emerald-500/30 text-white font-semibold'
-                  : 'bg-secondary/30 hover:bg-secondary/60 text-slate-300'
-              }`}
-            >
-              <Sparkles className="h-4 w-4 text-amber-400 shrink-0" />
-              <span>Overview & Promo</span>
-            </button>
+            {!isTauri() && (
+              <button
+                onClick={() => {
+                  setCurrentView('promo');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`flex items-center gap-2 p-2.5 rounded-lg transition-colors text-left ${
+                  currentView === 'promo'
+                    ? 'bg-emerald-500/15 border border-emerald-500/30 text-white font-semibold'
+                    : 'bg-secondary/30 hover:bg-secondary/60 text-slate-300'
+                }`}
+              >
+                <Sparkles className="h-4 w-4 text-amber-400 shrink-0" />
+                <span>Overview & Promo</span>
+              </button>
+            )}
+
+            {isTauri() && hasBioHardware && (
+              <button
+                onClick={() => {
+                  handleToggleBiometric();
+                }}
+                className="flex items-center justify-between p-2.5 rounded-lg bg-emerald-950/20 border border-emerald-500/30 text-left text-xs text-slate-200"
+              >
+                <span className="flex items-center gap-2">
+                  <Fingerprint className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <span>Вход по отпечатку</span>
+                </span>
+                <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold ${isBioEnabled ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-700/40 text-slate-400'}`}>
+                  {isBioEnabled ? 'ВКЛ' : 'ВЫКЛ'}
+                </span>
+              </button>
+            )}
 
             {isAdmin && (
               <button
