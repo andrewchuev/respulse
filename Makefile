@@ -1,4 +1,4 @@
-.PHONY: up down restart logs build ps seed clean release deploy deploy-direct backup-pull tauri-dev tauri-build tauri-android-init tauri-android-build
+.PHONY: up down restart logs build ps seed clean release deploy deploy-direct backup-pull tauri-dev tauri-build tauri-android-init tauri-android-build tauri-android-release tauri-android-bundle
 
 up:
 	docker compose up -d
@@ -95,3 +95,12 @@ tauri-android-init:
 
 tauri-android-build:
 	PATH="/home/dev/android-ndk-r26d/toolchains/llvm/prebuilt/linux-x86_64/bin:$(HOME)/.cargo/bin:$$PATH" ANDROID_HOME="/home/dev/android-sdk" NDK_HOME="/home/dev/android-ndk-r26d" npx @tauri-apps/cli android build --debug --target x86_64 --apk
+
+ANDROID_TARGET ?= aarch64
+
+tauri-android-release:
+	PATH="/home/dev/android-ndk-r26d/toolchains/llvm/prebuilt/linux-x86_64/bin:$(HOME)/.cargo/bin:$$PATH" ANDROID_HOME="/home/dev/android-sdk" NDK_HOME="/home/dev/android-ndk-r26d" npx @tauri-apps/cli android build --target $(ANDROID_TARGET) --apk
+
+tauri-android-bundle:
+	PATH="/home/dev/android-ndk-r26d/toolchains/llvm/prebuilt/linux-x86_64/bin:$(HOME)/.cargo/bin:$$PATH" ANDROID_HOME="/home/dev/android-sdk" NDK_HOME="/home/dev/android-ndk-r26d" npx @tauri-apps/cli android build --target $(ANDROID_TARGET) --aab
+
