@@ -8,7 +8,6 @@ import {
   DEFAULT_APP_CONFIG,
   fetchAdminAccess,
   fetchAuthConfig,
-  fetchAvailableUsers,
   fetchCurrentUser,
   fetchMonitors,
   fetchStats,
@@ -16,7 +15,6 @@ import {
   onUnauthorized,
   pauseMonitor,
   resumeMonitor,
-  switchUser,
   triggerTest,
 } from './api/client';
 import { Header } from './components/Header';
@@ -152,13 +150,11 @@ export function App() {
 
   // Auth & RBAC State
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  const [availableUsers, setAvailableUsers] = useState<UserProfile[]>([]);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
   const [pendingUpgradeAfterAuth, setPendingUpgradeAfterAuth] = useState(false);
   const [appConfig, setAppConfig] = useState<AppConfig>(DEFAULT_APP_CONFIG);
   const [isAdmin, setIsAdmin] = useState(false);
-  const demoMode = appConfig.demo_mode;
   const billingEnabled = appConfig.billing_enabled;
   const planKey = currentUser?.team_plan === 'PRO' ? 'PRO' : 'FREE';
   // Checkout is hidden while the service is a free beta.
@@ -224,12 +220,7 @@ export function App() {
 
   const loadUserData = async () => {
     try {
-      const [user, users] = await Promise.all([
-        fetchCurrentUser(),
-        fetchAvailableUsers(),
-      ]);
-      setCurrentUser(user);
-      setAvailableUsers(users);
+      setCurrentUser(await fetchCurrentUser());
     } catch (e) {
       console.warn('Failed to load user info', e);
     }
@@ -253,7 +244,6 @@ export function App() {
     // Any 401 from the API means the session is gone
     const unsubscribe = onUnauthorized(() => {
       setCurrentUser(null);
-      setAvailableUsers([]);
       if (isTauri()) {
         changeView('login');
       } else {
@@ -355,16 +345,6 @@ export function App() {
     return () => unsubscribe();
   }, [currentUser?.id]);
 
-  const handleSwitchUser = async (email: string) => {
-    try {
-      const switched = await switchUser(email);
-      setCurrentUser(switched);
-      await loadData();
-    } catch (e) {
-      console.error('Failed to switch user:', e);
-    }
-  };
-
   const handlePause = async (id: string) => {
     try {
       const updated = await pauseMonitor(id);
@@ -427,7 +407,6 @@ export function App() {
   if (currentView === 'login' || (isTauri() && (currentView === 'promo' || !getAuthToken()))) {
     return (
       <MobileAuthScreen
-        demoMode={demoMode}
         onSuccess={handleAuthSuccess}
       />
     );
@@ -456,7 +435,6 @@ export function App() {
                 : 'Create your workspace account to activate ResPulse Pro ($16/mo)'
               : undefined
           }
-          demoMode={demoMode}
           onSuccess={handleAuthSuccess}
         />
       </>
@@ -493,7 +471,6 @@ export function App() {
                 : 'Create your workspace account to activate ResPulse Pro ($16/mo)'
               : undefined
           }
-          demoMode={demoMode}
           onSuccess={handleAuthSuccess}
         />
       </>
@@ -514,10 +491,7 @@ export function App() {
         onOpenAddModal={() => setIsAddModalOpen(true)}
         totalActive={monitors.filter((m) => !m.is_paused).length}
         currentUser={currentUser}
-        availableUsers={availableUsers}
-        demoMode={demoMode}
         isAdmin={isAdmin}
-        onSwitchUser={handleSwitchUser}
         onOpenAuth={openAuth}
         onSignOut={handleSignOut}
         onOpenUpgradeModal={openUpgrade}
@@ -627,7 +601,6 @@ export function App() {
               : 'Create your workspace account to activate ResPulse Pro ($16/mo)'
             : undefined
         }
-        demoMode={demoMode}
         onSuccess={handleAuthSuccess}
       />
 

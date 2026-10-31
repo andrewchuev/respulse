@@ -140,9 +140,6 @@
   * Transparent visual matrix displaying exact capabilities across 11 granular permissions (monitors, bulk actions, alerts, incidents, post-mortems, team management).
 * **Team & Organization Workspace:**
   * Dedicated **Team & RBAC** management view with member rosters, role dropdown selectors, member deletion, and *Invite Member* modal dialogs.
-* **Instant B2B Demo Persona Switcher (`DEMO_MODE=true` only):**
-  * Profile dropdown in the top header allows instant switching between pre-seeded enterprise accounts (Owner, Admin, Engineer, Viewer) for live stakeholder demonstrations.
-  * Disabled by default: without `DEMO_MODE` the switcher, the 1-click sandbox login and the seeded demo passwords are all off.
 * **Context-Aware UI Safeguards:**
   * Prominent yellow *"Viewer Mode (Read-Only)"* banner automatically alerts non-privileged users.
   * Interactive action buttons (Add Monitor, Declare Incident, Add Channel, Pause/Resume, Delete) are gracefully disabled with informative tooltips explaining role requirements.
@@ -176,7 +173,7 @@
   * **Password Hashing:** Passwords securely hashed with `bcrypt` (10 rounds).
   * **Cryptographically Signed JWT Tokens:** Stateless JWT tokens issued via `jsonwebtoken` (HS256) valid for 7 days, carrying identity, organization ID, and role.
   * **Login Endpoint (`POST /api/auth/login`):** Validates credentials, updates login timestamp, and issues JWT tokens.
-  * **Glassmorphic Auth Modal (`AuthModal.tsx`):** Seamless sign in / registration dialog with brand glow, error alerts, password reveal, and 1-click sandbox access.
+  * **Glassmorphic Auth Modal (`AuthModal.tsx`):** Seamless sign in / registration dialog with brand glow, error alerts, and password reveal.
   * **Strict Authentication:** Every API call except the public ones (health, status page, badges, heartbeat pings, `/api/auth/*`) requires `Authorization: Bearer <JWT>`; missing, forged or expired tokens get `401`. The server refuses to start without a `JWT_SECRET` of at least 32 characters.
   * **Abuse Protection:** `POST /api/auth/login` allows 10 attempts per IP and then one every 6 seconds, `POST /api/auth/register` 3 signups per IP and then one every 20 minutes; excess requests get `429` with `Retry-After`. The client IP comes from the last `X-Forwarded-For` entry set by the reverse proxy, and only when the TCP peer is an internal address.
   * **SSRF Guard:** Monitor targets and webhook URLs may not resolve to private, loopback, link-local, CGNAT, multicast or reserved ranges (IPv4, IPv6 and IPv6-embedded IPv4). Hostnames are re-checked at connect time (DNS rebinding), redirects are vetted per hop, and creating such a monitor or channel returns `400`. Set `ALLOW_PRIVATE_TARGETS=true` for self-hosted setups that monitor internal services.
@@ -226,7 +223,7 @@ respulse/
 │       ├── models.rs            # Core data types, DTOs & permission models
 │       ├── api/                 # REST & WebSocket handlers
 │       │   ├── mod.rs
-│       │   ├── auth.rs          # Current user, demo user switcher & available personas
+│       │   ├── auth.rs          # Registration, login, current user & email verification
 │       │   ├── team.rs          # Multi-user team management & member invitations
 │       │   ├── monitors.rs      # Monitor CRUD, pause/resume, test (RBAC-guarded)
 │       │   ├── heartbeat.rs     # Push heartbeat endpoint, slug routing & auto-provisioning
@@ -262,7 +259,7 @@ respulse/
 │       ├── App.tsx              # Root component & WebSocket listener
 │       ├── api/client.ts        # Fetch client & WebSocket connection
 │       ├── components/          # UI components
-│       │   ├── Header.tsx       # Navigation, user profile & persona switcher dropdown
+│       │   ├── Header.tsx       # Navigation & user profile dropdown
 │       │   ├── StatsOverview.tsx# Glowing KPI metrics & system health cards
 │       │   ├── SkeletonDashboard.tsx # Shimmering zero-layout-shift loading state
 │       │   ├── MonitorList.tsx  # Multi-select, bulk operations & high-density view
@@ -318,18 +315,8 @@ Access the application locally via HTTPS:
 
 *(TLS certificates are automatically provisioned and managed by Caddy's internal local CA).*
 
-### 4. Pre-Seeded Enterprise Demo Personas
-ResPulse comes pre-configured with a default enterprise organization (`Acme Global Operations`) and four seeded demo accounts to showcase the RBAC engine without setup overhead:
-
-| Avatar | Name | Email | Role | Capabilities |
-| :---: | :--- | :--- | :---: | :--- |
-| 👑 | **Alice Vance** | `alice@respulse.internal` | `OWNER` | Full enterprise control, team invitations, role changes, organization deletion |
-| 🛡️ | **Bob Chen** | `bob@respulse.internal` | `ADMIN` | Infrastructure, alert channels, incident management & member invitations |
-| 🛠️ | **Charlie Davis** | `charlie@respulse.internal` | `ENGINEER` | Synthetic monitoring, on-demand probes, RCA post-mortems, bulk actions |
-| 👁️ | **Dana Scully** | `dana@respulse.internal` | `VIEWER` | Read-only dashboards, latency charts, incident history (mutations return `403`) |
-
-> [!TIP]
-> Demo personas are only available when the backend runs with `DEMO_MODE=true` (the default in the local `docker-compose.yml`, off in `deploy/`). Use the profile dropdown in the top-right header to switch between them in one click and observe the dynamic UI changes and server permission enforcement. The seeded accounts accept the demo password `password123` in this mode only.
+### 4. Create an Account
+Register from the sign-in dialog; the development stack behaves exactly like production (no demo accounts, no passwordless login, SSRF guard on).
 
 ---
 
@@ -352,7 +339,7 @@ The server `.env` needs `POSTGRES_*`, `JWT_SECRET`, `FASTSPRING_WEBHOOK_SECRET` 
 
 ## 📊 Operator Report
 
-Emails listed in `ADMIN_EMAILS` see a **Report** tab (`/admin`) with aggregate numbers to judge whether the service is worth developing: signups per day, the activation funnel (signed up → created a monitor → connected an alert channel → active in the last 7 days), weekly cohorts, demand signals (teams near or at their limits, teams using fast probes), monitors by type and server load (checks per day, probes per second, database size). It shows team names but never user emails, and excludes the seeded demo organization.
+Emails listed in `ADMIN_EMAILS` see a **Report** tab (`/admin`) with aggregate numbers to judge whether the service is worth developing: signups per day, the activation funnel (signed up → created a monitor → connected an alert channel → active in the last 7 days), weekly cohorts, demand signals (teams near or at their limits, teams using fast probes), monitors by type and server load (checks per day, probes per second, database size). It shows team names but never user emails, and excludes the system organization.
 
 ---
 
@@ -378,7 +365,7 @@ The `VERSION` file is the single source of truth (semver). `node scripts/version
 | `make backup-pull` | Copy the server's daily DB dumps to `~/backups/respulse` (off-host copy) |
 | `make deploy-direct` | Registry-free alternative: build locally, stream the images to the server over SSH (`docker save \| ssh docker load`) and roll out |
 | `make deploy` | Copy `deploy/` configs to the server, set `IMAGE_TAG`, `docker compose pull` and `up -d` (`TAG=<sha>` rolls back to an older release) |
-| `make seed` | Log in (`SEED_EMAIL`/`SEED_PASSWORD`, default demo owner) and populate the database with sample monitors |
+| `make seed` | Log in (`SEED_EMAIL`/`SEED_PASSWORD`, required) and populate the database with sample monitors |
 
 ---
 
@@ -394,14 +381,12 @@ All API routes are served under the `/api` prefix. Authenticated routes require 
 | `POST` | `/api/auth/resend-verification` | Send a fresh confirmation link (`{"email": ...}`); always answers `200` so addresses cannot be probed, rate-limited per IP |
 | `POST` | `/api/auth/login` | Authenticate with email/password and obtain signed JWT token |
 | `GET` | `/api/auth/me` | Current authenticated user profile, team details & permissions (Bearer JWT) |
-| `GET` | `/api/auth/config` | Public capabilities used by the UI: `demo_mode`, `billing_enabled` and the plan limits |
-| `GET` | `/api/auth/users` | List the members of the caller's team (persona switcher in demo mode) |
-| `POST` | `/api/auth/switch-user` | Passwordless login as a seeded demo persona (`DEMO_MODE=true` only, otherwise `404`) |
+| `GET` | `/api/auth/config` | Public capabilities used by the UI: `billing_enabled` and the plan limits |
 | `GET` | `/api/team/members` | List all team members of the active enterprise organization |
 | `POST` | `/api/team/members` | Invite a new team member with role (`OWNER`/`ADMIN` required) |
 | `PUT` | `/api/team/members/:id/role` | Update a team member's role (`OWNER`/`ADMIN` required) |
 | `DELETE` | `/api/team/members/:id` | Remove a member from the team (`OWNER`/`ADMIN` required) |
-| `POST`/`PUT` | `/api/team/plan` | Change plan (`OWNER`/`ADMIN`); downgrade to `FREE` always, upgrade to `PRO` only in demo mode (otherwise use checkout) |
+| `POST`/`PUT` | `/api/team/plan` | Change plan (`OWNER`/`ADMIN`); downgrade to `FREE` always, upgrade to `PRO` only through checkout |
 | `GET` | `/api/payments/fastspring/config` | Get FastSpring checkout configuration ($8/mo) for store `reslab` |
 | `POST` | `/api/payments/fastspring/confirm` | Report whether the Pro upgrade has landed (`200` if PRO, `409` while the webhook is pending); never upgrades by itself |
 | `POST` | `/api/payments/fastspring/webhook` | FastSpring webhook; requires a valid `X-FS-Signature` HMAC-SHA256 (base64) over the raw body (`503` if `FASTSPRING_WEBHOOK_SECRET` is unset). Events are deduplicated by event id, only the `respulse-pro-plan` product counts, and the team is matched by stored subscription id, checkout `team_id` tag/`referrer`, or the buyer's email (owner/admin). `order.completed`, `subscription.activated`, `subscription.charge.completed` keep the team on Pro; `subscription.canceled` marks it canceled (Pro until the period ends); `subscription.deactivated` drops it to Free; `return.created` (subscribe to it in FastSpring) marks the original payment `PARTIALLY_REFUNDED`/`REFUNDED` and tracks the refunded amount without touching the plan. Failures answer `5xx` so FastSpring retries |
@@ -452,13 +437,12 @@ All API routes are served under the `/api` prefix. Authenticated routes require 
 | `PORT` | `8080` | Port on which the Rust Axum API listens |
 | `RUST_LOG` | `respulse_api=debug,tower_http=info` | Logging filter level |
 | `JWT_SECRET` | *required* | HS256 signing key, at least 32 characters (`openssl rand -hex 32`); the server exits if missing or short |
-| `DEMO_MODE` | `false` | Enables demo persona switching, 1-click sandbox login and seeded demo passwords |
 | `BILLING_ENABLED` | `false` | Shows prices, upgrade buttons and checkout; leave off during the free open beta |
 | `REQUIRE_EMAIL_VERIFICATION` | `false` | New signups must confirm their email (single-use link, valid 24 h) before they can sign in; needs the `SMTP_*` settings, the server refuses to start without them |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_TLS` | *unset* / provider default / `starttls` | SMTP relay for outgoing email; `SMTP_TLS` is `starttls` (587), `tls` (implicit TLS, 465) or `none` (local test servers only) |
 | `SMTP_USERNAME` / `SMTP_PASSWORD` / `SMTP_FROM` | *unset* | SMTP credentials and the sender address, e.g. `ResPulse <noreply@respulse.online>` |
 | `APP_URL` | `http://localhost:8080` | Public base URL used in emailed links |
-| `ADMIN_EMAILS` | *unset* | Comma-separated emails that can open the operator report at `/admin` (aggregates only, demo org excluded) |
+| `ADMIN_EMAILS` | *unset* | Comma-separated emails that can open the operator report at `/admin` (aggregates only, system org excluded) |
 | `ALLOW_PRIVATE_TARGETS` | `false` | Lets monitors and webhooks reach private, loopback and link-local addresses; leave off on a public server (SSRF guard) |
 | `CORS_ALLOWED_ORIGINS` | *unset* | Comma-separated origins allowed to call the API cross-origin; unset means same-origin only (the bundled SPA needs nothing) |
 | `RETENTION_FREE_DAYS` / `RETENTION_PRO_DAYS` | `30` / `90` | How long probe history (`check_results`) is kept per plan; pruned daily in batches |

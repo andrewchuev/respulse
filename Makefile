@@ -25,17 +25,18 @@ build:
 ps:
 	docker compose ps
 
-SEED_EMAIL ?= alice@respulse.internal
-SEED_PASSWORD ?= password123
+SEED_EMAIL ?=
+SEED_PASSWORD ?=
 SEED_URL ?= https://respulse.wsl.local
 
-# Logs in first: the API no longer accepts anonymous requests. The demo password only works with DEMO_MODE=true.
+# Logs in first: the API no longer accepts anonymous requests. Usage: make seed SEED_EMAIL=you@example.com SEED_PASSWORD=...
 seed:
+	@test -n "$(SEED_EMAIL)" -a -n "$(SEED_PASSWORD)" || { echo "Set SEED_EMAIL and SEED_PASSWORD"; exit 1; }
 	@echo "Seeding initial monitors..."
 	@TOKEN=$$(curl -sk -X POST $(SEED_URL)/api/auth/login \
 		-H "Content-Type: application/json" \
 		-d '{"email":"$(SEED_EMAIL)","password":"$(SEED_PASSWORD)"}' | sed -n 's/.*"token":"\([^"]*\)".*/\1/p'); \
-	if [ -z "$$TOKEN" ]; then echo "Login failed: check SEED_EMAIL / SEED_PASSWORD (demo accounts need DEMO_MODE=true)"; exit 1; fi; \
+	if [ -z "$$TOKEN" ]; then echo "Login failed: check SEED_EMAIL / SEED_PASSWORD"; exit 1; fi; \
 	post() { curl -sk -X POST $(SEED_URL)/api/monitors -H "Authorization: Bearer $$TOKEN" -H "Content-Type: application/json" -d "$$1" > /dev/null && echo "✔ $$2"; }; \
 	post '{"name":"Google Search","url":"https://www.google.com","monitor_type":"HTTP","interval_seconds":30,"timeout_seconds":5}' "Google Search monitor created"; \
 	post '{"name":"GitHub API","url":"https://api.github.com","monitor_type":"HTTP","interval_seconds":30,"timeout_seconds":5}' "GitHub API monitor created"; \

@@ -16,12 +16,11 @@ import {
   KeyRound,
   Lock,
   Mail,
-  Shield,
   Sparkles,
   User,
   Users,
 } from 'lucide-react';
-import { loginUser, registerUser, resendVerification, switchUser } from '../api/client';
+import { loginUser, registerUser, resendVerification } from '../api/client';
 import { UserProfile } from '../types';
 
 interface AuthModalProps {
@@ -29,7 +28,6 @@ interface AuthModalProps {
   onClose: () => void;
   initialMode?: 'login' | 'register';
   subtitle?: string;
-  demoMode?: boolean;
   onSuccess: (user: UserProfile) => void;
 }
 
@@ -38,7 +36,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   initialMode = 'login',
   subtitle,
-  demoMode = false,
   onSuccess,
 }) => {
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
@@ -123,20 +120,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       } else {
         setError(err?.message || 'Authentication failed. Please check your credentials.');
       }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleQuickDemoLogin = async (demoEmail: string) => {
-    setError(null);
-    setLoading(true);
-    try {
-      const user = await switchUser(demoEmail);
-      onSuccess(user);
-      onClose();
-    } catch (err: any) {
-      setError(err?.message || 'Demo login failed');
     } finally {
       setLoading(false);
     }
@@ -303,11 +286,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <Lock className="h-3.5 w-3.5 text-emerald-400" />
                 Password
               </label>
-              {mode === 'login' && demoMode && (
-                <span className="text-[11px] text-slate-500 hover:text-emerald-400 cursor-pointer">
-                  Demo password: <code className="text-emerald-400 font-mono">password123</code>
-                </span>
-              )}
             </div>
             <div className="relative">
               <Input
@@ -353,51 +331,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             )}
           </Button>
         </form>
-
-        {/* Quick Demo Personas Login */}
-        {demoMode && (
-        <div className="mt-5 pt-4 border-t border-white/5 space-y-2.5">
-          <div className="flex items-center justify-between text-[11px] text-slate-400 font-medium">
-            <span className="flex items-center gap-1.5">
-              <Shield className="h-3.5 w-3.5 text-cyan-400" />
-              Instant Sandbox Access
-            </span>
-            <span className="text-slate-500">1-click demo personas</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => handleQuickDemoLogin('alice@respulse.internal')}
-              className="flex items-center gap-2 p-2 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800/80 text-left transition-all group"
-            >
-              <div className="h-7 w-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs flex-shrink-0 group-hover:scale-105">
-                👑
-              </div>
-              <div className="truncate">
-                <div className="font-semibold text-white truncate text-[11px]">Alice (Owner)</div>
-                <div className="text-[10px] text-slate-500 font-mono">Full Control</div>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => handleQuickDemoLogin('charlie@respulse.internal')}
-              className="flex items-center gap-2 p-2 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800/80 text-left transition-all group"
-            >
-              <div className="h-7 w-7 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xs flex-shrink-0 group-hover:scale-105">
-                🛠️
-              </div>
-              <div className="truncate">
-                <div className="font-semibold text-white truncate text-[11px]">Charlie (Engineer)</div>
-                <div className="text-[10px] text-slate-500 font-mono">Ops & Incidents</div>
-              </div>
-            </button>
-          </div>
-        </div>
-        )}
       </DialogContent>
     </Dialog>
   );

@@ -642,13 +642,7 @@ export const AdminPanel: React.FC = () => {
                 <div className="p-3 rounded-lg border border-border/60 bg-background/40">
                   <div className="text-muted-foreground">Private Targets (SSRF guard):</div>
                   <div className="text-white font-bold mt-1">
-                    {systemStatus.allow_private_targets ? 'ALLOWED (Local Dev)' : 'BLOCKED (Production)'}
-                  </div>
-                </div>
-                <div className="p-3 rounded-lg border border-border/60 bg-background/40">
-                  <div className="text-muted-foreground">Demo Mode:</div>
-                  <div className="text-white font-bold mt-1">
-                    {systemStatus.demo_mode ? 'ENABLED (Persona Switch)' : 'DISABLED'}
+                    {systemStatus.allow_private_targets ? 'ALLOWED' : 'BLOCKED'}
                   </div>
                 </div>
                 <div className="p-3 rounded-lg border border-border/60 bg-background/40">

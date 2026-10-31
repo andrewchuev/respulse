@@ -28,7 +28,6 @@ services:
       APP_USER_AGENT: "ResPulse/1.0 (+https://respulse.online)"
       RUST_LOG: respulse_api=info,tower_http=info
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
-      DEMO_MODE: ${DEMO_MODE:-false}
       ALLOW_PRIVATE_TARGETS: ${ALLOW_PRIVATE_TARGETS:-false}
       BILLING_ENABLED: ${BILLING_ENABLED:-false}
       ADMIN_EMAILS: ${ADMIN_EMAILS:-}

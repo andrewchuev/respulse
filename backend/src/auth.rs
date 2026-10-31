@@ -27,8 +27,6 @@ pub struct Claims {
 pub struct AuthConfig {
     encoding_key: EncodingKey,
     decoding_key: DecodingKey,
-    /// Enables passwordless persona switching and the seeded demo passwords.
-    pub demo_mode: bool,
 }
 
 impl AuthConfig {
@@ -36,13 +34,10 @@ impl AuthConfig {
     pub fn from_env() -> Result<Self, String> {
         let secret = std::env::var("JWT_SECRET")
             .map_err(|_| "JWT_SECRET must be set".to_string())?;
-        let demo_mode = std::env::var("DEMO_MODE")
-            .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
-            .unwrap_or(false);
-        Self::new(&secret, demo_mode)
+        Self::new(&secret)
     }
 
-    pub fn new(secret: &str, demo_mode: bool) -> Result<Self, String> {
+    pub fn new(secret: &str) -> Result<Self, String> {
         if secret.len() < MIN_JWT_SECRET_LEN {
             return Err(format!(
                 "JWT_SECRET must be at least {} characters long",
@@ -52,7 +47,6 @@ impl AuthConfig {
         Ok(Self {
             encoding_key: EncodingKey::from_secret(secret.as_bytes()),
             decoding_key: DecodingKey::from_secret(secret.as_bytes()),
-            demo_mode,
         })
     }
 
@@ -75,15 +69,9 @@ impl AuthConfig {
         decode::<Claims>(token, &self.decoding_key, &Validation::default()).map(|data| data.claims)
     }
 
-    /// Seeded demo accounts carry a placeholder hash and accept well-known passwords only in demo mode.
+    /// Only bcrypt hashes verify; placeholder hashes of legacy seeded accounts never match.
     pub fn verify_password(&self, password: &str, hash: &str) -> bool {
-        if hash.starts_with("$2") {
-            bcrypt::verify(password, hash).unwrap_or(false)
-        } else if self.demo_mode && (hash == "pbkdf2:demo" || hash.starts_with("demo:")) {
-            password == "password123" || password == "respulse2026" || password == "admin123" || password == "demo"
-        } else {
-            false
-        }
+        hash.starts_with("$2") && bcrypt::verify(password, hash).unwrap_or(false)
     }
 }
 
@@ -233,12 +221,12 @@ mod tests {
 
     #[test]
     fn rejects_short_secret() {
-        assert!(AuthConfig::new("too-short", false).is_err());
+        assert!(AuthConfig::new("too-short").is_err());
     }
 
     #[test]
     fn jwt_round_trip() {
-        let config = AuthConfig::new(SECRET, false).unwrap();
+        let config = AuthConfig::new(SECRET).unwrap();
         let user = sample_user();
         let token = config.create_jwt(&user, "VIEWER").unwrap();
         let claims = config.verify_jwt(&token).unwrap();
@@ -247,17 +235,15 @@ mod tests {
 
     #[test]
     fn jwt_signed_with_other_secret_is_rejected() {
-        let issuer = AuthConfig::new("another-secret-that-is-long-enough-456", false).unwrap();
-        let verifier = AuthConfig::new(SECRET, false).unwrap();
+        let issuer = AuthConfig::new("another-secret-that-is-long-enough-456").unwrap();
+        let verifier = AuthConfig::new(SECRET).unwrap();
         let token = issuer.create_jwt(&sample_user(), "OWNER").unwrap();
         assert!(verifier.verify_jwt(&token).is_err());
     }
 
     #[test]
-    fn demo_passwords_require_demo_mode() {
-        let off = AuthConfig::new(SECRET, false).unwrap();
-        let on = AuthConfig::new(SECRET, true).unwrap();
-        assert!(!off.verify_password("password123", "pbkdf2:demo"));
-        assert!(on.verify_password("password123", "pbkdf2:demo"));
+    fn placeholder_hashes_never_verify() {
+        let config = AuthConfig::new(SECRET).unwrap();
+        assert!(!config.verify_password("password123", "pbkdf2:demo"));
     }
 }

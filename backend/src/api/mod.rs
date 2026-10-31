@@ -28,8 +28,6 @@ pub fn create_router() -> Router<AppState> {
         .route("/auth/resend-verification", axum::routing::post(auth::resend_verification))
         .route("/auth/config", get(auth::auth_config))
         .route("/auth/me", get(auth::get_current_user))
-        .route("/auth/users", get(auth::list_available_users))
-        .route("/auth/switch-user", axum::routing::post(auth::switch_user))
         // Team Management & RBAC
         .route("/team/members", get(team::list_team_members).post(team::invite_member))
         .route("/team/members/:id/role", axum::routing::put(team::update_member_role))

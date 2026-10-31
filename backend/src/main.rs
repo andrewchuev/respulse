@@ -60,9 +60,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     limits.spawn_cleanup();
 
     let auth = Arc::new(AuthConfig::from_env()?);
-    if auth.demo_mode {
-        warn!("DEMO_MODE is enabled: passwordless persona login and demo passwords are active");
-    }
 
     let settings = Arc::new(AppSettings::from_env());
     let mailer = mail::Mailer::from_env()?.map(Arc::new);

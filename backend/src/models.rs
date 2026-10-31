@@ -485,11 +485,6 @@ pub struct UpdateMemberRoleRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SwitchUserRequest {
-    pub email: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RegisterRequest {
     pub company_name: String,
     pub name: String,

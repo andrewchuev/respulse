@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Activity, Plus, Radio, Globe, Bell, AlertTriangle, Users, ChevronDown, Check, Sparkles, LogOut, KeyRound, CreditCard, LayoutDashboard, FileJson, Menu, X, Shield, Fingerprint } from 'lucide-react';
+import { Activity, Plus, Radio, Globe, Bell, AlertTriangle, Users, ChevronDown, Sparkles, LogOut, KeyRound, CreditCard, LayoutDashboard, FileJson, Menu, X, Shield, Fingerprint } from 'lucide-react';
 import { Button } from './ui/button';
 import { UserProfile, UserRole } from '../types';
 import { isTauri } from '../lib/sshClient';
@@ -12,10 +12,7 @@ interface HeaderProps {
   onOpenAddModal: () => void;
   totalActive: number;
   currentUser: UserProfile | null;
-  availableUsers: UserProfile[];
-  demoMode: boolean;
   isAdmin?: boolean;
-  onSwitchUser: (email: string) => void;
   onOpenAuth?: (mode: 'login' | 'register') => void;
   onSignOut?: () => void;
   onOpenUpgradeModal?: () => void;
@@ -29,10 +26,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAddModal,
   totalActive,
   currentUser,
-  availableUsers,
-  demoMode,
   isAdmin = false,
-  onSwitchUser,
   onOpenAuth,
   onSignOut,
   onOpenUpgradeModal,
@@ -349,49 +343,6 @@ export const Header: React.FC<HeaderProps> = ({
                       <span className="text-[10px] text-slate-400 group-hover:text-cyan-400 font-bold">&rarr;</span>
                     </button>
                   </div>
-                )}
-
-                {/* Role Switcher for Demo / B2B evaluation; the server only honours it in demo mode */}
-                {demoMode && (
-                <div className="p-2 space-y-1.5">
-                  <span className="text-[10px] uppercase font-mono tracking-wider text-muted-foreground block">
-                    Switch Active User / Role (RBAC)
-                  </span>
-
-                  <div className="space-y-1">
-                    {availableUsers.map((u) => {
-                      const isActive = u.email === currentUser?.email;
-                      return (
-                        <button
-                          key={u.id}
-                          type="button"
-                          onClick={() => {
-                            onSwitchUser(u.email);
-                            setIsUserMenuOpen(false);
-                          }}
-                          className={`w-full flex items-center justify-between p-2 rounded-lg text-xs transition-colors text-left ${
-                            isActive
-                              ? 'bg-emerald-500/15 border border-emerald-500/30 text-white'
-                              : 'hover:bg-secondary/40 text-muted-foreground hover:text-white'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <img
-                              src={u.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${u.name}`}
-                              alt={u.name}
-                              className="h-5 w-5 rounded-full object-cover"
-                            />
-                            <div className="min-w-0">
-                              <div className="font-medium truncate text-white">{u.name}</div>
-                              <div className="text-[10px] text-muted-foreground font-mono truncate">{u.role}</div>
-                            </div>
-                          </div>
-                          {isActive && <Check className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
                 )}
 
                 {isTauri() && hasBioHardware && (

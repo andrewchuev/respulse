@@ -310,7 +310,6 @@ pub struct AdminSystemStatus {
     pub total_users: i64,
     pub allow_private_targets: bool,
     pub billing_enabled: bool,
-    pub demo_mode: bool,
     pub email_verification_required: bool,
     pub smtp_configured: bool,
 }
@@ -360,7 +359,6 @@ pub async fn get_system_status(
             .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
             .unwrap_or(false),
         billing_enabled: state.settings.billing_enabled,
-        demo_mode: state.auth.demo_mode,
         email_verification_required: state.settings.require_email_verification,
         smtp_configured: state.mailer.is_some(),
     }))

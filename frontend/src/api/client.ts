@@ -162,17 +162,8 @@ export async function fetchCurrentUser(): Promise<UserProfile> {
   return res.json();
 }
 
-export async function fetchAvailableUsers(): Promise<UserProfile[]> {
-  const res = await apiFetch(`${API_BASE}/auth/users`, {
-    headers: authHeaders(),
-  });
-  if (!res.ok) throw new Error('Failed to fetch available demo users');
-  return res.json();
-}
-
 // Mirrors the backend defaults so the UI still renders sensibly if the config request fails.
 export const DEFAULT_APP_CONFIG: AppConfig = {
-  demo_mode: false,
   billing_enabled: false,
   plans: {
     FREE: { max_monitors: 25, min_interval_seconds: 30, max_members: 1, retention_days: 30 },
@@ -277,19 +268,6 @@ export async function triggerAdminBackupPing(): Promise<{ status: string; messag
     throw new Error(data.error || 'Failed to trigger backup heartbeat');
   }
   return res.json();
-}
-
-/** Passwordless login as a seeded demo persona; the server only allows it in demo mode. */
-export async function switchUser(email: string): Promise<UserProfile> {
-  const res = await fetch(`${API_BASE}/auth/switch-user`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
-  });
-  if (!res.ok) throw new Error('Demo login is not available');
-  const data: AuthResponse = await res.json();
-  setAuthSession(data.token);
-  return data.user;
 }
 
 // -----------------------------------------------------------------------------

@@ -302,7 +302,6 @@ export interface PlanLimits {
 }
 
 export interface AppConfig {
-  demo_mode: boolean;
   billing_enabled: boolean;
   plans: { FREE: PlanLimits; PRO: PlanLimits };
 }
@@ -461,7 +460,6 @@ export interface AdminSystemStatus {
   total_users: number;
   allow_private_targets: boolean;
   billing_enabled: boolean;
-  demo_mode: boolean;
   email_verification_required: boolean;
   smtp_configured: boolean;
 }

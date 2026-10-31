@@ -2,7 +2,7 @@ use crate::api::monitors::AppState;
 use crate::auth::{hash_password, AuthUser};
 use crate::email_verification;
 use crate::models::{
-    AuthResponse, LoginRequest, RegisterRequest, SwitchUserRequest, Team, User, UserProfile,
+    AuthResponse, LoginRequest, RegisterRequest, Team, User, UserProfile,
     UserRole,
 };
 use crate::rate_limit::{client_ip, too_many_requests};
@@ -326,168 +326,12 @@ pub async fn get_current_user(
     Ok(Json(profile))
 }
 
-/// Seeded demo accounts live under this domain; only they can be switched to without a password.
-const DEMO_EMAIL_DOMAIN: &str = "@respulse.internal";
-
-/// Public auth capabilities so the UI can hide demo-only controls.
+/// Public auth capabilities the UI adapts to.
 pub async fn auth_config(State(state): State<AppState>) -> Json<serde_json::Value> {
     Json(json!({
-        "demo_mode": state.auth.demo_mode,
         "billing_enabled": state.settings.billing_enabled,
         "plans": { "FREE": crate::plans::FREE, "PRO": crate::plans::PRO },
     }))
-}
-
-/// Passwordless persona login for the seeded demo organization. Disabled unless `DEMO_MODE` is on.
-pub async fn switch_user(
-    State(state): State<AppState>,
-    Json(payload): Json<SwitchUserRequest>,
-) -> Result<Json<AuthResponse>, (StatusCode, Response)> {
-    if !state.auth.demo_mode {
-        return Err((
-            StatusCode::NOT_FOUND,
-            Json(json!({ "error": "Demo persona switching is disabled" })).into_response(),
-        ));
-    }
-
-    let email = payload.email.trim().to_lowercase();
-    if !email.ends_with(DEMO_EMAIL_DOMAIN) {
-        return Err((
-            StatusCode::NOT_FOUND,
-            Json(json!({ "error": "Demo user not found" })).into_response(),
-        ));
-    }
-
-    let user = sqlx::query_as::<_, User>(
-        "SELECT * FROM users WHERE email = $1 AND is_active = TRUE"
-    )
-    .bind(&email)
-    .fetch_optional(&state.pool)
-    .await
-    .map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "error": format!("Database error: {}", e) })).into_response(),
-        )
-    })?;
-
-    let user = match user {
-        Some(u) => u,
-        None => {
-            return Err((
-                StatusCode::NOT_FOUND,
-                Json(json!({ "error": "Demo user not found" })).into_response(),
-            ));
-        }
-    };
-
-    let team = sqlx::query_as::<_, Team>(
-        "SELECT * FROM teams WHERE id = $1"
-    )
-    .bind(user.team_id)
-    .fetch_one(&state.pool)
-    .await
-    .map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "error": format!("Database error: {}", e) })).into_response(),
-        )
-    })?;
-
-    let role = UserRole::from_str(&user.role);
-
-    // Update last_login_at
-    let _ = sqlx::query("UPDATE users SET last_login_at = NOW() WHERE id = $1")
-        .bind(user.id)
-        .execute(&state.pool)
-        .await;
-
-    let token = state.auth.create_jwt(&user, &user.role).map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "error": format!("Failed to generate JWT: {}", e) })).into_response(),
-        )
-    })?;
-
-    let profile = UserProfile {
-        id: user.id,
-        team_id: user.team_id,
-        team_name: team.name,
-        team_ping_key: Some(team.ping_key),
-        team_plan: team.plan,
-        email: user.email,
-        name: user.name,
-        role: role.clone(),
-        avatar_url: user.avatar_url,
-        is_active: user.is_active,
-        permissions: role.permissions(),
-    };
-
-    Ok(Json(AuthResponse {
-        token,
-        user: profile,
-    }))
-}
-
-pub async fn list_available_users(
-    State(state): State<AppState>,
-    auth: AuthUser,
-) -> Result<Json<Vec<UserProfile>>, (StatusCode, Response)> {
-    let users = sqlx::query_as::<_, User>(
-        "SELECT * FROM users WHERE team_id = $1 AND is_active = TRUE ORDER BY created_at ASC"
-    )
-    .bind(auth.user.team_id)
-    .fetch_all(&state.pool)
-    .await
-    .map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "error": format!("Database error: {}", e) })).into_response(),
-        )
-    })?;
-
-    let team = sqlx::query_as::<_, Team>(
-        "SELECT * FROM teams WHERE id = $1"
-    )
-    .bind(auth.user.team_id)
-    .fetch_optional(&state.pool)
-    .await
-    .map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "error": format!("Database error: {}", e) })).into_response(),
-        )
-    })?
-    .unwrap_or(Team {
-        id: auth.user.team_id,
-        name: "My Team".to_string(),
-        slug: "my-team".to_string(),
-        ping_key: "pk_live_enterprise0000000000001".to_string(),
-        plan: "PRO".to_string(),
-        created_at: chrono::Utc::now(),
-    });
-
-    let profiles = users
-        .into_iter()
-        .map(|u| {
-            let role = UserRole::from_str(&u.role);
-            UserProfile {
-                id: u.id,
-                team_id: u.team_id,
-                team_name: team.name.clone(),
-                team_ping_key: Some(team.ping_key.clone()),
-                team_plan: team.plan.clone(),
-                email: u.email,
-                name: u.name,
-                role: role.clone(),
-                avatar_url: u.avatar_url,
-                is_active: u.is_active,
-                permissions: role.permissions(),
-            }
-        })
-        .collect();
-
-    Ok(Json(profiles))
 }
 
 #[derive(Deserialize)]

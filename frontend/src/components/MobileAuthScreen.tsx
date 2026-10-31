@@ -10,17 +10,14 @@ import {
   Shield,
   Sparkles,
   User,
-  Users,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import {
   fetchCurrentUser,
-  getAuthToken,
   loginUser,
   registerUser,
   setAuthSession,
-  switchUser,
 } from '../api/client';
 import { UserProfile } from '../types';
 import {
@@ -32,12 +29,10 @@ import {
 } from '../lib/biometrics';
 
 interface MobileAuthScreenProps {
-  demoMode?: boolean;
   onSuccess: (user: UserProfile) => void;
 }
 
 export const MobileAuthScreen: React.FC<MobileAuthScreenProps> = ({
-  demoMode = false,
   onSuccess,
 }) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -147,22 +142,6 @@ export const MobileAuthScreen: React.FC<MobileAuthScreenProps> = ({
       }
     } catch (err: any) {
       setError(err?.message || 'Authentication failed. Please check your credentials.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDemoLogin = async (demoEmail: string) => {
-    setError(null);
-    setLoading(true);
-    try {
-      const user = await switchUser(demoEmail);
-      if (biometricAvailable) {
-        setBiometricEnabledLocally(true, getAuthToken());
-      }
-      onSuccess(user);
-    } catch (err: any) {
-      setError(err?.message || 'Failed to switch demo user');
     } finally {
       setLoading(false);
     }
@@ -386,36 +365,6 @@ export const MobileAuthScreen: React.FC<MobileAuthScreenProps> = ({
             )}
           </Button>
         </form>
-
-        {/* Demo Mode Quick Switcher */}
-        {demoMode && (
-          <div className="pt-3 border-t border-border/60">
-            <p className="text-[11px] font-mono uppercase text-muted-foreground mb-2 flex items-center gap-1.5">
-              <Users className="h-3.5 w-3.5 text-emerald-400" />
-              Quick Demo Sign-In:
-            </p>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => handleDemoLogin('alice@respulse.internal')}
-                className="h-9 justify-start text-[11px] border-emerald-500/30 hover:border-emerald-500/60"
-              >
-                👑 Alice (Owner)
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => handleDemoLogin('charlie@respulse.internal')}
-                className="h-9 justify-start text-[11px] border-blue-500/30 hover:border-blue-500/60"
-              >
-                🛠️ Charlie (SRE)
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Footer */}

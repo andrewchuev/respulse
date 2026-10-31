@@ -830,7 +830,7 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
               </div>
               <h3 className="text-lg font-bold text-white mb-2">4-Tier Enterprise RBAC & Multi-User Teams</h3>
               <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-                Granular permission controls with distinct roles: <span className="text-purple-300 font-mono">OWNER</span>, <span className="text-blue-300 font-mono">ADMIN</span>, <span className="text-emerald-300 font-mono">ENGINEER</span>, and read-only <span className="text-slate-300 font-mono">VIEWER</span>. Complete with interactive Permissions Matrix and instant demo persona switcher.
+                Granular permission controls with distinct roles: <span className="text-purple-300 font-mono">OWNER</span>, <span className="text-blue-300 font-mono">ADMIN</span>, <span className="text-emerald-300 font-mono">ENGINEER</span>, and read-only <span className="text-slate-300 font-mono">VIEWER</span>. Complete with interactive Permissions Matrix.
               </p>
             </div>
 
