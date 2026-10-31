@@ -373,6 +373,7 @@ The `VERSION` file is the single source of truth (semver). `node scripts/version
 | `make build` | Rebuild Docker images |
 | `make ps` | Show container health and port statuses |
 | `make release` | Build both images locally, tag them with the git SHA and `latest`, push to the registry (needs a clean tree and `docker login ghcr.io`) |
+| `make tauri-icons` | Regenerate desktop and Android app icons from `src-tauri/icon-src/*.svg` (needs `rsvg-convert`); Android gets adaptive icons |
 | `make backup-pull` | Copy the server's daily DB dumps to `~/backups/respulse` (off-host copy) |
 | `make deploy-direct` | Registry-free alternative: build locally, stream the images to the server over SSH (`docker save \| ssh docker load`) and roll out |
 | `make deploy` | Copy `deploy/` configs to the server, set `IMAGE_TAG`, `docker compose pull` and `up -d` (`TAG=<sha>` rolls back to an older release) |

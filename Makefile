@@ -1,4 +1,4 @@
-.PHONY: hooks version up down restart logs build ps seed clean release deploy deploy-direct backup-pull tauri-dev tauri-build tauri-android-init tauri-android-build tauri-android-release tauri-android-bundle tauri-android-install
+.PHONY: hooks version up down restart logs build ps seed clean release deploy deploy-direct backup-pull tauri-dev tauri-build tauri-icons tauri-android-init tauri-android-build tauri-android-release tauri-android-bundle tauri-android-install
 
 # Enables the pre-commit hook that bumps the patch version (VERSION file) on every commit.
 hooks:
@@ -97,6 +97,11 @@ tauri-dev:
 
 tauri-build:
 	PATH="$(HOME)/.cargo/bin:$$PATH" npx @tauri-apps/cli build
+
+# Renders the SVG sources (needs rsvg-convert) and regenerates every desktop/Android icon from them.
+tauri-icons:
+	cd src-tauri/icon-src && for n in app-icon android-bg android-fg; do rsvg-convert -w 1024 -h 1024 $$n.svg -o $$n.png || exit 1; done
+	npx @tauri-apps/cli icon src-tauri/icon-src/icon-manifest.json
 
 tauri-android-init:
 	PATH="/home/dev/android-ndk-r26d/toolchains/llvm/prebuilt/linux-x86_64/bin:$(HOME)/.cargo/bin:$$PATH" ANDROID_HOME="/home/dev/android-sdk" NDK_HOME="/home/dev/android-ndk-r26d" npx @tauri-apps/cli android init --ci --skip-targets-install
