@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Activity, Plus, Radio, Globe, Bell, AlertTriangle, Users, ChevronDown, LogOut, KeyRound, CreditCard, LayoutDashboard, FileJson, Menu, X, Shield, Fingerprint } from 'lucide-react';
+import { Activity, Plus, Globe, Bell, AlertTriangle, Users, ChevronDown, LogOut, CreditCard, LayoutDashboard, FileJson, Menu, X, Shield, Fingerprint } from 'lucide-react';
 import { Button } from './ui/button';
 import { UserProfile, UserRole } from '../types';
 import { isTauri } from '../lib/sshClient';
@@ -10,10 +10,8 @@ interface HeaderProps {
   currentView: 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo' | 'admin';
   setCurrentView: (view: 'dashboard' | 'channels' | 'incidents' | 'team' | 'status-page' | 'promo' | 'admin') => void;
   onOpenAddModal: () => void;
-  totalActive: number;
   currentUser: UserProfile | null;
   isAdmin?: boolean;
-  onOpenAuth?: (mode: 'login' | 'register') => void;
   onSignOut?: () => void;
   onOpenUpgradeModal?: () => void;
   onOpenManageSubscription?: () => void;
@@ -24,10 +22,8 @@ export const Header: React.FC<HeaderProps> = ({
   currentView,
   setCurrentView,
   onOpenAddModal,
-  totalActive,
   currentUser,
   isAdmin = false,
-  onOpenAuth,
   onSignOut,
   onOpenUpgradeModal,
   onOpenManageSubscription,
@@ -124,12 +120,7 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="font-extrabold tracking-tight text-base sm:text-lg bg-gradient-to-r from-white via-slate-100 to-emerald-300 bg-clip-text text-transparent">
                 ResPulse
               </span>
-              <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-[0_0_8px_rgba(16,185,129,0.2)]">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1 sm:mr-1.5 animate-pulse shadow-[0_0_5px_rgba(16,185,129,1)]"></span>
-                LIVE
-              </span>
             </div>
-            <p className="text-[11px] text-muted-foreground hidden xl:block">Enterprise Synthetic Monitoring</p>
           </div>
         </div>
 
@@ -207,12 +198,6 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Zone 3 (Right): Monitoring Status, Upsell & User Actions */}
         <div className="flex items-center justify-self-end gap-1.5 sm:gap-3 shrink-0">
-          <div className="hidden 2xl:flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 px-3 py-1.5 rounded-lg border border-border/50 shrink-0 whitespace-nowrap">
-            <Radio className="h-3.5 w-3.5 text-emerald-400 animate-pulse shrink-0" />
-            <span><span className="hidden xl:inline">Multi-node </span>Probing</span>
-            <span className="text-foreground font-mono font-medium whitespace-nowrap">({totalActive} active)</span>
-          </div>
-
           {/* User Profile / RBAC Switcher Dropdown */}
           <div className="relative shrink-0" ref={menuRef}>
             <button
@@ -245,32 +230,20 @@ export const Header: React.FC<HeaderProps> = ({
             {isUserMenuOpen && (
               <div className="absolute right-0 mt-2 w-72 bg-slate-900/95 backdrop-blur-2xl border border-white/10 ring-1 ring-white/5 rounded-2xl shadow-2xl shadow-black/90 p-2.5 z-50 divide-y divide-slate-800/80 animate-in fade-in-0 zoom-in-95 duration-150">
                 <div className="p-2 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase font-mono tracking-wider text-muted-foreground">
-                      Authenticated Profile
-                    </span>
+                  <div className="flex items-center justify-end">
                     {getRoleBadge(currentUser?.role)}
                   </div>
                   <div className="font-semibold text-white text-xs">{currentUser?.name}</div>
                   <div className="text-[11px] text-muted-foreground font-mono">{currentUser?.email}</div>
                   <div className="flex items-center justify-between text-[10px] font-mono mt-1 pt-1 border-t border-slate-800/60">
                     <span className="text-emerald-400">Org: {currentUser?.team_name || 'ResPulse Enterprise'}</span>
-                    <button
-                      onClick={() => {
-                        setIsUserMenuOpen(false);
-                        if (currentUser?.team_plan === 'PRO') {
-                          onOpenManageSubscription ? onOpenManageSubscription() : onOpenUpgradeModal?.();
-                        } else {
-                          onOpenUpgradeModal?.();
-                        }
-                      }}
-                      className={`px-1.5 py-0.5 rounded text-[9px] font-bold hover:brightness-125 transition-all ${
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
                         currentUser?.team_plan === 'FREE' ? 'bg-slate-800 text-slate-400 border border-slate-700' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                       }`}
-                      title={currentUser?.team_plan === 'PRO' ? "Manage Pro subscription (WayForPay)" : "Upgrade to Pro (WayForPay)"}
                     >
                       {currentUser?.team_plan || 'PRO'} PLAN
-                    </button>
+                    </span>
                   </div>
                 </div>
 
@@ -356,32 +329,8 @@ export const Header: React.FC<HeaderProps> = ({
                   </div>
                 )}
 
-                <div className="p-1.5 pt-2 flex items-center justify-between border-t border-white/5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCurrentView('team');
-                      setIsUserMenuOpen(false);
-                    }}
-                    className="py-1 text-xs text-muted-foreground hover:text-white transition-colors"
-                  >
-                    Manage Team ➔
-                  </button>
+                <div className="p-1.5 pt-2 flex items-center justify-end border-t border-white/5">
                   <div className="flex items-center gap-1.5">
-                    {onOpenAuth && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsUserMenuOpen(false);
-                          onOpenAuth('login');
-                        }}
-                        className="flex items-center gap-1 py-1 px-2 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800 transition-all"
-                        title="Sign in with credentials"
-                      >
-                        <KeyRound className="h-3 w-3 text-cyan-400" />
-                        Auth
-                      </button>
-                    )}
                     {onSignOut && (
                       <button
                         type="button"

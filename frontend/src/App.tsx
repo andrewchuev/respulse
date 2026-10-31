@@ -491,10 +491,8 @@ export function App() {
         currentView={currentView}
         setCurrentView={changeView}
         onOpenAddModal={() => setIsAddModalOpen(true)}
-        totalActive={monitors.filter((m) => !m.is_paused).length}
         currentUser={currentUser}
         isAdmin={isAdmin}
-        onOpenAuth={openAuth}
         onSignOut={handleSignOut}
         onOpenUpgradeModal={openUpgrade}
         onOpenManageSubscription={openManageSubscription}
