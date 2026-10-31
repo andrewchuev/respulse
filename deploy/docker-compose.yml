@@ -47,7 +47,10 @@ services:
       respulse-db:
         condition: service_healthy
     networks:
-      - respulse-net
+      respulse-net:
+      # Highest gw_priority makes this the default egress route, so probes can reach IPv6 targets.
+      respulse-egress:
+        gw_priority: 100
 
   respulse-frontend:
     image: ${REGISTRY:-ghcr.io/andrewchuev}/respulse-frontend:${IMAGE_TAG:?IMAGE_TAG is required}
@@ -130,3 +133,11 @@ volumes:
 networks:
   respulse-net:
     driver: bridge
+  # IPv6-capable egress for the backend only: the mail server must stay IPv4-only because
+  # the SPF record lists no IPv6 address.
+  respulse-egress:
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: fd4c:9a1e:7b52:1::/64
