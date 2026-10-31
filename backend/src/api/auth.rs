@@ -250,7 +250,7 @@ pub async fn login(
         name: "ResPulse Team".to_string(),
         slug: "respulse-team".to_string(),
         ping_key: "pk_live_enterprise0000000000001".to_string(),
-        plan: "PRO".to_string(),
+        plan: "FREE".to_string(),
         created_at: chrono::Utc::now(),
     });
 
@@ -305,7 +305,7 @@ pub async fn get_current_user(
         name: "ResPulse Enterprise Team".to_string(),
         slug: "respulse-enterprise".to_string(),
         ping_key: "pk_live_enterprise0000000000001".to_string(),
-        plan: "PRO".to_string(),
+        plan: "FREE".to_string(),
         created_at: chrono::Utc::now(),
     });
 

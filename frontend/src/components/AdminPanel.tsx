@@ -623,7 +623,7 @@ export const AdminPanel: React.FC = () => {
                     Storage Retention & Table Maintenance
                   </h3>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Batched deletion of expired check results older than team plan limits (14 days for Free, 90 days for Pro).
+                    Batched deletion of expired check results older than team plan limits (30 days for Free, 90 days for Pro).
                   </p>
                 </div>
                 <Button

@@ -291,6 +291,18 @@ pub async fn import_config(
                     continue;
                 }
 
+                if team_plan != "PRO"
+                    && item.cron_expression.as_deref().map_or(false, |c| !c.trim().is_empty())
+                {
+                    summary.errors.push(format!(
+                        "Monitor '{}': custom Cron schedules are a Pro feature.{}",
+                        item.name,
+                        state.settings.upgrade_hint()
+                    ));
+                    summary.monitors_skipped += 1;
+                    continue;
+                }
+
                 // Check min interval for plan
                 let min_interval = plan_limits.min_interval_seconds;
                 if item.interval_seconds < min_interval {
@@ -425,6 +437,16 @@ pub async fn import_config(
             for mut item in channels {
                 if let Err((_, err_msg)) = validate_channel_config(&item.config).await {
                     summary.errors.push(format!("Channel '{}': {}", item.name, err_msg));
+                    continue;
+                }
+
+                if team_plan != "PRO" && !item.filter_tags.is_empty() {
+                    summary.errors.push(format!(
+                        "Channel '{}': tag-based alert routing is a Pro feature.{}",
+                        item.name,
+                        state.settings.upgrade_hint()
+                    ));
+                    summary.channels_skipped += 1;
                     continue;
                 }
 

@@ -51,15 +51,12 @@ impl AppSettings {
         let billing_enabled = std::env::var("BILLING_ENABLED")
             .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
             .unwrap_or(false);
-        let mut admin_emails: Vec<String> = std::env::var("ADMIN_EMAILS")
+        let admin_emails: Vec<String> = std::env::var("ADMIN_EMAILS")
             .unwrap_or_default()
             .split(',')
             .map(|e| e.trim().to_lowercase())
             .filter(|e| !e.is_empty())
             .collect();
-        if admin_emails.is_empty() {
-            admin_emails.push("alice@respulse.internal".to_string());
-        }
         let require_email_verification = std::env::var("REQUIRE_EMAIL_VERIFICATION")
             .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
             .unwrap_or(false);

@@ -166,7 +166,7 @@ export async function fetchCurrentUser(): Promise<UserProfile> {
 export const DEFAULT_APP_CONFIG: AppConfig = {
   billing_enabled: false,
   plans: {
-    FREE: { max_monitors: 25, min_interval_seconds: 30, max_members: 1, retention_days: 30 },
+    FREE: { max_monitors: 20, min_interval_seconds: 60, max_members: 1, retention_days: 30 },
     PRO: { max_monitors: 100, min_interval_seconds: 10, max_members: 10, retention_days: 90 },
   },
 };

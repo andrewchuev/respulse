@@ -106,6 +106,30 @@ async fn handle_slug_ping(
         None => {
             // Auto-provision if ?create=1
             if query.get("create").map(|v| v.as_str()) == Some("1") {
+                let team_plan: String = sqlx::query_scalar("SELECT plan FROM teams WHERE id = $1")
+                    .bind(team_id)
+                    .fetch_optional(&state.pool)
+                    .await
+                    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+                    .unwrap_or_else(|| "FREE".to_string());
+                let (monitor_count,): (i64,) = sqlx::query_as("SELECT COUNT(*)::bigint FROM monitors WHERE team_id = $1")
+                    .bind(team_id)
+                    .fetch_one(&state.pool)
+                    .await
+                    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+                let max_monitors = crate::plans::limits(&team_plan).max_monitors;
+                if monitor_count >= max_monitors {
+                    return Err((
+                        StatusCode::BAD_REQUEST,
+                        format!(
+                            "Monitor limit reached ({} max on the {} plan).{}",
+                            max_monitors,
+                            team_plan,
+                            state.settings.upgrade_hint()
+                        ),
+                    ));
+                }
+
                 let friendly_name = clean_slug
                     .replace('-', " ")
                     .split_whitespace()

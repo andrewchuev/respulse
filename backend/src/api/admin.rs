@@ -1,7 +1,7 @@
 //! Operator & Super-Administrator Control Plane:
 //! Platform telemetry, tenant management, user lifecycle, and system diagnostics.
 //!
-//! Only emails listed in `ADMIN_EMAILS` (or default demo admin) may access these endpoints.
+//! Only emails listed in `ADMIN_EMAILS` may access these endpoints.
 
 use crate::api::monitors::AppState;
 use crate::auth::AuthUser;
