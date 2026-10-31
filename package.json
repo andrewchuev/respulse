@@ -1,6 +1,6 @@
 {
   "name": "respulse",
-  "version": "1.1.11",
+  "version": "1.1.12",
   "private": true,
   "description": "Systems-Grade Synthetic Monitoring Platform",
   "scripts": {

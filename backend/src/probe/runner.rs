@@ -5,8 +5,9 @@ use crate::probe::ssl::check_ssl;
 use crate::probe::tcp::check_tcp;
 use chrono::Utc;
 use reqwest::Client;
+use std::collections::HashSet;
 use std::str::FromStr;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock, Mutex};
 use std::time::Duration;
 use tokio::sync::broadcast::Sender;
 use tracing::{error, info};
@@ -77,16 +78,41 @@ async fn check_due_monitors(
     .await?;
 
     for monitor in monitors {
+        // last_checked_at is only written when a probe finishes, so a slow probe would otherwise be
+        // re-dispatched on every tick, flooding the target and duplicating incidents and alerts.
+        let Some(guard) = InFlightGuard::acquire(monitor.id) else {
+            continue;
+        };
         let pool = pool.clone();
         let client = client.clone();
         let tx = tx.clone();
 
         tokio::spawn(async move {
+            let _guard = guard;
             execute_single_probe(pool, client, monitor, tx).await;
         });
     }
 
     Ok(())
+}
+
+static IN_FLIGHT: LazyLock<Mutex<HashSet<Uuid>>> = LazyLock::new(Default::default);
+
+/// Marks a monitor as being probed; released on drop, including when the probe task panics.
+struct InFlightGuard(Uuid);
+
+impl InFlightGuard {
+    fn acquire(id: Uuid) -> Option<Self> {
+        // Built lazily: an eagerly created guard that is discarded would run Drop and release the id.
+        let inserted = IN_FLIGHT.lock().unwrap_or_else(|e| e.into_inner()).insert(id);
+        inserted.then(|| Self(id))
+    }
+}
+
+impl Drop for InFlightGuard {
+    fn drop(&mut self) {
+        IN_FLIGHT.lock().unwrap_or_else(|e| e.into_inner()).remove(&self.0);
+    }
 }
 
 pub async fn execute_single_probe(
@@ -371,4 +397,18 @@ pub async fn execute_single_probe(
         status_code: probe_result.status_code,
         error: probe_result.error,
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn in_flight_guard_blocks_duplicates_until_dropped() {
+        let id = Uuid::new_v4();
+        let first = InFlightGuard::acquire(id).expect("first acquire succeeds");
+        assert!(InFlightGuard::acquire(id).is_none());
+        drop(first);
+        assert!(InFlightGuard::acquire(id).is_some());
+    }
 }
