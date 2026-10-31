@@ -10,7 +10,6 @@ import {
   testSshConnection,
   executeSshCommand,
   launchExternalSsh,
-  isTauri,
 } from '../lib/sshClient';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -28,7 +27,6 @@ import {
   AlertCircle,
   Loader2,
   Server,
-  Smartphone,
   Laptop,
 } from 'lucide-react';
 
@@ -230,17 +228,8 @@ export const SshConsolePanel: React.FC<SshConsolePanelProps> = ({ monitor }) => 
           </div>
         </div>
         <div className="flex items-center gap-1.5 font-mono text-[10px] text-slate-400 bg-slate-950 px-2 py-1 rounded-lg border border-slate-800 shrink-0">
-          {isTauri() ? (
-            <>
-              <Laptop className="h-3 w-3 text-cyan-400" />
-              <span>Tauri 2 Native Client</span>
-            </>
-          ) : (
-            <>
-              <Smartphone className="h-3 w-3 text-amber-400" />
-              <span>Web & Mobile Companion</span>
-            </>
-          )}
+          <Laptop className="h-3 w-3 text-cyan-400" />
+          <span>Tauri 2 Native Client</span>
         </div>
       </div>
 

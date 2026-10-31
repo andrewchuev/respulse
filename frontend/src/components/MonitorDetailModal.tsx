@@ -8,6 +8,7 @@ import { Button } from './ui/button';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Activity, Clock, ShieldCheck, Copy, Check, Terminal, Play, AlertTriangle, Pencil } from 'lucide-react';
 import { SshConsolePanel } from './SshConsolePanel';
+import { isTauri } from '../lib/sshClient';
 
 interface MonitorDetailModalProps {
   monitor: MonitorWithStats | null;
@@ -25,6 +26,8 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
   const [details, setDetails] = useState<MonitorWithStats | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'metrics' | 'ssh'>('metrics');
+  // Credentials stay on the device, so the console exists only in the native apps.
+  const sshAvailable = isTauri();
 
   useEffect(() => {
     if (!monitor) return;
@@ -130,6 +133,7 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
             </span>
           </button>
 
+          {sshAvailable && (
           <button
             type="button"
             onClick={() => setActiveTab('ssh')}
@@ -150,9 +154,10 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
               </span>
             )}
           </button>
+          )}
         </div>
 
-        {activeTab === 'ssh' ? (
+        {sshAvailable && activeTab === 'ssh' ? (
           <div className="pt-2">
             <SshConsolePanel monitor={data} />
           </div>

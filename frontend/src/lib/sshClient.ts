@@ -62,6 +62,21 @@ export function isTauri(): boolean {
   );
 }
 
+const NATIVE_ONLY_MSG = 'The SSH console is only available in the ResPulse desktop and mobile apps.';
+
+/**
+ * Credentials must never sit in browser storage, where any script on the origin can read them;
+ * this wipes profiles saved by earlier web builds.
+ */
+export function purgeWebSshProfiles(): void {
+  if (isTauri()) return;
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Storage may be blocked; nothing to purge then.
+  }
+}
+
 /**
  * Load all locally stored SSH profiles
  */
@@ -128,13 +143,7 @@ export async function testSshConnection(profile: SshProfile): Promise<SshTestRes
     }
   }
 
-  // Running in browser web mode
-  return {
-    success: true,
-    message: `Ready for one-click connection via system terminal. Direct in-app SSH execution is enabled in ResPulse Desktop & Mobile.`,
-    banner: `SSH-2.0-OpenSSH_Ready`,
-    latency_ms: 12,
-  };
+  throw new Error(NATIVE_ONLY_MSG);
 }
 
 /**
@@ -159,14 +168,7 @@ export async function executeSshCommand(profile: SshProfile, command: string): P
     }
   }
 
-  // Web Browser fallback simulation / guidance
-  const simulatedStdout = `[Web Demo / External Launcher]\nTo execute remote commands directly from this browser, launch via your native terminal or use the ResPulse Android / Windows Tauri App.\nCommand requested: ${command}\nTarget: ${profile.username}@${profile.host}:${profile.port}`;
-  return {
-    stdout: simulatedStdout,
-    stderr: '',
-    exit_code: 0,
-    duration_ms: 24,
-  };
+  throw new Error(NATIVE_ONLY_MSG);
 }
 
 /**
@@ -175,16 +177,13 @@ export async function executeSshCommand(profile: SshProfile, command: string): P
 export async function launchExternalSsh(profile: SshProfile): Promise<void> {
   const uri = `ssh://${encodeURIComponent(profile.username)}@${profile.host}:${profile.port || 22}`;
 
-  if (isTauri()) {
-    try {
-      const { invoke } = await import('@tauri-apps/api/core');
-      await invoke('open_external_ssh', { uri });
-      return;
-    } catch (err) {
-      console.warn('Tauri open_external_ssh failed, falling back to window.open:', err);
-    }
-  }
+  if (!isTauri()) throw new Error(NATIVE_ONLY_MSG);
 
-  // Standard web browser fallback
-  window.open(uri, '_blank');
+  try {
+    const { invoke } = await import('@tauri-apps/api/core');
+    await invoke('open_external_ssh', { uri });
+  } catch (err) {
+    console.warn('Tauri open_external_ssh failed, falling back to window.open:', err);
+    window.open(uri, '_blank');
+  }
 }
