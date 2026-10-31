@@ -115,11 +115,15 @@ pub async fn invite_member(
     .bind(avatar_url)
     .fetch_one(&state.pool)
     .await
-    .map_err(|e| {
-        (
+    .map_err(|e| match crate::plans::plan_limit_message(&e, &state.settings) {
+        Some(msg) => (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": msg })).into_response(),
+        ),
+        None => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({ "error": format!("Failed to create user: {}", e) })).into_response(),
-        )
+        ),
     })?;
 
     Ok((StatusCode::CREATED, Json(member)))

@@ -232,6 +232,7 @@ pub async fn test_channel(client: &Client, channel: &NotificationChannel) -> Res
         cron_expression: None,
         timezone: "UTC".to_string(),
         next_expected_at: None,
+        paused_by_plan: false,
         created_at: Utc::now(),
         updated_at: Utc::now(),
     };

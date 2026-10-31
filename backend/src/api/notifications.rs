@@ -209,8 +209,10 @@ pub async fn update_channel(
         existing.config
     };
     let is_active = payload.is_active.unwrap_or(existing.is_active);
+    // Routing set while on Pro keeps working after a downgrade; only adding or changing it needs Pro.
+    let previous_tags = existing.filter_tags.clone();
     let filter_tags = payload.filter_tags.unwrap_or(existing.filter_tags);
-    if !filter_tags.is_empty() {
+    if !filter_tags.is_empty() && filter_tags != previous_tags {
         let team_plan: String = sqlx::query_scalar("SELECT plan FROM teams WHERE id = $1")
             .bind(auth.user.team_id)
             .fetch_optional(&state.pool)

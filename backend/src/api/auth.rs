@@ -200,6 +200,25 @@ pub async fn login(
     let user = match user {
         Some(u) => u,
         None => {
+            // Say why only to someone who proves they own the account.
+            let suspended = sqlx::query_as::<_, User>(
+                "SELECT * FROM users WHERE email = $1 AND suspended_by_plan"
+            )
+            .bind(&email)
+            .fetch_optional(&state.pool)
+            .await
+            .ok()
+            .flatten();
+            if let Some(u) = suspended {
+                if state.auth.verify_password(password, &u.password_hash) {
+                    return Err((
+                        StatusCode::FORBIDDEN,
+                        Json(json!({
+                            "error": "Your access was suspended because the team's plan no longer includes this seat. Ask the team owner to upgrade to Pro."
+                        })).into_response(),
+                    ));
+                }
+            }
             return Err((
                 StatusCode::UNAUTHORIZED,
                 Json(json!({ "error": "Invalid email or password" })).into_response(),

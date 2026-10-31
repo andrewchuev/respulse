@@ -42,6 +42,9 @@ pub struct Monitor {
     #[serde(default = "default_timezone")]
     pub timezone: String,
     pub next_expected_at: Option<DateTime<Utc>>,
+    /// Paused by the downgrade policy rather than by a user; an upgrade resumes it.
+    #[serde(default)]
+    pub paused_by_plan: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

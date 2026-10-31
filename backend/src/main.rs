@@ -9,6 +9,7 @@ mod notifier;
 mod plans;
 mod probe;
 mod rate_limit;
+mod plan_enforcement;
 mod retention;
 
 use api::monitors::AppState;
@@ -84,7 +85,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Spawn probe background scheduler
     tokio::spawn(probe::run_probe_scheduler(pool.clone(), tx.clone()));
+    plans::sync_plan_limits(&pool).await?;
     tokio::spawn(retention::run_retention_loop(pool.clone()));
+    tokio::spawn(plan_enforcement::run_loop(pool.clone()));
 
     let api_router = api::create_router();
 

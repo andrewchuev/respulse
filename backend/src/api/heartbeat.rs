@@ -159,7 +159,10 @@ async fn handle_slug_ping(
                 .bind(&clean_slug)
                 .fetch_one(&state.pool)
                 .await
-                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+                .map_err(|e| match crate::plans::plan_limit_message(&e, &state.settings) {
+                    Some(msg) => (StatusCode::BAD_REQUEST, msg),
+                    None => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+                })?;
 
                 (created_monitor, true)
             } else {

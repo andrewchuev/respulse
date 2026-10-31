@@ -490,6 +490,18 @@ pub async fn cancel_subscription(
 }
 
 #[derive(Serialize)]
+pub struct DowngradeStatus {
+    pub downgraded_at: chrono::DateTime<Utc>,
+    pub grace_ends_at: chrono::DateTime<Utc>,
+    pub enforced: bool,
+    pub monitors_over_limit: i64,
+    pub short_interval_monitors: i64,
+    pub members_over_limit: i64,
+    pub paused_by_plan: i64,
+    pub suspended_by_plan: i64,
+}
+
+#[derive(Serialize)]
 pub struct BillingStatusResponse {
     pub plan: String,
     pub subscription_status: String,
@@ -497,19 +509,54 @@ pub struct BillingStatusResponse {
     pub subscription_provider: Option<String>,
     pub billing_enabled: bool,
     pub is_configured: bool,
+    /// Present for a Free team that used to be on Pro and has not been fully brought under the Free limits.
+    pub downgrade: Option<DowngradeStatus>,
 }
 
 pub async fn get_billing_status(
     auth: AuthUser,
     State(state): State<AppState>,
 ) -> Result<Json<BillingStatusResponse>, (StatusCode, String)> {
-    let row: (String, String, Option<String>, Option<String>) = sqlx::query_as(
-        "SELECT plan, subscription_status, subscription_id, subscription_provider FROM teams WHERE id = $1"
+    let db_err = |e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string());
+
+    let row: (String, String, Option<String>, Option<String>, Option<chrono::DateTime<Utc>>) = sqlx::query_as(
+        "SELECT plan, subscription_status, subscription_id, subscription_provider, plan_downgraded_at FROM teams WHERE id = $1"
     )
     .bind(auth.user.team_id)
     .fetch_one(&state.pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    .map_err(db_err)?;
+
+    let downgrade = match row.4 {
+        Some(downgraded_at) if row.0 != "PRO" => {
+            let free = crate::plans::FREE;
+            let grace_ends_at = downgraded_at + chrono::Duration::days(crate::plans::downgrade_grace_days());
+            let (monitors, short, paused, members, suspended): (i64, i64, i64, i64, i64) = sqlx::query_as(
+                "SELECT
+                    (SELECT COUNT(*) FROM monitors WHERE team_id = $1 AND NOT paused_by_plan),
+                    (SELECT COUNT(*) FROM monitors WHERE team_id = $1 AND interval_seconds < $2),
+                    (SELECT COUNT(*) FROM monitors WHERE team_id = $1 AND paused_by_plan),
+                    (SELECT COUNT(*) FROM users WHERE team_id = $1 AND NOT suspended_by_plan),
+                    (SELECT COUNT(*) FROM users WHERE team_id = $1 AND suspended_by_plan)"
+            )
+            .bind(auth.user.team_id)
+            .bind(free.min_interval_seconds)
+            .fetch_one(&state.pool)
+            .await
+            .map_err(db_err)?;
+            Some(DowngradeStatus {
+                downgraded_at,
+                grace_ends_at,
+                enforced: Utc::now() >= grace_ends_at,
+                monitors_over_limit: (monitors - free.max_monitors).max(0),
+                short_interval_monitors: short,
+                members_over_limit: (members - free.max_members).max(0),
+                paused_by_plan: paused,
+                suspended_by_plan: suspended,
+            })
+        }
+        _ => None,
+    };
 
     Ok(Json(BillingStatusResponse {
         plan: row.0,
@@ -518,6 +565,7 @@ pub async fn get_billing_status(
         subscription_provider: row.3,
         billing_enabled: state.settings.billing_enabled,
         is_configured: state.wayforpay.is_some(),
+        downgrade,
     }))
 }
 

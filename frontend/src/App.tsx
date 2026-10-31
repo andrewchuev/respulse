@@ -33,6 +33,7 @@ import { AuthModal } from './components/AuthModal';
 import { LegalPage } from './components/LegalPage';
 import { AdminPanel } from './components/AdminPanel';
 import { VerifyEmailPage } from './components/VerifyEmailPage';
+import { DowngradeNotice } from './components/DowngradeNotice';
 import { WayForPayCheckoutModal } from './components/WayForPayCheckoutModal';
 import { ManageSubscriptionModal } from './components/ManageSubscriptionModal';
 import { ExportImportModal } from './components/ExportImportModal';
@@ -364,6 +365,7 @@ export function App() {
       );
     } catch (e) {
       console.error(e);
+      alert(e instanceof Error && e.message ? e.message : 'Failed to resume monitor');
     }
   };
 
@@ -498,6 +500,8 @@ export function App() {
         onOpenManageSubscription={openManageSubscription}
         onOpenExportImport={openExportImport}
       />
+
+      <DowngradeNotice plan={planKey} refreshKey={monitors.length} onUpgrade={billingEnabled ? openUpgrade : undefined} />
 
       {/* Viewer Mode Banner */}
       {isViewer && (

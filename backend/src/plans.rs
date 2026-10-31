@@ -27,6 +27,43 @@ pub const PRO: PlanLimits = PlanLimits {
     retention_days: 90,
 };
 
+/// Days a team keeps its Pro-era resources after dropping to Free before the limits are enforced.
+pub const DEFAULT_DOWNGRADE_GRACE_DAYS: i64 = 7;
+
+pub fn downgrade_grace_days() -> i64 {
+    std::env::var("DOWNGRADE_GRACE_DAYS")
+        .ok()
+        .and_then(|v| v.trim().parse::<i64>().ok())
+        .filter(|d| *d >= 0)
+        .unwrap_or(DEFAULT_DOWNGRADE_GRACE_DAYS)
+}
+
+/// Copies the constants into `plan_limits`, which the database triggers read.
+pub async fn sync_plan_limits(pool: &sqlx::PgPool) -> Result<(), sqlx::Error> {
+    for (name, plan) in [("FREE", FREE), ("PRO", PRO)] {
+        sqlx::query(
+            "INSERT INTO plan_limits (plan, max_monitors, max_members) VALUES ($1, $2, $3)
+             ON CONFLICT (plan) DO UPDATE SET max_monitors = EXCLUDED.max_monitors, max_members = EXCLUDED.max_members",
+        )
+        .bind(name)
+        .bind(plan.max_monitors)
+        .bind(plan.max_members)
+        .execute(pool)
+        .await?;
+    }
+    Ok(())
+}
+
+/// The message of a plan-limit violation raised by the database triggers, if `e` is one.
+pub fn plan_limit_message(e: &sqlx::Error, settings: &AppSettings) -> Option<String> {
+    let db = e.as_database_error()?;
+    let pg = db.try_downcast_ref::<sqlx::postgres::PgDatabaseError>()?;
+    if pg.hint() != Some("plan_limit") {
+        return None;
+    }
+    Some(format!("{}{}", pg.message(), settings.upgrade_hint()))
+}
+
 pub fn limits(plan: &str) -> PlanLimits {
     if plan == "PRO" {
         PRO

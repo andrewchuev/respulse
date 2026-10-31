@@ -237,7 +237,7 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({
                 size="icon"
                 variant="ghost"
                 className="h-7 w-7 text-muted-foreground hover:text-emerald-400 disabled:opacity-30 disabled:cursor-not-allowed"
-                title={isViewer ? 'Read-only access: requires Engineer role or higher to resume' : 'Resume monitor'}
+                title={isViewer ? 'Read-only access: requires Engineer role or higher to resume' : monitor.paused_by_plan ? 'Paused by the Free plan limit: delete or pause another monitor to resume this one' : 'Resume monitor'}
                 disabled={isViewer}
                 onClick={() => onResume(monitor.id)}
               >
@@ -450,7 +450,7 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({
                 size="icon"
                 variant="ghost"
                 className="h-8 w-8 text-muted-foreground hover:text-emerald-400 disabled:opacity-30 disabled:cursor-not-allowed"
-                title={isViewer ? 'Read-only access: requires Engineer role or higher to resume' : 'Resume monitor'}
+                title={isViewer ? 'Read-only access: requires Engineer role or higher to resume' : monitor.paused_by_plan ? 'Paused by the Free plan limit: delete or pause another monitor to resume this one' : 'Resume monitor'}
                 disabled={isViewer}
                 onClick={() => onResume(monitor.id)}
               >

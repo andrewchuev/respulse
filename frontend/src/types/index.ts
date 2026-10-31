@@ -17,6 +17,7 @@ export interface Monitor {
   port: number | null;
   status: MonitorStatus;
   is_paused: boolean;
+  paused_by_plan?: boolean;
   last_checked_at: string | null;
   last_status_change_at: string | null;
   last_response_time_ms: number | null;
@@ -248,6 +249,17 @@ export interface UserProfile {
   permissions: string[];
 }
 
+export interface DowngradeStatus {
+  downgraded_at: string;
+  grace_ends_at: string;
+  enforced: boolean;
+  monitors_over_limit: number;
+  short_interval_monitors: number;
+  members_over_limit: number;
+  paused_by_plan: number;
+  suspended_by_plan: number;
+}
+
 export interface BillingStatusResponse {
   plan: string;
   subscription_status: string;
@@ -255,6 +267,7 @@ export interface BillingStatusResponse {
   subscription_provider?: string | null;
   billing_enabled: boolean;
   is_configured: boolean;
+  downgrade?: DowngradeStatus | null;
 }
 
 export interface WayForPayCheckoutResponse {

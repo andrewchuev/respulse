@@ -420,7 +420,10 @@ pub async fn create_monitor(
     .bind(next_expected_at)
     .fetch_one(&state.pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    .map_err(|e| match plans::plan_limit_message(&e, &state.settings) {
+        Some(msg) => (StatusCode::BAD_REQUEST, msg),
+        None => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+    })?;
 
     let pool = state.pool.clone();
     let client = state.http_client.clone();
@@ -539,6 +542,8 @@ pub async fn update_monitor(
         }
         None => existing.slug,
     };
+    // A schedule set while on Pro keeps working after a downgrade; only adding or changing one needs Pro.
+    let previous_cron = existing.cron_expression.clone();
     let cron_expression = match payload.cron_expression {
         Some(s) if s.trim().is_empty() => None,
         Some(s) => {
@@ -552,7 +557,7 @@ pub async fn update_monitor(
         }
         None => existing.cron_expression,
     };
-    if cron_expression.is_some() && team_plan != "PRO" {
+    if cron_expression.is_some() && cron_expression != previous_cron && team_plan != "PRO" {
         return Err((
             StatusCode::BAD_REQUEST,
             format!(
@@ -579,7 +584,8 @@ pub async fn update_monitor(
     let updated = sqlx::query_as::<_, Monitor>(
         r#"
         UPDATE monitors
-        SET name = $1, url = $2, interval_seconds = $3, timeout_seconds = $4,
+        SET original_interval_seconds = CASE WHEN interval_seconds IS DISTINCT FROM $3 THEN NULL ELSE original_interval_seconds END,
+            name = $1, url = $2, interval_seconds = $3, timeout_seconds = $4,
             method = $5, headers = $6, body = $7, expected_status_code = $8,
             keyword = $9, port = $10, auth_username = $11, auth_password = $12,
             tags = $13, group_name = $14, grace_seconds = $15, slug = $16,
@@ -693,7 +699,10 @@ pub async fn resume_monitor(
     .bind(auth.user.team_id)
     .fetch_one(&state.pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    .map_err(|e| match plans::plan_limit_message(&e, &state.settings) {
+        Some(msg) => (StatusCode::BAD_REQUEST, msg),
+        None => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+    })?;
 
     let pool = state.pool.clone();
     let client = state.http_client.clone();
@@ -801,7 +810,10 @@ pub async fn bulk_action(
             .bind(auth.user.team_id)
             .execute(&state.pool)
             .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+            .map_err(|e| match plans::plan_limit_message(&e, &state.settings) {
+                Some(msg) => (StatusCode::BAD_REQUEST, msg),
+                None => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+            })?;
 
             let affected = res.rows_affected() as usize;
 

@@ -152,6 +152,8 @@
   * **Architectural Deep Dive (Why Rust?):** Benchmark comparison matrix comparing ResPulse (Rust Axum + Tokio) against legacy NodeJS/Python engines (memory, zero GC jitter, thread concurrency, rustls memory safety).
   * **Free Open Beta (current mode):** `BILLING_ENABLED=false` hides prices and checkout. Every team gets the Free limits: **20 monitors, 60-second minimum interval, 30-day history, solo workspace**, heartbeat/cron monitoring, multi-channel alerts and SVG badges. Pro-only features (10-second probes, up to 100 monitors, 10 team members, Prometheus exporter, 90-day history) are planned for a possible paid plan and are not offered during the beta.
   * **Paid plan (dormant):** with `BILLING_ENABLED=true` the Pro plan ($16/month: up to 100 monitors, 10-second probes, 10 team members, Prometheus exporter, 90-day history) and the checkout below come back.
+  * **Downgrade policy (Pro → Free):** nothing is deleted. The team keeps everything for a grace period (`DOWNGRADE_GRACE_DAYS`, default 7) and sees a banner; afterwards the Free limits are applied: monitors beyond 20 (newest first) are paused, probe intervals below 60 s are raised, and members beyond the Free seat count are suspended (owner and oldest accounts stay). Resuming a paused monitor is allowed only while fewer than 20 monitors are running, so deleting or pausing one frees a slot. Upgrading to Pro restores the paused monitors, original intervals and suspended members. Cron schedules and tag routing set while on Pro keep working but cannot be added or changed on Free.
+  * **Limits are enforced atomically:** database triggers (migration `0020`) take a per-team lock on every monitor/member insert and on resume, so concurrent requests cannot exceed the plan limits.
   * **WayForPay Payment & Subscription Integration:**
     * Self-service checkout for the Pro Plan ($16.00 USD / month), a recurring card subscription processed by **WayForPay**.
     * Checkout is a hosted full-page redirect; the plan is switched to Pro only by the signed WayForPay webhook, and cancelling revokes the recurring payment immediately.
@@ -386,7 +388,7 @@ All API routes are served under the `/api` prefix. Authenticated routes require 
 | `PUT` | `/api/team/members/:id/role` | Update a team member's role (`OWNER`/`ADMIN` required) |
 | `DELETE` | `/api/team/members/:id` | Remove a member from the team (`OWNER`/`ADMIN` required) |
 | `POST`/`PUT` | `/api/team/plan` | Change plan (`OWNER`/`ADMIN`); downgrade to `FREE` always, upgrade to `PRO` only through checkout |
-| `GET` | `/api/billing/status` | Plan, subscription status and provider of the caller's team |
+| `GET` | `/api/billing/status` | Plan, subscription status and provider of the caller's team, plus a `downgrade` block (grace end, over-limit counts) after a Pro → Free change |
 | `POST` | `/api/billing/wayforpay/checkout` | Create a WayForPay hosted checkout for the Pro plan ($16/mo) and return its URL |
 | `POST` | `/api/billing/wayforpay/webhook` | WayForPay service callback; the merchant signature is verified, events are deduplicated and only a valid approved payment upgrades the team |
 | `POST` | `/api/billing/wayforpay/cancel` | Cancel the recurring payment and revert the team to Free |
@@ -445,6 +447,7 @@ All API routes are served under the `/api` prefix. Authenticated routes require 
 | `ADMIN_EMAILS` | *unset* | Comma-separated emails that can open the operator report at `/admin` (aggregates only, system org excluded) |
 | `ALLOW_PRIVATE_TARGETS` | `false` | Lets monitors and webhooks reach private, loopback and link-local addresses; leave off on a public server (SSRF guard) |
 | `CORS_ALLOWED_ORIGINS` | *unset* | Comma-separated origins allowed to call the API cross-origin; unset means same-origin only (the bundled SPA needs nothing) |
+| `DOWNGRADE_GRACE_DAYS` | `7` | Days a team that dropped from Pro to Free keeps its extra monitors, short intervals and members before the Free limits are applied |
 | `RETENTION_FREE_DAYS` / `RETENTION_PRO_DAYS` | `30` / `90` | How long probe history (`check_results`) is kept per plan; pruned daily in batches |
 | `WAYFORPAY_MERCHANT_ACCOUNT` / `WAYFORPAY_SECRET_KEY` | *unset* | WayForPay merchant credentials; checkout and webhooks are unavailable without them |
 | `WAYFORPAY_MERCHANT_PASSWORD` | *unset* | Needed to revoke the recurring payment on cancellation |
