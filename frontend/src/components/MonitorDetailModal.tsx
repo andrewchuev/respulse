@@ -56,7 +56,7 @@ export const MonitorDetailModal: React.FC<MonitorDetailModalProps> = ({
 
   return (
     <Dialog open={!!monitor} onOpenChange={onClose}>
-      <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:max-w-[700px] bg-slate-900/95 backdrop-blur-2xl border border-white/10 ring-1 ring-white/5 shadow-2xl shadow-black/90 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto overflow-x-hidden p-3.5 sm:p-6 top-[52%] sm:top-[50%]">
+      <DialogContent className="grid-cols-[minmax(0,1fr)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:max-w-[700px]bg-slate-900/95 backdrop-blur-2xl border border-white/10 ring-1 ring-white/5 shadow-2xl shadow-black/90 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto overflow-x-hidden p-3.5 sm:p-6 top-[52%] sm:top-[50%]">
         <DialogHeader>
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
