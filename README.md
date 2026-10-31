@@ -159,6 +159,10 @@
     * Checkout is a hosted full-page redirect; the plan is switched to Pro only by the signed WayForPay webhook, and cancelling revokes the recurring payment immediately.
   * **Interactive FAQ & Social Proof:** Expandable accordions answering technical architecture, VPC self-hosting, heartbeat monitoring, and role permissions.
 
+### SEO & GEO
+* `frontend/index.html` is the only indexable page: it carries Open Graph / Twitter tags, JSON-LD (WebSite, WebApplication with both plans, Organization, FAQPage) and a crawler-visible copy of the landing content that React replaces on load. Every client-side route is served from `frontend/app.html` with `noindex` (header and meta), unknown URLs return a real `404`.
+* `frontend/public/` holds `robots.txt`, `sitemap.xml` (its `lastmod` is stamped by the commit hook), `llms.txt` for AI crawlers, `logo.svg` and `og-image.jpg` (1200×630). Keep the plan limits in `llms.txt`, the JSON-LD and the static copy in sync with `backend/src/plans.rs`.
+
 ### 9. Production Server Deployment (respulse.online)
 * **Cloud Architecture & Security Hardening:**
   * Hosted at `/opt/respulse` on Debian 13 (Trixie) x86_64 (`respulse.online`, `46.225.23.41`).
