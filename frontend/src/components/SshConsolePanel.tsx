@@ -50,6 +50,7 @@ function extractDefaultHost(rawUrl: string): string {
 export const SshConsolePanel: React.FC<SshConsolePanelProps> = ({ monitor }) => {
   const [profile, setProfile] = useState<SshProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [storageError, setStorageError] = useState<string | null>(null);
 
   // Form states
   const [host, setHost] = useState('');
@@ -72,39 +73,56 @@ export const SshConsolePanel: React.FC<SshConsolePanelProps> = ({ monitor }) => 
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const existing = getSshProfile(monitor.id);
-    if (existing) {
-      setProfile(existing);
-      setHost(existing.host);
-      setPort(existing.port);
-      setUsername(existing.username);
-      setServiceName(existing.service_name || '');
-      if (existing.auth.type === 'Password') {
-        setAuthType('Password');
-        setPassword(existing.auth.value);
-      } else if (existing.auth.type === 'PrivateKey') {
-        setAuthType('PrivateKey');
-        setPrivateKey(existing.auth.value.key);
-        setPassphrase(existing.auth.value.passphrase || '');
+    let cancelled = false;
+    setStorageError(null);
+
+    const applyProfile = (existing: SshProfile | null) => {
+      if (cancelled) return;
+      if (existing) {
+        setProfile(existing);
+        setHost(existing.host);
+        setPort(existing.port);
+        setUsername(existing.username);
+        setServiceName(existing.service_name || '');
+        if (existing.auth.type === 'Password') {
+          setAuthType('Password');
+          setPassword(existing.auth.value);
+        } else if (existing.auth.type === 'PrivateKey') {
+          setAuthType('PrivateKey');
+          setPrivateKey(existing.auth.value.key);
+          setPassphrase(existing.auth.value.passphrase || '');
+        } else {
+          setAuthType('Agent');
+        }
+        setIsEditing(false);
       } else {
-        setAuthType('Agent');
+        const defHost = extractDefaultHost(monitor.url);
+        setHost(defHost);
+        setPort(22);
+        setUsername('root');
+        setServiceName(monitor.name.toLowerCase().replace(/[^a-z0-9_-]/g, ''));
+        setProfile(null);
+        setIsEditing(true);
       }
-      setIsEditing(false);
-    } else {
-      const defHost = extractDefaultHost(monitor.url);
-      setHost(defHost);
-      setPort(22);
-      setUsername('root');
-      setServiceName(monitor.name.toLowerCase().replace(/[^a-z0-9_-]/g, ''));
-      setProfile(null);
-      setIsEditing(true);
-    }
-    setOutput(null);
-    setOutputMeta(null);
-    setTestResult(null);
+      setOutput(null);
+      setOutputMeta(null);
+      setTestResult(null);
+    };
+
+    getSshProfile(monitor.id)
+      .then(applyProfile)
+      .catch((err: Error) => {
+        if (cancelled) return;
+        setStorageError(err.message);
+        applyProfile(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [monitor.id, monitor.url, monitor.name]);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!host.trim() || !username.trim()) return;
 
@@ -131,19 +149,29 @@ export const SshConsolePanel: React.FC<SshConsolePanelProps> = ({ monitor }) => 
       updated_at: new Date().toISOString(),
     };
 
-    saveSshProfile(newProfile);
-    setProfile(newProfile);
-    setIsEditing(false);
-    setTestResult(null);
+    try {
+      const saved = await saveSshProfile(newProfile);
+      setStorageError(null);
+      setProfile(saved);
+      setIsEditing(false);
+      setTestResult(null);
+    } catch (err) {
+      setStorageError((err as Error).message);
+    }
   };
 
-  const handleDeleteProfile = () => {
+  const handleDeleteProfile = async () => {
     if (confirm('Remove local SSH credentials for this endpoint?')) {
-      deleteSshProfile(monitor.id);
-      setProfile(null);
-      setIsEditing(true);
-      setOutput(null);
-      setTestResult(null);
+      try {
+        await deleteSshProfile(monitor.id);
+        setStorageError(null);
+        setProfile(null);
+        setIsEditing(true);
+        setOutput(null);
+        setTestResult(null);
+      } catch (err) {
+        setStorageError((err as Error).message);
+      }
     }
   };
 
@@ -232,6 +260,13 @@ export const SshConsolePanel: React.FC<SshConsolePanelProps> = ({ monitor }) => 
           <span>Tauri 2 Native Client</span>
         </div>
       </div>
+
+      {storageError && (
+        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-300 flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+          <span>Secure credential storage failed: {storageError}</span>
+        </div>
+      )}
 
       {/* VIEW: CONFIGURATION FORM */}
       {isEditing ? (

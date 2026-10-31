@@ -1,8 +1,8 @@
 /**
  * ResPulse SRE Mobile & Desktop Local SSH Client
  *
- * All credentials (passwords, private keys) are stored SOLELY on the user's
- * local device (Zero-Knowledge) and are NEVER transmitted to ResPulse cloud servers.
+ * All credentials (passwords, private keys) are stored SOLELY on the user's local device, encrypted
+ * by a key held in the OS keyring / Android Keystore, and are NEVER transmitted to ResPulse servers.
  */
 
 export interface SshAuthPassword {
@@ -77,48 +77,77 @@ export function purgeWebSshProfiles(): void {
   }
 }
 
-/**
- * Load all locally stored SSH profiles
- */
-export function getAllSshProfiles(): Record<string, SshProfile> {
+const PROFILE_KEY_PREFIX = 'ssh_profile:';
+
+async function vaultInvoke<T>(command: string, args: Record<string, unknown>): Promise<T> {
+  if (!isTauri()) throw new Error(NATIVE_ONLY_MSG);
+  const { invoke } = await import('@tauri-apps/api/core');
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    return JSON.parse(raw);
+    return await invoke<T>(command, args);
   } catch (err) {
-    console.error('Failed to parse local SSH profiles:', err);
-    return {};
+    throw new Error(String(err));
   }
 }
 
 /**
- * Get SSH profile associated with a specific monitor ID
+ * Get the SSH profile of a monitor from the native encrypted vault (OS keyring / Android Keystore)
  */
-export function getSshProfile(monitorId: string): SshProfile | null {
-  const all = getAllSshProfiles();
-  return all[monitorId] || null;
+export async function getSshProfile(monitorId: string): Promise<SshProfile | null> {
+  // A profile may still sit in WebView storage on the first launch after an update.
+  await migrateLegacySshProfiles();
+  const raw = await vaultInvoke<string | null>('secret_get', { key: PROFILE_KEY_PREFIX + monitorId });
+  return raw ? (JSON.parse(raw) as SshProfile) : null;
 }
 
 /**
- * Save an SSH profile locally (Zero-Knowledge)
+ * Save an SSH profile into the native encrypted vault (Zero-Knowledge)
  */
-export function saveSshProfile(profile: SshProfile): void {
-  const all = getAllSshProfiles();
-  all[profile.monitor_id] = {
-    ...profile,
-    updated_at: new Date().toISOString(),
-  };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+export async function saveSshProfile(profile: SshProfile): Promise<SshProfile> {
+  const stored = { ...profile, updated_at: new Date().toISOString() };
+  await vaultInvoke('secret_set', {
+    key: PROFILE_KEY_PREFIX + profile.monitor_id,
+    value: JSON.stringify(stored),
+  });
+  return stored;
 }
 
 /**
- * Delete an SSH profile locally
+ * Delete an SSH profile from the native encrypted vault
  */
-export function deleteSshProfile(monitorId: string): void {
-  const all = getAllSshProfiles();
-  if (all[monitorId]) {
-    delete all[monitorId];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+export async function deleteSshProfile(monitorId: string): Promise<void> {
+  await vaultInvoke('secret_delete', { key: PROFILE_KEY_PREFIX + monitorId });
+}
+
+/**
+ * Moves profiles saved in WebView storage by earlier builds into the vault. The plaintext copy is
+ * removed only after every profile was written, so a failed run is retried on the next launch.
+ */
+export function migrateLegacySshProfiles(): Promise<void> {
+  migration ??= runLegacyMigration();
+  return migration;
+}
+
+let migration: Promise<void> | null = null;
+
+async function runLegacyMigration(): Promise<void> {
+  if (!isTauri()) return;
+  let legacy: Record<string, SshProfile>;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    legacy = JSON.parse(raw);
+  } catch (err) {
+    console.error('Failed to read legacy SSH profiles:', err);
+    return;
+  }
+
+  try {
+    for (const [monitorId, profile] of Object.entries(legacy)) {
+      await vaultInvoke('secret_set', { key: PROFILE_KEY_PREFIX + monitorId, value: JSON.stringify(profile) });
+    }
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (err) {
+    console.error('SSH profile migration failed, will retry on next launch:', err);
   }
 }
 

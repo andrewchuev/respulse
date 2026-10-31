@@ -348,6 +348,12 @@ Emails listed in `ADMIN_EMAILS` see a **Report** tab (`/admin`) with aggregate n
 
 ---
 
+## 🔐 SSH Console (desktop & mobile apps)
+
+The per-monitor SSH console exists only in the Tauri apps; the web UI does not show it. Credentials never leave the device and are not kept in WebView storage: they are written to an AES-256-GCM sealed file (`ssh-vault.bin` in the app data directory). The key is held by the OS: the system keyring on desktop (Windows Credential Manager, macOS Keychain, Linux Secret Service) and a non-exportable Android Keystore key on Android. On Linux a Secret Service provider such as GNOME Keyring or KeePassXC must be running, otherwise saving a profile fails instead of falling back to plaintext. Profiles saved by older builds in WebView storage are migrated on first launch. If the key is lost (e.g. app data restored on another device) the unreadable vault is kept as `ssh-vault.bin.unreadable` and profiles must be entered again.
+
+---
+
 ## 🏷 Versioning
 
 The `VERSION` file is the single source of truth (semver). `node scripts/version.mjs sync` propagates it to `package.json`, `tauri.conf.json` (Android `versionName`), both `Cargo.toml` files and the lockfiles; the frontend shows it in the footer and promo badge. After `make hooks`, every commit increments the patch number automatically (skipped for merges/rebases or with `SKIP_VERSION_BUMP=1`); change major/minor with `node scripts/version.mjs set 1.2.0`.
