@@ -448,6 +448,7 @@ All API routes are served under the `/api` prefix. Authenticated routes require 
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_TLS` | *unset* / provider default / `starttls` | SMTP relay for outgoing email; `SMTP_TLS` is `starttls` (587), `tls` (implicit TLS, 465) or `none` (local test servers only) |
 | `SMTP_USERNAME` / `SMTP_PASSWORD` / `SMTP_FROM` | *unset* | SMTP credentials and the sender address, e.g. `ResPulse <noreply@respulse.online>` |
 | `APP_URL` | `http://localhost:8080` | Public base URL used in emailed links |
+| `ALERT_SOURCE_NAME` | host of `APP_URL` | Label prefixed to alert titles (Telegram, Discord, Slack) and sent as `source` in webhook payloads, so shared alert groups show which deployment fired |
 | `ADMIN_EMAILS` | *unset* | Comma-separated emails that can open the operator report at `/admin` (aggregates only, system org excluded) |
 | `ALLOW_PRIVATE_TARGETS` | `false` | Lets monitors and webhooks reach private, loopback and link-local addresses; leave off on a public server (SSRF guard) |
 | `CORS_ALLOWED_ORIGINS` | *unset* | Comma-separated origins allowed to call the API cross-origin; unset means same-origin only (the bundled SPA needs nothing) |

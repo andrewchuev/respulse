@@ -8,6 +8,7 @@ use crate::models::{Monitor, NotificationChannel, WsMessage};
 use chrono::Utc;
 use reqwest::Client;
 use serde_json::json;
+use std::sync::OnceLock;
 use tokio::sync::broadcast::Sender;
 use tracing::{error, info};
 use uuid::Uuid;
@@ -118,6 +119,31 @@ pub async fn dispatch_alert(
     }
 }
 
+/// Label that tells shared alert groups which ResPulse deployment sent a message.
+fn source_name() -> &'static str {
+    static SOURCE: OnceLock<String> = OnceLock::new();
+    SOURCE.get_or_init(|| {
+        resolve_source_name(
+            std::env::var("ALERT_SOURCE_NAME").ok().as_deref(),
+            std::env::var("APP_URL").ok().as_deref(),
+        )
+    })
+}
+
+/// Explicit override wins, then the host of `APP_URL`, then a generic fallback.
+fn resolve_source_name(override_name: Option<&str>, app_url: Option<&str>) -> String {
+    override_name
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
+        .or_else(|| {
+            app_url
+                .and_then(|u| reqwest::Url::parse(u).ok())
+                .and_then(|u| u.host_str().map(str::to_string))
+        })
+        .unwrap_or_else(|| "ResPulse".to_string())
+}
+
 pub async fn deliver_to_channel(
     client: &Client,
     ch: &NotificationChannel,
@@ -133,10 +159,11 @@ pub async fn deliver_to_channel(
             .map_err(|e| format!("Webhook URL not allowed: {}", e))?;
     }
 
+    let source = source_name();
     let title = match event_name {
-        "DOWN" => format!("🚨 INCIDENT: {} is DOWN", monitor.name),
-        "RESOLVED" => format!("✅ RESOLVED: {} is UP", monitor.name),
-        _ => format!("🔔 ResPulse Test Notification: {}", monitor.name),
+        "DOWN" => format!("[{}] 🚨 INCIDENT: {} is DOWN", source, monitor.name),
+        "RESOLVED" => format!("[{}] ✅ RESOLVED: {} is UP", source, monitor.name),
+        _ => format!("[{}] 🔔 ResPulse Test Notification: {}", source, monitor.name),
     };
 
     let text_detail = match event_name {
@@ -180,6 +207,7 @@ pub async fn deliver_to_channel(
         "WEBHOOK" | "CUSTOM" | _ => {
             let payload = json!({
                 "event": event_name,
+                "source": source,
                 "monitor": {
                     "id": monitor.id,
                     "name": monitor.name,
@@ -238,4 +266,26 @@ pub async fn test_channel(client: &Client, channel: &NotificationChannel) -> Res
     };
 
     deliver_to_channel(client, channel, &dummy_monitor, "TEST", None, None).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn source_name_prefers_explicit_override() {
+        assert_eq!(resolve_source_name(Some(" prod-eu "), Some("https://respulse.online")), "prod-eu");
+    }
+
+    #[test]
+    fn source_name_falls_back_to_app_url_host() {
+        assert_eq!(resolve_source_name(None, Some("https://respulse.online/app")), "respulse.online");
+        assert_eq!(resolve_source_name(Some("  "), Some("https://respulse.online")), "respulse.online");
+    }
+
+    #[test]
+    fn source_name_uses_generic_default_without_config() {
+        assert_eq!(resolve_source_name(None, None), "ResPulse");
+        assert_eq!(resolve_source_name(None, Some("not a url")), "ResPulse");
+    }
 }
