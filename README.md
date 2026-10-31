@@ -356,10 +356,18 @@ Emails listed in `ADMIN_EMAILS` see a **Report** tab (`/admin`) with aggregate n
 
 ---
 
+## 🏷 Versioning
+
+The `VERSION` file is the single source of truth (semver). `node scripts/version.mjs sync` propagates it to `package.json`, `tauri.conf.json` (Android `versionName`), both `Cargo.toml` files and the lockfiles; the frontend shows it in the footer and promo badge. After `make hooks`, every commit increments the patch number automatically (skipped for merges/rebases or with `SKIP_VERSION_BUMP=1`); change major/minor with `node scripts/version.mjs set 1.2.0`.
+
+---
+
 ## 🛠 Makefile Commands
 
 | Command | Description |
 | :--- | :--- |
+| `make hooks` | Enable the git pre-commit hook that bumps the patch version on every commit |
+| `make version` | Print the current app version (`VERSION` file) |
 | `make up` | Build and start all containers in detached mode |
 | `make down` | Stop and remove running containers |
 | `make restart` | Restart all application containers |

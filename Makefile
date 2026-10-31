@@ -1,4 +1,11 @@
-.PHONY: up down restart logs build ps seed clean release deploy deploy-direct backup-pull tauri-dev tauri-build tauri-android-init tauri-android-build tauri-android-release tauri-android-bundle tauri-android-install
+.PHONY: hooks version up down restart logs build ps seed clean release deploy deploy-direct backup-pull tauri-dev tauri-build tauri-android-init tauri-android-build tauri-android-release tauri-android-bundle tauri-android-install
+
+# Enables the pre-commit hook that bumps the patch version (VERSION file) on every commit.
+hooks:
+	git config core.hooksPath .githooks
+
+version:
+	@cat VERSION
 
 up:
 	docker compose up -d

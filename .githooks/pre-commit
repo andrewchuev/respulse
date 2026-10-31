@@ -1,0 +1,17 @@
+#!/bin/sh
+# Bumps the patch version on every commit; enable with `make hooks`.
+# Skipped for merges, rebases, cherry-picks and when SKIP_VERSION_BUMP=1.
+[ -n "$SKIP_VERSION_BUMP" ] && exit 0
+git_dir=$(git rev-parse --git-dir)
+for marker in MERGE_HEAD CHERRY_PICK_HEAD rebase-merge rebase-apply; do
+  [ -e "$git_dir/$marker" ] && exit 0
+done
+
+root=$(git rev-parse --show-toplevel)
+version=$(node "$root/scripts/version.mjs" patch) || exit 1
+
+git -C "$root" add VERSION package.json package-lock.json \
+  frontend/package.json frontend/package-lock.json \
+  src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock \
+  backend/Cargo.toml backend/Cargo.lock
+echo "version bumped to $version"

@@ -94,7 +94,7 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
                 ResPulse
               </span>
               <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
-                v1.0
+                v{__APP_VERSION__}
               </span>
             </div>
           </div>
