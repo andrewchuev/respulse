@@ -258,8 +258,8 @@ export const StatusPage: React.FC<StatusPageProps> = ({ onBack }) => {
                             <div className="text-xs font-bold font-mono text-emerald-400">
                               {svc.uptime_24h.toFixed(1)}%
                             </div>
-                            <div className="text-[10px] font-mono text-muted-foreground">
-                              {formatMs(svc.last_response_time_ms)}
+                            <div className="text-[10px] font-mono text-muted-foreground" title="Median response time, last 24h">
+                              {formatMs(svc.latency_p50_ms)}
                             </div>
                           </div>
                         </div>

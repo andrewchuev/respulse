@@ -12,7 +12,8 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ stats }) => {
   const up = stats?.up_monitors ?? 0;
   const down = stats?.down_monitors ?? 0;
   const uptime = stats?.overall_uptime_24h ?? 100;
-  const avgLatency = stats?.avg_response_time_ms ?? 0;
+  const medianLatency = stats?.median_response_time_ms ?? 0;
+  const p95Latency = stats?.p95_response_time_ms ?? 0;
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-8">
@@ -88,18 +89,19 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ stats }) => {
         </CardContent>
       </Card>
 
-      {/* 4. Avg Latency */}
+      {/* 4. Median Latency */}
       <Card className="relative overflow-hidden bg-card/60 backdrop-blur border-border/80 hover:border-purple-500/40 hover:shadow-[0_4px_25px_rgba(168,85,247,0.12)] transition-all group">
         <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-purple-400/30 to-transparent" />
         <CardContent className="p-2.5 sm:p-5 flex items-center justify-between gap-1.5 sm:gap-2">
           <div className="min-w-0">
             <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">
               <span className="sm:hidden">Latency</span>
-              <span className="hidden sm:inline">Avg Latency (24h)</span>
+              <span className="hidden sm:inline">Median Latency (24h)</span>
             </p>
             <div className="flex items-baseline gap-1 sm:gap-2 mt-0.5 sm:mt-1">
-              <span className="text-lg sm:text-2xl font-bold font-mono tracking-tight text-white group-hover:text-purple-300 transition-colors">{avgLatency}</span>
+              <span className="text-lg sm:text-2xl font-bold font-mono tracking-tight text-white group-hover:text-purple-300 transition-colors">{medianLatency}</span>
               <span className="text-[10px] sm:text-xs font-mono text-muted-foreground">ms</span>
+              <span className="hidden sm:inline text-[10px] sm:text-xs font-mono text-muted-foreground" title="95th percentile of successful checks">p95 {p95Latency}</span>
             </div>
           </div>
           <div className="h-7 w-7 sm:h-10 sm:w-10 rounded-lg bg-purple-500/10 border border-purple-500/25 flex items-center justify-center text-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.2)] shrink-0">

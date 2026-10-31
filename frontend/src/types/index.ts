@@ -57,6 +57,9 @@ export interface MonitorWithStats extends Monitor {
   uptime_24h: number;
   uptime_7d: number;
   uptime_30d: number;
+  /** Median / p95 response time over the last 24h, successful checks only. */
+  latency_p50_ms: number | null;
+  latency_p95_ms: number | null;
   recent_history: UptimeBarPoint[];
   latency_history: LatencyPoint[];
 }
@@ -128,6 +131,8 @@ export interface GlobalStats {
   paused_monitors: number;
   overall_uptime_24h: number;
   avg_response_time_ms: number;
+  median_response_time_ms: number;
+  p95_response_time_ms: number;
 }
 
 export interface PublicStatusPage {

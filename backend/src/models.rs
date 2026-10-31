@@ -219,6 +219,9 @@ pub struct MonitorWithStats {
     pub uptime_24h: f64,
     pub uptime_7d: f64,
     pub uptime_30d: f64,
+    /// Median / 95th percentile response time over the last 24h, successful checks only.
+    pub latency_p50_ms: Option<f64>,
+    pub latency_p95_ms: Option<f64>,
     pub recent_history: Vec<UptimeBarPoint>,
     pub latency_history: Vec<LatencyPoint>,
 }
@@ -245,7 +248,10 @@ pub struct GlobalStats {
     pub down_monitors: usize,
     pub paused_monitors: usize,
     pub overall_uptime_24h: f64,
+    /// Mean over successful checks; kept for older clients, prefer the median.
     pub avg_response_time_ms: f64,
+    pub median_response_time_ms: f64,
+    pub p95_response_time_ms: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

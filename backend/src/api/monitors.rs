@@ -1,3 +1,4 @@
+use crate::api::stats::latency_percentiles_24h;
 use crate::auth::{AuthConfig, AuthUser};
 use crate::db::DbPool;
 use crate::models::{
@@ -159,11 +160,15 @@ pub async fn list_monitors(
             .collect();
         recent_history.reverse();
 
+        let (latency_p50_ms, latency_p95_ms) = latency_percentiles_24h(&state.pool, m.id).await;
+
         result.push(MonitorWithStats {
             monitor: m,
             uptime_24h: (uptime_24h * 100.0).round() / 100.0,
             uptime_7d: (uptime_7d * 100.0).round() / 100.0,
             uptime_30d: (uptime_30d * 100.0).round() / 100.0,
+            latency_p50_ms,
+            latency_p95_ms,
             recent_history,
             latency_history: vec![],
         });
@@ -285,11 +290,15 @@ pub async fn get_monitor(
         });
     }
 
+    let (latency_p50_ms, latency_p95_ms) = latency_percentiles_24h(&state.pool, monitor.id).await;
+
     Ok(Json(MonitorWithStats {
         monitor,
         uptime_24h: (uptime_24h * 100.0).round() / 100.0,
         uptime_7d: (uptime_7d * 100.0).round() / 100.0,
         uptime_30d: (uptime_30d * 100.0).round() / 100.0,
+        latency_p50_ms,
+        latency_p95_ms,
         recent_history,
         latency_history,
     }))

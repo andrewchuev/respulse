@@ -49,6 +49,8 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({
     bar: { timestamp: string; is_up: boolean; response_time_ms: number; status_code: number | null };
   } | null>(null);
 
+  const latencyTitle = `Median (p50) of successful checks, last 24h. p95: ${formatMs(monitor.latency_p95_ms)}. Last check: ${formatMs(monitor.last_response_time_ms)}`;
+
   const handleTest = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setTesting(true);
@@ -216,8 +218,11 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({
             {monitor.uptime_24h.toFixed(1)}%
           </span>
 
-          <span className="text-xs font-mono font-medium text-white w-14 text-right hidden sm:inline-block">
-            {formatMs(monitor.last_response_time_ms)}
+          <span
+            className="text-xs font-mono font-medium text-white w-14 text-right hidden sm:inline-block"
+            title={latencyTitle}
+          >
+            {formatMs(monitor.latency_p50_ms)}
           </span>
 
           <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
@@ -425,11 +430,11 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({
         {/* Right: Latency & Quick Actions */}
         <div className="flex items-center justify-between md:justify-end gap-3 border-t md:border-t-0 border-border/40 pt-2.5 md:pt-0">
           <div className="text-right">
-            <div className="text-sm font-mono font-medium text-white">
-              {formatMs(monitor.last_response_time_ms)}
+            <div className="text-sm font-mono font-medium text-white" title={latencyTitle}>
+              {formatMs(monitor.latency_p50_ms)}
             </div>
-            <div className="text-[10px] text-muted-foreground">
-              {timeAgo(monitor.last_checked_at)}
+            <div className="text-[10px] text-muted-foreground" title={latencyTitle}>
+              last {formatMs(monitor.last_response_time_ms)} · {timeAgo(monitor.last_checked_at)}
             </div>
           </div>
 

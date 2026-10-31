@@ -57,6 +57,7 @@
   * Color-coded status bars (operational, down, paused).
   * Smooth hover scale transitions (`hover:scale-y-125 hover:brightness-125`) with animated floating glass tooltips displaying exact timestamp, HTTP status code, and latency in milliseconds.
 * **Response Time Analytics & Brand Neon Glow:**
+  * Latency figures are the median (p50) and p95 of successful checks over the last 24 h, not the last sample or a mean, so one slow check or a timeout does not distort them; the last value is shown as secondary text.
   * Interactive area charts built with `Recharts` showing latency history with dual-stop emerald/cyan gradients and luminous ambient glow auras.
   * Calculates rolling 24-hour, 7-day, and 30-day uptime percentages.
 * **Perceived Performance & Skeleton UI:**
@@ -426,7 +427,7 @@ All API routes are served under the `/api` prefix. Authenticated routes require 
 | `POST` | `/api/incidents/:id/updates` | Append a new live status update to the incident timeline |
 | `GET` | `/api/admin/access` | Whether the caller may open the operator report (`ADMIN_EMAILS`) |
 | `GET` | `/api/admin/report` | Operator report: signups, activation funnel, cohorts, demand signals, load (admins only, `403` otherwise) |
-| `GET` | `/api/stats` | Global metrics (total, operational, down, average latency) |
+| `GET` | `/api/stats` | Global metrics (total, operational, down, median and p95 latency of successful checks over 24 h; `avg_response_time_ms` is kept for older clients) |
 | `GET` | `/api/status-page` | Public status page data |
 | `GET` | `/api/metrics` / `/metrics` | Prometheus scrape endpoint scoped to one team; send `Authorization: Bearer <team Ping Key or JWT>` (`respulse_monitors_total`, statuses, latencies, incidents) |
 | `GET` | `/api/badge/:token[.svg]` | Vector SVG status badge by monitor UUID or heartbeat token |

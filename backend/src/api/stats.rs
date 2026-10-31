@@ -13,6 +13,38 @@ struct StatsAggregate {
     total: i64,
     up: i64,
     avg_time: Option<f64>,
+    p50_time: Option<f64>,
+    p95_time: Option<f64>,
+}
+
+#[derive(FromRow)]
+struct LatencyPercentiles {
+    p50: Option<f64>,
+    p95: Option<f64>,
+}
+
+fn round1(v: f64) -> f64 {
+    (v * 10.0).round() / 10.0
+}
+
+/// Median and p95 of a monitor's successful checks in the last 24h. Failed checks are left out:
+/// a 10s timeout says nothing about how fast the service answers when it is up.
+pub async fn latency_percentiles_24h(pool: &crate::db::DbPool, monitor_id: uuid::Uuid) -> (Option<f64>, Option<f64>) {
+    let row: Option<LatencyPercentiles> = sqlx::query_as(
+        r#"
+        SELECT
+            (percentile_cont(0.5) WITHIN GROUP (ORDER BY response_time_ms))::float8 AS p50,
+            (percentile_cont(0.95) WITHIN GROUP (ORDER BY response_time_ms))::float8 AS p95
+        FROM check_results
+        WHERE monitor_id = $1 AND is_up = TRUE AND checked_at >= NOW() - INTERVAL '24 hours'
+        "#
+    )
+    .bind(monitor_id)
+    .fetch_one(pool)
+    .await
+    .ok();
+
+    row.map_or((None, None), |r| (r.p50.map(round1), r.p95.map(round1)))
 }
 
 #[derive(FromRow)]
@@ -44,7 +76,9 @@ pub async fn get_stats(
         SELECT
             COUNT(*)::bigint as total,
             COUNT(*) FILTER (WHERE c.is_up = true)::bigint as up,
-            AVG(c.response_time_ms)::float8 as avg_time
+            (AVG(c.response_time_ms) FILTER (WHERE c.is_up = true))::float8 as avg_time,
+            (percentile_cont(0.5) WITHIN GROUP (ORDER BY c.response_time_ms) FILTER (WHERE c.is_up = true))::float8 as p50_time,
+            (percentile_cont(0.95) WITHIN GROUP (ORDER BY c.response_time_ms) FILTER (WHERE c.is_up = true))::float8 as p95_time
         FROM check_results c
         JOIN monitors m ON m.id = c.monitor_id
         WHERE m.team_id = $1 AND c.checked_at >= $2
@@ -54,7 +88,7 @@ pub async fn get_stats(
     .bind(day_ago)
     .fetch_one(&state.pool)
     .await
-    .unwrap_or(StatsAggregate { total: 0, up: 0, avg_time: Some(0.0) });
+    .unwrap_or(StatsAggregate { total: 0, up: 0, avg_time: None, p50_time: None, p95_time: None });
 
     let overall_uptime_24h = if agg.total > 0 {
         ((agg.up as f64 / agg.total as f64) * 10000.0).round() / 100.0
@@ -66,7 +100,9 @@ pub async fn get_stats(
         0.0
     };
 
-    let avg_response_time_ms = ((agg.avg_time.unwrap_or(0.0) * 10.0).round()) / 10.0;
+    let avg_response_time_ms = round1(agg.avg_time.unwrap_or(0.0));
+    let median_response_time_ms = round1(agg.p50_time.unwrap_or(0.0));
+    let p95_response_time_ms = round1(agg.p95_time.unwrap_or(0.0));
 
     Ok(Json(GlobalStats {
         total_monitors,
@@ -75,6 +111,8 @@ pub async fn get_stats(
         paused_monitors,
         overall_uptime_24h,
         avg_response_time_ms,
+        median_response_time_ms,
+        p95_response_time_ms,
     }))
 }
 
@@ -203,11 +241,15 @@ pub async fn get_status_page(
             .collect();
         recent_history.reverse();
 
+        let (latency_p50_ms, latency_p95_ms) = latency_percentiles_24h(&state.pool, m.id).await;
+
         services.push(MonitorWithStats {
             monitor: m,
             uptime_24h: (uptime_24h * 100.0).round() / 100.0,
             uptime_7d: (uptime_24h * 100.0).round() / 100.0,
             uptime_30d: (uptime_24h * 100.0).round() / 100.0,
+            latency_p50_ms,
+            latency_p95_ms,
             recent_history,
             latency_history: vec![],
         });
