@@ -268,7 +268,7 @@ pub async fn update_team_plan(
         ));
     }
 
-    // Paid upgrades go through the signed FastSpring webhook; self-service PRO is not allowed.
+    // Paid upgrades go through the signed WayForPay webhook; self-service PRO is not allowed.
     if plan_upper == "PRO" {
         return Err((
             StatusCode::FORBIDDEN,

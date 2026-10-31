@@ -10,7 +10,6 @@ import {
   BillingStatusResponse,
   BulkActionPayload,
   BulkActionResponse,
-  ConfirmFastSpringPaymentPayload,
   CreateChannelPayload,
   CreateManualIncidentPayload,
   CreateMonitorPayload,
@@ -23,7 +22,6 @@ import {
   Monitor,
   MonitorWithStats,
   NotificationChannel,
-  FastSpringCheckoutConfig,
   PaymentTransaction,
   PublicStatusPage,
   RegisterPayload,
@@ -600,29 +598,7 @@ export async function fetchBillingStatus(): Promise<BillingStatusResponse> {
   return res.json();
 }
 
-// Payments & FastSpring
-export async function fetchFastSpringConfig(): Promise<FastSpringCheckoutConfig> {
-  const res = await apiFetch(`${API_BASE}/payments/fastspring/config`, {
-    headers: authHeaders(),
-  });
-  if (!res.ok) throw new Error('Failed to fetch FastSpring configuration');
-  return res.json();
-}
-
-export async function confirmFastSpringPayment(payload: ConfirmFastSpringPaymentPayload): Promise<any> {
-  const res = await apiFetch(`${API_BASE}/payments/fastspring/confirm`, {
-    method: 'POST',
-    headers: authHeaders({ 'Content-Type': 'application/json' }),
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    // 409 means the signed FastSpring webhook has not upgraded the plan yet, which callers can retry.
-    throw Object.assign(new Error(err.error || 'Failed to confirm FastSpring payment'), { status: res.status });
-  }
-  return res.json();
-}
-
+// Payments
 export async function fetchPaymentHistory(): Promise<PaymentTransaction[]> {
   const res = await apiFetch(`${API_BASE}/payments/history`, {
     headers: authHeaders(),

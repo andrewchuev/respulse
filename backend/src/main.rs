@@ -12,7 +12,6 @@ mod rate_limit;
 mod retention;
 
 use api::monitors::AppState;
-use api::payments::WebhookConfig;
 use auth::AuthConfig;
 use plans::AppSettings;
 use rate_limit::RateLimits;
@@ -77,7 +76,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         tx: tx.clone(),
         http_client,
         auth,
-        webhook: Arc::new(WebhookConfig::from_env()),
         limits,
         settings,
         mailer,

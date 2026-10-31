@@ -2,7 +2,6 @@ pub mod admin;
 pub mod auth;
 pub mod badge;
 pub mod export_import;
-pub mod fastspring;
 pub mod heartbeat;
 pub mod incidents;
 pub mod metrics;
@@ -38,10 +37,7 @@ pub fn create_router() -> Router<AppState> {
         .route("/billing/wayforpay/checkout", axum::routing::post(wayforpay::create_checkout_session))
         .route("/billing/wayforpay/webhook", axum::routing::post(wayforpay::billing_webhook))
         .route("/billing/wayforpay/cancel", axum::routing::post(wayforpay::cancel_subscription))
-        // Payments & FastSpring Subscription
-        .route("/payments/fastspring/config", get(payments::get_fastspring_config))
-        .route("/payments/fastspring/confirm", axum::routing::post(payments::confirm_fastspring_payment))
-        .route("/payments/fastspring/webhook", axum::routing::post(payments::fastspring_webhook))
+        // Payment history
         .route("/payments/history", get(payments::get_payment_history))
         // Operator report & super-admin control plane
         .route("/admin/access", get(admin::admin_access))

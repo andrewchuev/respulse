@@ -2043,10 +2043,9 @@ dependencies = [
 
 [[package]]
 name = "respulse-api"
-version = "1.1.4"
+version = "1.1.5"
 dependencies = [
  "axum",
- "base64 0.23.1",
  "bcrypt",
  "chrono",
  "chrono-tz",

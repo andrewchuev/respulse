@@ -523,18 +523,3 @@ pub struct PaymentTransaction {
     pub refunded_at: Option<DateTime<Utc>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FastSpringCheckoutConfig {
-    pub store_id: String,
-    pub is_test: bool,
-    pub storefront: String,
-    pub product_path: String,
-    pub plan_name: String,
-    pub amount: f64,
-    pub currency: String,
-    pub billing_cycle: String,
-    pub checkout_url: String,
-    pub team_id: String,
-    pub user_email: String,
-}
-

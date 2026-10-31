@@ -23,9 +23,9 @@ respulse.online {
         X-Frame-Options "SAMEORIGIN"
         Referrer-Policy "strict-origin-when-cross-origin"
         Permissions-Policy "camera=(), microphone=(), geolocation=()"
-        # Same-origin app; FastSpring's checkout script/iframe and the avatar hosts are the only exceptions.
+        # Same-origin app; the avatar hosts are the only exceptions (WayForPay checkout is a full-page redirect).
         # style-src needs 'unsafe-inline' for the inline style attributes of Radix UI and Recharts.
-        Content-Security-Policy "default-src 'self'; script-src 'self' https://sbl.onfastspring.com; style-src 'self' 'unsafe-inline' https://sbl.onfastspring.com; img-src 'self' data: https://sbl.onfastspring.com https://api.dicebear.com https://images.unsplash.com; font-src 'self' data:; connect-src 'self' wss://respulse.online https://*.onfastspring.com; frame-src https://*.onfastspring.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+        Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.dicebear.com https://images.unsplash.com; font-src 'self' data:; connect-src 'self' wss://respulse.online; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
         -Server
     }
 

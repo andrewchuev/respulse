@@ -151,17 +151,16 @@
   * **Interactive Multi-Protocol Playground:** Tabbed live explorer covering HTTP/REST APIs, TCP sockets & databases, TLS certificate tracking, asynchronous worker heartbeats, and multi-channel alerts with executable curl examples.
   * **Architectural Deep Dive (Why Rust?):** Benchmark comparison matrix comparing ResPulse (Rust Axum + Tokio) against legacy NodeJS/Python engines (memory, zero GC jitter, thread concurrency, rustls memory safety).
   * **Free Open Beta (current mode):** `BILLING_ENABLED=false` hides prices and checkout. Every team gets the Free limits: **20 monitors, 60-second minimum interval, 30-day history, solo workspace**, heartbeat/cron monitoring, multi-channel alerts and SVG badges. Pro-only features (10-second probes, up to 100 monitors, 10 team members, Prometheus exporter, 90-day history) are planned for a possible paid plan and are not offered during the beta.
-  * **Paid plan (dormant):** with `BILLING_ENABLED=true` the Pro plan ($8/month: up to 100 monitors, 10-second probes, 10 team members, Prometheus exporter, 90-day history) and the checkout below come back.
-  * **FastSpring Payment & Subscription Integration:**
-    * Native self-service checkout for the Pro Plan ($8.00 USD / month).
-    * Processed securely via **FastSpring** (Merchant of Record, store `reslab`).
-    * Supports in-app **FastSpring Store Builder Library (SBL) popup modal**, hosted web checkout (`https://reslab.test.onfastspring.com/respulse-pro-plan`), credit/debit cards, Apple Pay, Google Pay, wire transfers, automated VAT compliance, and real-time webhook order fulfillment (`/api/payments/fastspring/webhook`).
+  * **Paid plan (dormant):** with `BILLING_ENABLED=true` the Pro plan ($16/month: up to 100 monitors, 10-second probes, 10 team members, Prometheus exporter, 90-day history) and the checkout below come back.
+  * **WayForPay Payment & Subscription Integration:**
+    * Self-service checkout for the Pro Plan ($16.00 USD / month), a recurring card subscription processed by **WayForPay**.
+    * Checkout is a hosted full-page redirect; the plan is switched to Pro only by the signed WayForPay webhook, and cancelling revokes the recurring payment immediately.
   * **Interactive FAQ & Social Proof:** Expandable accordions answering technical architecture, VPC self-hosting, heartbeat monitoring, and role permissions.
 
 ### 9. Production Server Deployment (respulse.online)
 * **Cloud Architecture & Security Hardening:**
   * Hosted at `/opt/respulse` on Debian 13 (Trixie) x86_64 (`respulse.online`, `46.225.23.41`).
-  * **Reverse Proxy:** Dockerized Caddy (`caddy:2-alpine`) orchestrating automated Let's Encrypt / ZeroSSL TLS certificates with HTTP/2, HTTP/3 (QUIC), and canonical `www` to apex domain 301 redirects. Responses carry HSTS and a strict `Content-Security-Policy` (same-origin only, plus FastSpring's checkout script/iframe and the avatar hosts); the policy was verified against the real app including the Recharts views and the FastSpring popup.
+  * **Reverse Proxy:** Dockerized Caddy (`caddy:2-alpine`) orchestrating automated Let's Encrypt / ZeroSSL TLS certificates with HTTP/2, HTTP/3 (QUIC), and canonical `www` to apex domain 301 redirects. Responses carry HSTS and a strict `Content-Security-Policy` (same-origin only, plus the avatar hosts); the policy was verified against the real app including the Recharts views.
   * **Zero Direct Exposure:** PostgreSQL, Rust API, and Nginx containers reside on an isolated internal Docker bridge network (`respulse-net`). Only ports `80` (HTTP) and `443` (HTTPS TCP/UDP) are published to the host.
   * **Strict Permissions:** `/opt/respulse` is locked down to `dev:docker` with `0750` permissions, and `.env` credentials are restricted to `0600`.
   * **Host Hardening:** UFW firewall configured (`deny incoming`, allow `22`, `80`, `443`), SSH accepts public keys only (`PasswordAuthentication no`), `fail2ban` guards it against brute-force attacks, and `docker.service` enabled on boot with automatic restart policies (`restart: unless-stopped`).
@@ -333,7 +332,7 @@ Without a registry login, `make deploy-direct` does steps 2-3 in one go by shipp
 
 **Backups:** `deploy/backup.sh` runs from the server's cron daily at 03:17 UTC, writes validated `pg_dump -Fc` files to `/opt/respulse/backups/` and keeps the last 14. Run `make backup-pull` regularly for an off-host copy. Restore with `docker exec -i respulse-db pg_restore -U <user> -d <db> --clean --if-exists < db-<ts>.dump`.
 
-The server `.env` needs `POSTGRES_*`, `JWT_SECRET`, `FASTSPRING_WEBHOOK_SECRET` (see `deploy/.env.example`).
+The server `.env` needs `POSTGRES_*`, `JWT_SECRET`, `WAYFORPAY_*` credentials (see `deploy/.env.example`).
 
 ---
 
@@ -387,9 +386,10 @@ All API routes are served under the `/api` prefix. Authenticated routes require 
 | `PUT` | `/api/team/members/:id/role` | Update a team member's role (`OWNER`/`ADMIN` required) |
 | `DELETE` | `/api/team/members/:id` | Remove a member from the team (`OWNER`/`ADMIN` required) |
 | `POST`/`PUT` | `/api/team/plan` | Change plan (`OWNER`/`ADMIN`); downgrade to `FREE` always, upgrade to `PRO` only through checkout |
-| `GET` | `/api/payments/fastspring/config` | Get FastSpring checkout configuration ($8/mo) for store `reslab` |
-| `POST` | `/api/payments/fastspring/confirm` | Report whether the Pro upgrade has landed (`200` if PRO, `409` while the webhook is pending); never upgrades by itself |
-| `POST` | `/api/payments/fastspring/webhook` | FastSpring webhook; requires a valid `X-FS-Signature` HMAC-SHA256 (base64) over the raw body (`503` if `FASTSPRING_WEBHOOK_SECRET` is unset). Events are deduplicated by event id, only the `respulse-pro-plan` product counts, and the team is matched by stored subscription id, checkout `team_id` tag/`referrer`, or the buyer's email (owner/admin). `order.completed`, `subscription.activated`, `subscription.charge.completed` keep the team on Pro; `subscription.canceled` marks it canceled (Pro until the period ends); `subscription.deactivated` drops it to Free; `return.created` (subscribe to it in FastSpring) marks the original payment `PARTIALLY_REFUNDED`/`REFUNDED` and tracks the refunded amount without touching the plan. Failures answer `5xx` so FastSpring retries |
+| `GET` | `/api/billing/status` | Plan, subscription status and provider of the caller's team |
+| `POST` | `/api/billing/wayforpay/checkout` | Create a WayForPay hosted checkout for the Pro plan ($16/mo) and return its URL |
+| `POST` | `/api/billing/wayforpay/webhook` | WayForPay service callback; the merchant signature is verified, events are deduplicated and only a valid approved payment upgrades the team |
+| `POST` | `/api/billing/wayforpay/cancel` | Cancel the recurring payment and revert the team to Free |
 | `GET` | `/api/payments/history` | List payment transaction history and invoices for team |
 | `GET` | `/api/monitors` | List all monitors with 24h/7d/30d uptime & history bars |
 | `POST` | `/api/monitors` | Create a new monitor (HTTP, PORT, SSL, HEARTBEAT) |
@@ -446,7 +446,8 @@ All API routes are served under the `/api` prefix. Authenticated routes require 
 | `ALLOW_PRIVATE_TARGETS` | `false` | Lets monitors and webhooks reach private, loopback and link-local addresses; leave off on a public server (SSRF guard) |
 | `CORS_ALLOWED_ORIGINS` | *unset* | Comma-separated origins allowed to call the API cross-origin; unset means same-origin only (the bundled SPA needs nothing) |
 | `RETENTION_FREE_DAYS` / `RETENTION_PRO_DAYS` | `30` / `90` | How long probe history (`check_results`) is kept per plan; pruned daily in batches |
-| `FASTSPRING_WEBHOOK_SECRET` | *unset* | HMAC SHA256 secret configured on the FastSpring webhook; webhooks are rejected without it |
-| `FASTSPRING_LIVE_MODE` | `false` | Use the live FastSpring storefront and ignore non-live (test) orders |
+| `WAYFORPAY_MERCHANT_ACCOUNT` / `WAYFORPAY_SECRET_KEY` | *unset* | WayForPay merchant credentials; checkout and webhooks are unavailable without them |
+| `WAYFORPAY_MERCHANT_PASSWORD` | *unset* | Needed to revoke the recurring payment on cancellation |
+| `WAYFORPAY_MERCHANT_DOMAIN` / `WAYFORPAY_CURRENCY` | `respulse.online` / `USD` | Merchant domain and charge currency |
 | `APP_URL` | — | Public base URL of the deployment |
 | `APP_USER_AGENT` | `ResPulse/1.0 (+https://respulse.online)` | User-Agent sent by HTTP probes |

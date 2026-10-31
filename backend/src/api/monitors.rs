@@ -1,4 +1,3 @@
-use crate::api::payments::WebhookConfig;
 use crate::auth::{AuthConfig, AuthUser};
 use crate::db::DbPool;
 use crate::models::{
@@ -39,7 +38,6 @@ pub struct AppState {
     pub tx: Sender<WsMessage>,
     pub http_client: Arc<Client>,
     pub auth: Arc<AuthConfig>,
-    pub webhook: Arc<WebhookConfig>,
     pub limits: Arc<RateLimits>,
     pub settings: Arc<AppSettings>,
     pub mailer: Option<Arc<Mailer>>,

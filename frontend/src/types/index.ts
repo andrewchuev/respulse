@@ -262,20 +262,6 @@ export interface WayForPayCheckoutResponse {
   order_reference: string;
 }
 
-export interface FastSpringCheckoutConfig {
-  store_id: string;
-  is_test: boolean;
-  storefront: string;
-  product_path: string;
-  plan_name: string;
-  amount: number;
-  currency: string;
-  billing_cycle: string;
-  checkout_url: string;
-  team_id: string;
-  user_email: string;
-}
-
 export interface PaymentTransaction {
   id: string;
   team_id: string;
@@ -341,13 +327,6 @@ export interface AdminReportData {
     members: number;
     last_login_at: string | null;
   }[];
-}
-
-export interface ConfirmFastSpringPaymentPayload {
-  order_id?: string;
-  reference?: string;
-  subscription_id?: string;
-  payer_email?: string;
 }
 
 export interface TeamMember {
