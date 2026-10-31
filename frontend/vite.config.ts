@@ -15,6 +15,15 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      // app.html is the noindex shell served for every client-side route; index.html is the crawlable landing page.
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        app: path.resolve(__dirname, 'app.html'),
+      },
+    },
+  },
   server: {
     host: '0.0.0.0',
     port: 8080,

@@ -36,6 +36,8 @@ function sync(version) {
     replaceOnce(f, new RegExp(`(name = "${name}"\\nversion = ")[^"]+(")`), version);
   }
   writeFileSync(path('VERSION'), `${version}\n`);
+  // Search engines use lastmod to decide when to recrawl, so it follows the commit date.
+  replaceOnce('frontend/public/sitemap.xml', /(<lastmod>)[^<]+(<\/lastmod>)/, new Date().toISOString().slice(0, 10));
 }
 
 const current = readFileSync(path('VERSION'), 'utf8').trim();

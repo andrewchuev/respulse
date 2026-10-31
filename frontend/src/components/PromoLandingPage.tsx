@@ -234,7 +234,7 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
           {/* Pill Badge */}
           <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 sm:py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[11px] sm:text-xs font-mono font-medium shadow-[0_0_15px_rgba(16,185,129,0.15)] animate-in fade-in slide-in-from-bottom-2 duration-300 max-w-full">
             <Zap className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-emerald-400 shrink-0 animate-pulse" />
-            <span className="truncate sm:overflow-visible">Rust 1.82 Core • Zero GC • Async Tokio</span>
+            <span className="truncate sm:overflow-visible">Rust Core • Zero GC • Async Tokio</span>
           </div>
 
           {/* Headline */}
@@ -248,7 +248,7 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
 
           {/* Subtitle */}
           <p className="text-sm sm:text-base md:text-lg text-slate-400 max-w-2xl mx-auto font-normal leading-relaxed px-1 sm:px-0">
-            Eliminate blind spots across your distributed infrastructure. ResPulse delivers sub-millisecond precision
+            Eliminate blind spots across your distributed infrastructure. ResPulse delivers precision
             probing for HTTP/S, TCP sockets, TLS certificates, and worker heartbeats — backed by instant multi-channel alerting
             and collaborative RCA post-mortems.
           </p>
@@ -520,7 +520,7 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
-                      <span>Sub-millisecond connect handshake timeout measurement</span>
+                      <span>Connect handshake time measurement</span>
                     </li>
                   </ul>
                 </div>
@@ -938,7 +938,7 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
                   </div>
                   <div className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
-                    <span><strong>20 Heartbeat Monitors</strong> (Dead Man's Switch, Interval Pings)</span>
+                    <span><strong>Heartbeat monitors</strong> (Dead Man's Switch, Interval Pings) count toward the 20</span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
@@ -1030,10 +1030,6 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
                     <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
                     <span><strong>90-Day Retention</strong> &amp; SRE Post-Mortem (RCA)</span>
                   </div>
-                  <div className="flex items-center gap-2.5">
-                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
-                    <span>Custom Domain for Public Status Page</span>
-                  </div>
                 </div>
               </div>
 
@@ -1050,57 +1046,6 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
                 Upgrade to Pro — $16/mo (excl. VAT)
               </Button>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ------------------------------------------------------------- */}
-      {/* 8. TESTIMONIALS SECTION */}
-      {/* ------------------------------------------------------------- */}
-      <section className="py-20 border-t border-white/5 bg-slate-950/40 relative">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="text-center space-y-3 mb-12">
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-              Trusted by SREs and Infrastructure Teams
-            </h2>
-            <p className="text-sm text-slate-400">Here's how engineering teams rely on ResPulse every day.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                quote: "ResPulse replaced our expensive legacy Datadog synthetic monitors. The Rust backend consumes virtually zero RAM, and false alarms dropped to absolute zero.",
-                author: "Alex Rivera",
-                role: "Head of Infrastructure",
-                company: "HyperScale Cloud",
-              },
-              {
-                quote: "The built-in Post-Mortem editor with 1-click SRE template cut our incident coordination time by 60%. Publishing updates to the public status page is seamless.",
-                author: "Elena Rostova",
-                role: "Staff SRE",
-                company: "FinTech Core",
-              },
-              {
-                quote: "Having 4-tier RBAC and a compact density view means our NOC team can supervise 200+ endpoints on a single wall monitor without losing track of a single millisecond.",
-                author: "Marcus Vance",
-                role: "VP of Platform Engineering",
-                company: "Acme Global",
-              },
-            ].map((t, idx) => (
-              <div
-                key={idx}
-                className="p-6 rounded-2xl border border-white/5 bg-slate-900/40 flex flex-col justify-between backdrop-blur"
-              >
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed italic mb-4">
-                  "{t.quote}"
-                </p>
-                <div>
-                  <div className="font-semibold text-white text-xs">{t.author}</div>
-                  <div className="text-[11px] text-emerald-400 font-mono">{t.role}</div>
-                  <div className="text-[10px] text-slate-500">{t.company}</div>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </section>
@@ -1123,7 +1068,7 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
             {[
               {
                 q: "How does ResPulse achieve zero garbage collection pauses?",
-                a: "Unlike NodeJS or Python-based monitoring tools that suffer from periodic garbage collection (GC) freezes causing false latency spikes, ResPulse is built in 100% safe Rust. Rust uses deterministic compile-time memory management (RAII), ensuring ultra-consistent sub-millisecond scheduling precision."
+                a: "Unlike NodeJS or Python-based monitoring tools that suffer from periodic garbage collection (GC) freezes causing false latency spikes, ResPulse is built in Rust. Rust uses deterministic compile-time memory management (RAII), so there are no GC pauses to disturb probe scheduling."
               },
               {
                 q: "Can I self-host ResPulse completely inside an isolated private VPC?",
@@ -1143,7 +1088,7 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
               },
               {
                 q: billingEnabled ? "What is included in the $16/month Pro plan?" : "Is ResPulse free?",
-                a: billingEnabled ? "The Pro plan ($16.00 USD / month excl. VAT, cancel anytime) offers turbo 10-second probe intervals, up to 100 synthetic monitors, advanced 5-field cron tasks with timezones, full 64KB STDERR log capture, up to 10 team members with 4-tier RBAC, 90-day retention with SRE RCA post-mortems, Prometheus metric exports, tag-based alert routing, and custom domain status pages." : "Yes, ResPulse is free while it is in open beta, with generous limits for small teams and side projects. A paid plan with faster probes, team seats and a Prometheus exporter may come later; if it does, you will get advance notice and nothing will be charged without your explicit checkout.",
+                a: billingEnabled ? "The Pro plan ($16.00 USD / month excl. VAT, cancel anytime) offers turbo 10-second probe intervals, up to 100 synthetic monitors, advanced 5-field cron tasks with timezones, full 64KB STDERR log capture, up to 10 team members with 4-tier RBAC, 90-day retention with SRE RCA post-mortems, Prometheus metric exports, and tag-based alert routing." : "Yes, ResPulse is free while it is in open beta, with generous limits for small teams and side projects. A paid plan with faster probes, team seats and a Prometheus exporter may come later; if it does, you will get advance notice and nothing will be charged without your explicit checkout.",
               },
               {
                 q: "How does Role-Based Access Control (RBAC) enforce security?",

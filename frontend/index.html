@@ -1,16 +1,21 @@
 <!doctype html>
-<html lang="en" class="dark" prefix="og: http://ogp.me/ns#">
+<html lang="en" class="dark" prefix="og: https://ogp.me/ns#">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>ResPulse — High-Performance Synthetic Monitoring &amp; Observability</title>
+    <meta name="description" content="Synthetic uptime monitoring built in Rust: HTTP, TCP and SSL probes, cron heartbeats, Telegram, Slack and Discord alerts, incident post-mortems and public status pages." />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#030712" />
+    <link rel="canonical" href="https://respulse.online/" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
 
-    <!-- Essential Open Graph (Telegram, WhatsApp, Slack, Discord, LinkedIn, Facebook) -->
+    <!-- Open Graph (Telegram, WhatsApp, Slack, Discord, LinkedIn, Facebook) -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="ResPulse" />
     <meta property="og:url" content="https://respulse.online/" />
     <meta property="og:title" content="ResPulse — High-Performance Synthetic Monitoring &amp; Observability" />
-    <meta property="og:description" content="Systems-grade synthetic uptime monitoring and observability in Rust. Sub-10ms precision scheduler, Cron dead man's switch with timezones, Prometheus metrics exporter, and real-time public status pages." />
+    <meta property="og:description" content="Synthetic uptime monitoring built in Rust: HTTP, TCP and SSL probes, cron heartbeats, Telegram, Slack and Discord alerts, incident post-mortems and public status pages." />
     <meta property="og:image" content="https://respulse.online/og-image.jpg" />
     <meta property="og:image:secure_url" content="https://respulse.online/og-image.jpg" />
     <meta property="og:image:type" content="image/jpeg" />
@@ -21,142 +26,205 @@
 
     <!-- Twitter / X Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://respulse.online/" />
     <meta name="twitter:title" content="ResPulse — High-Performance Synthetic Monitoring &amp; Observability" />
-    <meta name="twitter:description" content="Systems-grade synthetic uptime monitoring and observability in Rust. Sub-10ms precision scheduler, Cron dead man's switch with timezones, Prometheus metrics exporter, and real-time public status pages." />
+    <meta name="twitter:description" content="Synthetic uptime monitoring built in Rust: HTTP, TCP and SSL probes, cron heartbeats, Telegram, Slack and Discord alerts, incident post-mortems and public status pages." />
     <meta name="twitter:image" content="https://respulse.online/og-image.jpg" />
     <meta name="twitter:image:alt" content="ResPulse Synthetic Monitoring &amp; Observability Platform" />
 
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M22 12h-4l-3 9L9 3l-3 9H2'/></svg>" />
-    <link rel="canonical" href="https://respulse.online/" />
-    <link rel="sitemap" type="application/xml" title="Sitemap" href="https://respulse.online/sitemap.xml" />
-
-    <!-- Primary SEO Meta Tags -->
-    <meta name="title" content="ResPulse — High-Performance Synthetic Monitoring &amp; Observability" />
-    <meta name="description" content="Systems-grade synthetic uptime monitoring and observability engine built in Rust. Sub-10ms precision scheduler, Cron dead man's switch with timezones, Prometheus /metrics exporter, SSL certificate tracking, multi-channel alerts (Telegram, Slack, Discord), and real-time public status pages." />
-    <meta name="keywords" content="uptime monitoring, synthetic monitoring, api monitoring, status page, ssl cert monitoring, website monitoring, heartbeat monitoring, cron job monitor, dead mans switch, prometheus metrics, devops monitoring, ping monitor, response time tracker, status badge, tag alert routing, multi-tenant rbac, rust axum" />
-    <meta name="author" content="ResPulse" />
-    <meta name="robots" content="index, follow" />
-    <meta name="revisit-after" content="7 days" />
-    <meta name="rating" content="General" />
-    <meta name="theme-color" content="#030712" />
-
-    <!-- GEO Optimization Tags (Hetzner Nuremberg, Bavaria, Germany) -->
-    <meta name="geo.region" content="DE-BY" />
-    <meta name="geo.placename" content="Nuremberg" />
-    <meta name="geo.position" content="49.4527;11.0783" />
-    <meta name="ICBM" content="49.4527, 11.0783" />
-    <meta name="coverage" content="Worldwide" />
-    <meta name="distribution" content="Global" />
-    <meta name="target" content="all" />
+    <style>
+      .seo-static { max-width: 56rem; margin: 0 auto; padding: 2rem 1rem; line-height: 1.6; color: #cbd5e1; font-family: system-ui, sans-serif; }
+      .seo-static a { color: #34d399; }
+      .seo-static h1, .seo-static h2, .seo-static h3 { color: #fff; }
+    </style>
 
     <!-- Structured Data (JSON-LD Schema.org) -->
     <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
     {
-      "@context": "https://schema.org",
-      "@graph": [
+      "@type": "WebSite",
+      "@id": "https://respulse.online/#website",
+      "url": "https://respulse.online/",
+      "name": "ResPulse",
+      "inLanguage": "en",
+      "publisher": {
+        "@id": "https://respulse.online/#organization"
+      }
+    },
+    {
+      "@type": "WebApplication",
+      "@id": "https://respulse.online/#webapp",
+      "name": "ResPulse",
+      "url": "https://respulse.online/",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Web, Android, Windows",
+      "description": "Synthetic uptime monitoring built in Rust: HTTP, TCP and SSL probes, cron heartbeats with IANA timezones, Prometheus metrics export, multi-channel alerts, incident management and public status pages.",
+      "offers": [
         {
-          "@type": "WebApplication",
-          "@id": "https://respulse.online/#webapp",
-          "name": "ResPulse",
-          "url": "https://respulse.online",
-          "applicationCategory": "DevOpsApplication",
-          "operatingSystem": "All",
-          "description": "High-performance synthetic monitoring, real-time uptime checks, SSL/TLS expiry tracking, Cron dead man's switch with IANA timezones, Prometheus metrics export, automated incident management, and public status pages built in Rust.",
-          "offers": {
-            "@type": "AggregateOffer",
-            "priceCurrency": "USD",
-            "lowPrice": "0",
-            "highPrice": "8",
-            "offerCount": "2"
-          },
-          "featureList": [
-            "Sub-10ms precision synthetic probes (HTTP, SSL, TCP)",
-            "Advanced Heartbeat & Cron monitoring with 5-field syntax and IANA timezones",
-            "Task duration measurement, 64KB STDERR log capture, and hung job detection",
-            "Human-readable slug endpoints with auto-provisioning (?create=1)",
-            "Prometheus /metrics export endpoint for Grafana scraping",
-            "Shields.io-compatible vector SVG status badges for GitHub",
-            "Tag-based alert routing and multi-channel instant delivery (Telegram, Discord, Slack, Webhooks)",
-            "Automated incident management with live timeline & SRE RCA post-mortems",
-            "Public status pages with real-time WebSocket updates",
-            "Multi-tenant Role-Based Access Control (RBAC)"
-          ],
-          "screenshot": "https://respulse.online/og-image.jpg"
+          "@type": "Offer",
+          "name": "Free",
+          "price": "0",
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock",
+          "url": "https://respulse.online/#pricing"
         },
         {
-          "@type": "Organization",
-          "@id": "https://respulse.online/#organization",
-          "name": "ResPulse",
-          "url": "https://respulse.online",
-          "logo": "https://respulse.online/og-image.jpg",
-          "address": {
-            "@type": "PostalAddress",
-            "addressLocality": "Nuremberg",
-            "addressRegion": "Bavaria",
-            "addressCountry": "DE"
+          "@type": "Offer",
+          "name": "Pro",
+          "price": "16",
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock",
+          "url": "https://respulse.online/#pricing",
+          "priceSpecification": {
+            "@type": "UnitPriceSpecification",
+            "price": "16",
+            "priceCurrency": "USD",
+            "unitCode": "MON",
+            "billingDuration": 1
+          }
+        }
+      ],
+      "featureList": [
+        "HTTP, SSL certificate and TCP port probes",
+        "Heartbeat and cron monitoring with 5-field expressions and IANA timezones",
+        "Prometheus /metrics export for Grafana",
+        "SVG status badges for GitHub READMEs",
+        "Alerts to Telegram, Discord, Slack and custom webhooks with tag-based routing",
+        "Incident timeline and post-mortem editor",
+        "Public status pages",
+        "Multi-user teams with role-based access control"
+      ],
+      "screenshot": "https://respulse.online/og-image.jpg",
+      "publisher": {
+        "@id": "https://respulse.online/#organization"
+      }
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://respulse.online/#organization",
+      "name": "ResPulse",
+      "url": "https://respulse.online/",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://respulse.online/logo.svg"
+      }
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://respulse.online/#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "How does ResPulse achieve zero garbage collection pauses?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Unlike NodeJS or Python-based monitoring tools that suffer from periodic garbage collection (GC) freezes causing false latency spikes, ResPulse is built in Rust. Rust uses deterministic compile-time memory management (RAII), so there are no GC pauses to disturb probe scheduling."
           }
         },
         {
-          "@type": "FAQPage",
-          "@id": "https://respulse.online/#faq",
-          "mainEntity": [
-            {
-              "@type": "Question",
-              "name": "How does ResPulse achieve zero garbage collection pauses?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Unlike NodeJS or Python-based monitoring tools that suffer from periodic garbage collection (GC) freezes causing false latency spikes, ResPulse is built in 100% safe Rust. Rust uses deterministic compile-time memory management (RAII), ensuring ultra-consistent sub-millisecond scheduling precision."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "Can I self-host ResPulse completely inside an isolated private VPC?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Yes! ResPulse is 100% containerized with Docker Compose. It requires only PostgreSQL and a reverse proxy (like the included Caddy 2 setup). It can run entirely within your private subnet to monitor internal databases, Kubernetes pods, and VPC endpoints without egress access."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "How does push heartbeat (dead man's switch) work for cron jobs?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "When you create a Heartbeat monitor, ResPulse generates a unique cryptographic webhook URL or slug URL. You can signal task start (/start), explicit failures (/fail), pass shell exit codes (/0, /1), attach full STDERR logs, and use standard 5-field cron expressions with IANA timezones. If an expected ping is missed or execution times out, an incident is immediately declared."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "Does ResPulse export metrics to Prometheus and Grafana?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Yes! ResPulse provides a standard Prometheus metrics exporter endpoint at /api/metrics and /metrics, exposing gauges for monitor statuses, probe latencies, heartbeat execution durations, and ongoing incidents for instant Grafana scraping."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "Which alert delivery channels are currently supported?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "ResPulse natively supports Telegram Bot API, Discord Rich Embed Webhooks, Slack Incoming Webhooks, and Custom JSON Webhooks with granular tag-based alert routing (filter_tags) to direct notifications to specific on-call squads."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "How does Role-Based Access Control (RBAC) enforce security?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "ResPulse implements a 4-tier security model: Owner (full control & org deletion), Admin (monitor & team management), Engineer (monitor CRUD, test probes & post-mortems), and Viewer (read-only dashboards). All mutations are strictly validated on the Axum backend and return 403 Forbidden for unauthorized roles."
-              }
-            }
-          ]
+          "@type": "Question",
+          "name": "Can I self-host ResPulse completely inside an isolated private VPC?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes! ResPulse is 100% containerized with Docker Compose. It requires only PostgreSQL and a reverse proxy (like the included Caddy 2 setup). It can run entirely within your private subnet to monitor internal databases, Kubernetes pods, and VPC endpoints without egress access."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does push heartbeat (dead man's switch) work for cron jobs?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "When you create a Heartbeat monitor, ResPulse generates a unique cryptographic webhook URL or slug URL. You can signal task start (/start), explicit failures (/fail), pass shell exit codes (/0, /1), attach full STDERR logs, and use standard 5-field cron expressions with IANA timezones. If an expected ping is missed or execution times out, an incident is immediately declared."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does ResPulse export metrics to Prometheus and Grafana?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes! ResPulse provides a standard Prometheus metrics exporter endpoint at /api/metrics and /metrics, exposing gauges for monitor statuses, probe latencies, heartbeat execution durations, and ongoing incidents for instant Grafana scraping."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Which alert delivery channels are currently supported?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "ResPulse natively supports Telegram Bot API, Discord Rich Embed Webhooks, Slack Incoming Webhooks, and Custom JSON Webhooks with granular tag-based alert routing (filter_tags) to direct notifications to specific on-call squads."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does Role-Based Access Control (RBAC) enforce security?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "ResPulse implements a 4-tier security model: Owner (full control & org deletion), Admin (monitor & team management), Engineer (monitor CRUD, test probes & post-mortems), and Viewer (read-only dashboards). All mutations are strictly validated on the Axum backend and return 403 Forbidden for unauthorized roles."
+          }
         }
       ]
     }
+  ]
+}
     </script>
   </head>
   <body class="bg-background text-foreground antialiased min-h-screen">
-    <div id="root"></div>
+    <div id="root">
+      <!-- Crawler-visible copy of the landing page; React replaces it on load. -->
+      <div class="seo-static">
+        <header><strong>ResPulse</strong></header>
+        <main>
+          <h1>Systems-Grade Synthetic Monitoring. Engineered for SREs.</h1>
+          <p>ResPulse is a synthetic uptime monitoring and observability platform built in Rust. It probes HTTP/S endpoints, TCP ports and TLS certificates, watches cron jobs and workers with heartbeats, and sends alerts to Telegram, Slack, Discord and custom webhooks. Incident timelines, post-mortems and public status pages are built in.</p>
+          <p><a href="/app">Open the console</a></p>
+
+          <h2>Features</h2>
+          <ul>
+            <li>HTTP/S, SSL certificate and TCP port probes</li>
+            <li>Heartbeat (dead man's switch) monitoring with 5-field cron expressions and IANA timezones</li>
+            <li>Prometheus /metrics exporter for Grafana</li>
+            <li>SVG status badges for GitHub READMEs</li>
+            <li>Tag-based alert routing to Telegram, Discord, Slack and webhooks</li>
+            <li>Incident management with live timeline and post-mortem editor</li>
+            <li>Public status pages</li>
+            <li>Multi-user teams with four-tier role-based access control</li>
+          </ul>
+
+          <h2 id="pricing">Pricing</h2>
+          <h3>Free — $0 forever</h3>
+          <ul>
+            <li>20 monitors (HTTP, SSL, TCP, heartbeat)</li>
+            <li>60-second probe interval</li>
+            <li>30-day history</li>
+            <li>1 user</li>
+          </ul>
+          <h3>Pro — $16 per month (excl. VAT)</h3>
+          <ul>
+            <li>Up to 100 monitors</li>
+            <li>10-second probe interval</li>
+            <li>Up to 10 team members</li>
+            <li>90-day history, cron schedules with timezones, tag-based alert routing, Prometheus exporter</li>
+          </ul>
+
+          <h2 id="faq">Frequently asked questions</h2>
+          <h3>How does ResPulse achieve zero garbage collection pauses?</h3>
+          <p>Unlike NodeJS or Python-based monitoring tools that suffer from periodic garbage collection (GC) freezes causing false latency spikes, ResPulse is built in Rust. Rust uses deterministic compile-time memory management (RAII), so there are no GC pauses to disturb probe scheduling.</p>
+          <h3>Can I self-host ResPulse completely inside an isolated private VPC?</h3>
+          <p>Yes! ResPulse is 100% containerized with Docker Compose. It requires only PostgreSQL and a reverse proxy (like the included Caddy 2 setup). It can run entirely within your private subnet to monitor internal databases, Kubernetes pods, and VPC endpoints without egress access.</p>
+          <h3>How does push heartbeat (dead man's switch) work for cron jobs?</h3>
+          <p>When you create a Heartbeat monitor, ResPulse generates a unique cryptographic webhook URL or slug URL. You can signal task start (/start), explicit failures (/fail), pass shell exit codes (/0, /1), attach full STDERR logs, and use standard 5-field cron expressions with IANA timezones. If an expected ping is missed or execution times out, an incident is immediately declared.</p>
+          <h3>Does ResPulse export metrics to Prometheus and Grafana?</h3>
+          <p>Yes! ResPulse provides a standard Prometheus metrics exporter endpoint at /api/metrics and /metrics, exposing gauges for monitor statuses, probe latencies, heartbeat execution durations, and ongoing incidents for instant Grafana scraping.</p>
+          <h3>Which alert delivery channels are currently supported?</h3>
+          <p>ResPulse natively supports Telegram Bot API, Discord Rich Embed Webhooks, Slack Incoming Webhooks, and Custom JSON Webhooks with granular tag-based alert routing (filter_tags) to direct notifications to specific on-call squads.</p>
+          <h3>How does Role-Based Access Control (RBAC) enforce security?</h3>
+          <p>ResPulse implements a 4-tier security model: Owner (full control & org deletion), Admin (monitor & team management), Engineer (monitor CRUD, test probes & post-mortems), and Viewer (read-only dashboards). All mutations are strictly validated on the Axum backend and return 403 Forbidden for unauthorized roles.</p>
+        </main>
+        <footer>
+          <a href="/terms">Terms of Service</a> · <a href="/privacy">Privacy Policy</a> · <a href="/refund">Refund Policy</a>
+        </footer>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

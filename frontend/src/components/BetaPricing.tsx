@@ -17,7 +17,6 @@ const planned = [
   'Prometheus metrics exporter (/api/metrics)',
   'Tag-based alert routing (filter_tags)',
   '90-day retention and SRE post-mortems',
-  'Custom domain for status pages',
 ];
 
 /** Pricing section while the service is a free open beta and checkout is switched off. */

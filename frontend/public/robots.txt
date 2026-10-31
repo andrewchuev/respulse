@@ -1,27 +1,7 @@
-User-agent: TelegramBot
-Allow: /
-Allow: /og-image.jpg
-Allow: /og-image.png
-
-User-agent: Twitterbot
-Allow: /
-Allow: /og-image.jpg
-Allow: /og-image.png
-
-User-agent: facebookexternalhit
-Allow: /
-Allow: /og-image.jpg
-Allow: /og-image.png
-
 User-agent: *
 Allow: /
-Allow: /app
-Allow: /status
-Allow: /badge/
-Allow: /api/badge/
-Allow: /metrics
-Allow: /api/metrics
 Disallow: /api/
+Disallow: /app
+Disallow: /admin
 
 Sitemap: https://respulse.online/sitemap.xml
-Host: https://respulse.online

@@ -41,7 +41,6 @@ const proFeatures = [
   'Tag-based alert routing (filter_tags)',
   'Up to 10 Team Members with 4-tier RBAC',
   '90-day latency retention & SRE incident post-mortems',
-  'Custom domain for public status pages',
 ];
 
 const downgradeConsequences = [

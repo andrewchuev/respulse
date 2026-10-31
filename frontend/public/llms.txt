@@ -1,0 +1,26 @@
+# ResPulse
+
+> ResPulse is a synthetic uptime monitoring and observability platform built in Rust. It probes HTTP/S endpoints, TCP ports and TLS certificates, monitors cron jobs and workers through heartbeats, and delivers alerts to Telegram, Slack, Discord and custom webhooks. Incident management with post-mortems and public status pages are included.
+
+## Capabilities
+
+- Probes: HTTP/S (status code, keyword), TCP port, SSL certificate expiry
+- Heartbeat (dead man's switch) monitors with start/fail/exit-code signals, 5-field cron expressions and IANA timezones
+- Prometheus metrics exporter at /metrics for Grafana
+- SVG status badges for GitHub READMEs
+- Alert channels: Telegram, Discord, Slack, custom JSON webhooks, with tag-based routing (Pro)
+- Incident timeline, post-mortem editor and public status pages
+- Teams with four roles: Owner, Admin, Engineer, Viewer
+- Web app, plus Android and Windows apps with an SSH console that keeps credentials on the device
+
+## Plans
+
+- Free, $0: 20 monitors, 60-second minimum interval, 30-day history, 1 user
+- Pro, $16 per month excluding VAT: 100 monitors, 10-second minimum interval, 10 team members, 90-day history, cron schedules, tag-based alert routing, Prometheus exporter
+
+## Links
+
+- [Home](https://respulse.online/)
+- [Terms of Service](https://respulse.online/terms)
+- [Privacy Policy](https://respulse.online/privacy)
+- [Refund Policy](https://respulse.online/refund)
