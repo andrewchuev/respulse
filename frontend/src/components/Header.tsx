@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Activity, Plus, Radio, Globe, Bell, AlertTriangle, Users, ChevronDown, Sparkles, LogOut, KeyRound, CreditCard, LayoutDashboard, FileJson, Menu, X, Shield, Fingerprint } from 'lucide-react';
+import { Activity, Plus, Radio, Globe, Bell, AlertTriangle, Users, ChevronDown, LogOut, KeyRound, CreditCard, LayoutDashboard, FileJson, Menu, X, Shield, Fingerprint } from 'lucide-react';
 import { Button } from './ui/button';
 import { UserProfile, UserRole } from '../types';
 import { isTauri } from '../lib/sshClient';
@@ -190,19 +190,6 @@ export const Header: React.FC<HeaderProps> = ({
             <Globe className="h-3.5 w-3.5 shrink-0" />
             <span><span className="hidden xl:inline">Public </span>Status</span>
           </button>
-          {!isTauri() && (
-            <button
-              onClick={() => setCurrentView('promo')}
-              className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                currentView === 'promo'
-                  ? 'bg-background text-foreground shadow-sm border border-border/60 text-amber-300'
-                  : 'text-muted-foreground hover:text-amber-300'
-              }`}
-            >
-              <Sparkles className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-              <span><span className="hidden xl:inline">Overview & </span>Promo</span>
-            </button>
-          )}
           {isAdmin && (
             <button
               onClick={() => setCurrentView('admin')}
@@ -519,23 +506,6 @@ export const Header: React.FC<HeaderProps> = ({
               <Globe className="h-4 w-4 text-cyan-400 shrink-0" />
               <span>Public Status</span>
             </button>
-
-            {!isTauri() && (
-              <button
-                onClick={() => {
-                  setCurrentView('promo');
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`flex items-center gap-2 p-2.5 rounded-lg transition-colors text-left ${
-                  currentView === 'promo'
-                    ? 'bg-emerald-500/15 border border-emerald-500/30 text-white font-semibold'
-                    : 'bg-secondary/30 hover:bg-secondary/60 text-slate-300'
-                }`}
-              >
-                <Sparkles className="h-4 w-4 text-amber-400 shrink-0" />
-                <span>Overview & Promo</span>
-              </button>
-            )}
 
             {isTauri() && hasBioHardware && (
               <button
