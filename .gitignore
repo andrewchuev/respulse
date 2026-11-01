@@ -18,3 +18,6 @@ scratch/
 mail-config/
 deploy/mail-config/
 .idea/
+
+# Local SMTP credentials
+mail_credentials.txt
