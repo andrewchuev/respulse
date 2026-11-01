@@ -43,6 +43,7 @@
     * Precomputes `next_expected_at` timestamps for fast, indexed overdue detection.
   * **Human-Readable Slugs & Auto-Provisioning (`?create=1`):**
     * Ping using team-scoped Ping Keys and clean readable slugs: `https://respulse.online/api/ping/pk_live_enterprise.../nightly-backup`.
+    * The Ping Key is shown in the Team tab (hidden until revealed, with a copy button and ready-made `RESPULSE_URL` / `RESPULSE_PING_KEY` lines for resmetrics); it is not visible to the VIEWER role.
     * Dynamic on-the-fly provisioning: pinging any unregistered slug with `?create=1` automatically provisions and initializes the monitor in one request.
     * The first ping can say how the monitor is made: `?create=1&interval=60&grace=120&name=Web+1&group=Servers&tags=prod,web` (seconds; `interval` never below the plan minimum, `grace` up to 7 days; the answer repeats what was applied). Without them a monitor is made for a daily job (`interval` 86400 s, `grace` 3600 s, group *Background Workers*, tag `cron`). A monitor that exists is not changed by later pings.
   * **Payload & STDERR Capture:** Attach command outputs, crash logs, or stack traces (up to 64KB via POST body). Logs are stored and displayed directly in the dashboard and incident post-mortems.

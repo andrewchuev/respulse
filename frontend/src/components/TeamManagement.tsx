@@ -6,6 +6,7 @@ import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { timeAgo } from '../lib/utils';
+import { PingKeyCard } from './PingKeyCard';
 import {
   Users,
   Shield,
@@ -246,6 +247,10 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
           <ShieldAlert className="h-4 w-4 text-destructive" />
           {error}
         </div>
+      )}
+
+      {currentUser?.team_ping_key && currentUser.role !== 'VIEWER' && (
+        <PingKeyCard pingKey={currentUser.team_ping_key} />
       )}
 
       {/* Summary Cards */}
