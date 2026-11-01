@@ -22,11 +22,13 @@ import {
   BarChart3,
   Tag,
   Menu,
+  MessageSquare,
   X,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { BetaPricing } from './BetaPricing';
+import { ContactModal } from './ContactModal';
 import { DEFAULT_APP_CONFIG } from '../api/client';
 import { PlanLimits } from '../types';
 
@@ -71,6 +73,7 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
   };
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isContactOpen, setIsContactOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#070b14] text-foreground font-sans relative overflow-x-hidden selection:bg-emerald-500 selection:text-black">
@@ -112,6 +115,13 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
             >
               <Globe className="h-3.5 w-3.5 text-cyan-400" />
               Public Status
+            </button>
+            <button
+              onClick={() => setIsContactOpen(true)}
+              className="text-muted-foreground hover:text-white flex items-center gap-1 transition-colors"
+            >
+              <MessageSquare className="h-3.5 w-3.5 text-emerald-400" />
+              Contact
             </button>
           </nav>
 
@@ -196,6 +206,16 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
               >
                 <Globe className="h-4 w-4 text-cyan-400" />
                 Public Status Page
+              </button>
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  setIsContactOpen(true);
+                }}
+                className="p-2.5 rounded-lg text-left text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors flex items-center gap-2"
+              >
+                <MessageSquare className="h-4 w-4 text-emerald-400" />
+                Contact Us
               </button>
             </nav>
 
@@ -1212,6 +1232,9 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
             <a href="#faq" className="hover:text-emerald-400 transition-colors">
               FAQ
             </a>
+            <button onClick={() => setIsContactOpen(true)} className="hover:text-emerald-400 transition-colors">
+              Contact
+            </button>
             <a href="/terms" className="hover:text-emerald-400 transition-colors">
               Terms of Service
             </a>
@@ -1224,6 +1247,8 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
           </div>
         </div>
       </footer>
+
+      <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
     </div>
   );
 };

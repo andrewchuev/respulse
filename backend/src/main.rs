@@ -67,6 +67,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("REQUIRE_EMAIL_VERIFICATION needs SMTP_HOST and SMTP_FROM to be configured".into());
     }
 
+    if let Some(contact) = &settings.contact_email {
+        contact
+            .parse::<lettre::message::Mailbox>()
+            .map_err(|e| format!("invalid CONTACT_EMAIL: {e}"))?;
+        if mailer.is_none() {
+            warn!("CONTACT_EMAIL is set but SMTP is not configured: contact form messages will be rejected");
+        }
+    }
+
     let wayforpay = api::wayforpay::WayForPayConfig::from_env(&settings.app_url).map(Arc::new);
     if wayforpay.is_some() {
         info!("WayForPay subscription billing initialized");

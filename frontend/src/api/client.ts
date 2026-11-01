@@ -136,6 +136,30 @@ export async function resendVerification(email: string): Promise<void> {
   if (!res.ok) throw new Error('Could not send the email. Please try again later.');
 }
 
+export type ContactKind = 'bug' | 'question' | 'suggestion';
+
+export interface ContactPayload {
+  name: string;
+  email: string;
+  kind: ContactKind;
+  message: string;
+  /** Honeypot; must stay empty for real visitors. */
+  website: string;
+}
+
+export async function sendContactMessage(payload: ContactPayload): Promise<void> {
+  const res = await fetch(`${API_BASE}/contact`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (res.status === 429) throw new Error('Too many messages. Please wait a few minutes and try again.');
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error || 'Could not send your message. Please try again later.');
+  }
+}
+
 /** Redeems the emailed link and signs the user in. */
 export async function verifyEmail(token: string): Promise<AuthResponse> {
   const res = await fetch(`${API_BASE}/auth/verify-email`, {

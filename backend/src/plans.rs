@@ -81,6 +81,8 @@ pub struct AppSettings {
     pub require_email_verification: bool,
     /// Public base URL used in emailed links.
     pub app_url: String,
+    /// Operator mailbox that receives landing-page contact form messages.
+    pub contact_email: Option<String>,
 }
 
 impl AppSettings {
@@ -101,7 +103,11 @@ impl AppSettings {
             .ok()
             .filter(|u| !u.trim().is_empty())
             .unwrap_or_else(|| "http://localhost:8080".to_string());
-        Self { billing_enabled, admin_emails, require_email_verification, app_url }
+        let contact_email = std::env::var("CONTACT_EMAIL")
+            .ok()
+            .map(|v| v.trim().to_string())
+            .filter(|v| !v.is_empty());
+        Self { billing_enabled, admin_emails, require_email_verification, app_url, contact_email }
     }
 
     pub fn is_admin(&self, email: &str) -> bool {
@@ -138,6 +144,7 @@ mod tests {
             admin_emails: vec!["boss@example.com".to_string()],
             require_email_verification: false,
             app_url: String::new(),
+            contact_email: None,
         };
         assert!(settings.is_admin(" Boss@Example.com "));
         assert!(!settings.is_admin("other@example.com"));
@@ -146,6 +153,7 @@ mod tests {
             admin_emails: vec![],
             require_email_verification: false,
             app_url: String::new(),
+            contact_email: None,
         };
         assert!(!empty.is_admin(""));
     }

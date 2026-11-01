@@ -394,6 +394,7 @@ All API routes are served under the `/api` prefix. Authenticated routes require 
 | `POST` | `/api/auth/register` | Self-service registration (creates organization workspace + Owner with bcrypt password); with `REQUIRE_EMAIL_VERIFICATION=true` it answers `{"status":"verification_required"}` and emails a confirmation link instead of returning a token |
 | `POST` | `/api/auth/verify-email` | Redeem the emailed confirmation token (`{"token": ...}`) and sign in; single use, `400` if invalid or expired |
 | `POST` | `/api/auth/resend-verification` | Send a fresh confirmation link (`{"email": ...}`); always answers `200` so addresses cannot be probed, rate-limited per IP |
+| `POST` | `/api/contact` | Landing-page contact form (`{"name", "email", "kind": "bug"\|"question"\|"suggestion", "message", "website"}`); emailed to `CONTACT_EMAIL` with the sender as Reply-To, nothing is stored. Honeypot field `website` must stay empty, rate-limited per IP (3 messages, then one per 10 minutes), `503` if `CONTACT_EMAIL` or SMTP is not configured |
 | `POST` | `/api/auth/login` | Authenticate with email/password and obtain signed JWT token |
 | `GET` | `/api/auth/me` | Current authenticated user profile, team details & permissions (Bearer JWT) |
 | `GET` | `/api/auth/config` | Public capabilities used by the UI: `billing_enabled` and the plan limits |
@@ -459,6 +460,7 @@ All API routes are served under the `/api` prefix. Authenticated routes require 
 | `REQUIRE_EMAIL_VERIFICATION` | `false` | New signups must confirm their email (single-use link, valid 24 h) before they can sign in; needs the `SMTP_*` settings, the server refuses to start without them |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_TLS` | *unset* / provider default / `starttls` | SMTP relay for outgoing email; `SMTP_TLS` is `starttls` (587), `tls` (implicit TLS, 465) or `none` (local test servers only) |
 | `SMTP_USERNAME` / `SMTP_PASSWORD` / `SMTP_FROM` | *unset* | SMTP credentials and the sender address, e.g. `ResPulse <noreply@respulse.online>` |
+| `CONTACT_EMAIL` | *unset* | Operator mailbox that receives messages from the landing-page contact form (bug reports, questions, suggestions); needs the `SMTP_*` settings, otherwise `POST /api/contact` answers `503` |
 | `APP_URL` | `http://localhost:8080` | Public base URL used in emailed links |
 | `ALERT_SOURCE_NAME` | host of `APP_URL` | Label prefixed to alert titles (Telegram, Discord, Slack) and sent as `source` in webhook payloads, so shared alert groups show which deployment fired |
 | `ADMIN_EMAILS` | *unset* | Comma-separated emails that can open the operator report at `/admin` (aggregates only, system org excluded) |

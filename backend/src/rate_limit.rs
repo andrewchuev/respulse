@@ -19,6 +19,7 @@ pub struct RateLimits {
     login: DefaultKeyedRateLimiter<IpAddr>,
     register: DefaultKeyedRateLimiter<IpAddr>,
     resend: DefaultKeyedRateLimiter<IpAddr>,
+    contact: DefaultKeyedRateLimiter<IpAddr>,
 }
 
 fn quota(replenish_every: Duration, burst: u32) -> Quota {
@@ -36,6 +37,8 @@ impl RateLimits {
             register: RateLimiter::keyed(quota(Duration::from_secs(20 * 60), 3)),
             // 3 confirmation resends up front, then one every 10 minutes.
             resend: RateLimiter::keyed(quota(Duration::from_secs(10 * 60), 3)),
+            // 3 contact messages up front, then one every 10 minutes.
+            contact: RateLimiter::keyed(quota(Duration::from_secs(10 * 60), 3)),
         }
     }
 
@@ -49,6 +52,10 @@ impl RateLimits {
 
     pub fn check_resend(&self, ip: IpAddr) -> Result<(), Duration> {
         Self::check(&self.resend, ip)
+    }
+
+    pub fn check_contact(&self, ip: IpAddr) -> Result<(), Duration> {
+        Self::check(&self.contact, ip)
     }
 
     fn check(limiter: &DefaultKeyedRateLimiter<IpAddr>, ip: IpAddr) -> Result<(), Duration> {
@@ -70,6 +77,8 @@ impl RateLimits {
                 limits.register.shrink_to_fit();
                 limits.resend.retain_recent();
                 limits.resend.shrink_to_fit();
+                limits.contact.retain_recent();
+                limits.contact.shrink_to_fit();
             }
         });
     }
@@ -127,6 +136,16 @@ mod tests {
             assert!(limits.check_register(ip("203.0.113.9")).is_ok());
         }
         assert!(limits.check_register(ip("203.0.113.9")).is_err());
+    }
+
+    #[test]
+    fn contact_allows_three_messages_per_ip() {
+        let limits = RateLimits::new();
+        for _ in 0..3 {
+            assert!(limits.check_contact(ip("203.0.113.9")).is_ok());
+        }
+        assert!(limits.check_contact(ip("203.0.113.9")).is_err());
+        assert!(limits.check_contact(ip("198.51.100.7")).is_ok());
     }
 
     #[test]

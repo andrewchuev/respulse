@@ -50,11 +50,25 @@ impl Mailer {
     }
 
     pub async fn send(&self, to: &str, subject: &str, text: String, html: String) -> Result<(), String> {
+        self.send_with_reply_to(to, None, subject, text, html).await
+    }
+
+    /// `reply_to` lets the operator answer a visitor's message straight from the mailbox.
+    pub async fn send_with_reply_to(
+        &self,
+        to: &str,
+        reply_to: Option<&str>,
+        subject: &str,
+        text: String,
+        html: String,
+    ) -> Result<(), String> {
         let to: Mailbox = to.parse().map_err(|e| format!("invalid recipient: {e}"))?;
-        let message = Message::builder()
-            .from(self.from.clone())
-            .to(to)
-            .subject(subject)
+        let mut builder = Message::builder().from(self.from.clone()).to(to).subject(subject);
+        if let Some(reply_to) = reply_to {
+            let reply_to: Mailbox = reply_to.parse().map_err(|e| format!("invalid reply-to: {e}"))?;
+            builder = builder.reply_to(reply_to);
+        }
+        let message = builder
             .multipart(
                 MultiPart::alternative()
                     .singlepart(SinglePart::builder().header(ContentType::TEXT_PLAIN).body(text))

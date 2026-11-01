@@ -24,7 +24,7 @@ pub fn hash_token(raw: &str) -> String {
         .collect()
 }
 
-fn escape_html(text: &str) -> String {
+pub fn escape_html(text: &str) -> String {
     text.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;")
 }
 

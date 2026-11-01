@@ -1,6 +1,7 @@
 pub mod admin;
 pub mod auth;
 pub mod badge;
+pub mod contact;
 pub mod export_import;
 pub mod heartbeat;
 pub mod incidents;
@@ -28,6 +29,8 @@ pub fn create_router() -> Router<AppState> {
         .route("/auth/resend-verification", axum::routing::post(auth::resend_verification))
         .route("/auth/config", get(auth::auth_config))
         .route("/auth/me", get(auth::get_current_user))
+        // Landing-page contact form
+        .route("/contact", axum::routing::post(contact::submit))
         // Team Management & RBAC
         .route("/team/members", get(team::list_team_members).post(team::invite_member))
         .route("/team/members/:id/role", axum::routing::put(team::update_member_role))
