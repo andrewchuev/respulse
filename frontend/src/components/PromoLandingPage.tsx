@@ -279,7 +279,7 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
           {/* Key Value Metrics Strip */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 sm:gap-3 pt-8 max-w-4xl mx-auto text-left">
             {[
-              { val: '< 10 ms', label: 'Scheduler Precision', icon: Clock, color: 'text-emerald-400' },
+              { val: '4 Probes', label: 'HTTP · TCP · TLS · Heartbeat', icon: Clock, color: 'text-emerald-400' },
               { val: '100% Rust', label: 'Zero GC Observability', icon: Cpu, color: 'text-cyan-400' },
               billingEnabled
                 ? { val: '10s Turbo', label: 'High-Frequency Probing', icon: Zap, color: 'text-purple-400' }
@@ -457,7 +457,7 @@ export const PromoLandingPage: React.FC<PromoLandingPageProps> = ({
                   <h3 className="text-2xl font-bold text-white tracking-tight">HTTP/HTTPS Synthetic Probing</h3>
                   <p className="text-sm text-slate-300 leading-relaxed">
                     Execute high-frequency GET, POST, HEAD, and PUT requests with customizable request bodies and headers.
-                    Validate expected HTTP status codes, detect body keywords, and measure accurate latency breakdown (DNS, Connect, TLS, TTFB).
+                    Validate expected HTTP status codes, detect body keywords, and track response time on every probe with median and p95 latency stats.
                   </p>
                   <ul className="space-y-2 text-xs text-slate-400">
                     <li className="flex items-center gap-2">
@@ -555,16 +555,16 @@ let latency_ms = start.elapsed().as_millis();
                   <h3 className="text-2xl font-bold text-white tracking-tight">SSL/TLS Certificate Tracking</h3>
                   <p className="text-sm text-slate-300 leading-relaxed">
                     Validate TLS handshake integrity, verify certificate authority chains using <code className="text-amber-300">rustls</code> and
-                    <code className="text-amber-300"> webpki-roots</code>, and receive advance alerts 30, 14, and 3 days before cert expiration.
+                    <code className="text-amber-300"> webpki-roots</code>, and get warned when a certificate is within 7 days of expiring.
                   </p>
                   <ul className="space-y-2 text-xs text-slate-400">
                     <li className="flex items-center gap-2">
                       <Check className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
-                      <span>Detects revoked, self-signed, and expired certificates before customers notice</span>
+                      <span>Flags expired certificates as DOWN and rejects self-signed or untrusted chains</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
-                      <span>Validates SNI host matching and TLS 1.3 protocol negotiation</span>
+                      <span>Validates that the certificate matches the requested hostname (SNI)</span>
                     </li>
                   </ul>
                 </div>
@@ -576,7 +576,7 @@ let latency_ms = start.elapsed().as_millis();
                   </div>
                   <div className="space-y-1 text-xs">
                     <div className="text-emerald-400">✓ Common Name: *.respulse.internal</div>
-                    <div className="text-slate-400">Issuer: Let's Encrypt Authority X3</div>
+                    <div className="text-slate-400">Issuer: Let's Encrypt R11</div>
                     <div className="text-slate-400">Valid Until: 2027-10-28 (365 days remaining)</div>
                     <div className="text-emerald-400">Status: HEALTHY / ZERO WARNINGS</div>
                   </div>
@@ -785,8 +785,8 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
                   <td className="p-4 sm:p-5 font-mono text-slate-400">50 - 250 ms Stop-the-world spikes</td>
                 </tr>
                 <tr>
-                  <td className="p-4 sm:p-5 font-semibold text-white">Probe Timing Precision</td>
-                  <td className="p-4 sm:p-5 font-mono text-emerald-400 font-bold">&lt; 1 ms scheduler jitter</td>
+                  <td className="p-4 sm:p-5 font-semibold text-white">Probe Scheduling</td>
+                  <td className="p-4 sm:p-5 font-mono text-emerald-400 font-bold">Async tasks, 2 s scheduler tick</td>
                   <td className="p-4 sm:p-5 font-mono text-slate-400">Event loop delays under load</td>
                 </tr>
                 <tr>
@@ -861,9 +861,9 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
               <div className="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4 group-hover:scale-105 transition-all">
                 <Globe className="h-5 w-5" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Categorized Public Status Page</h3>
+              <h3 className="text-lg font-bold text-white mb-2">Live Platform Status Page</h3>
               <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-                Transparent SLA status page with automatic 90-day history calculations, grouped component blocks (Websites, Core APIs, Infrastructure), live active incident notices, and expandable past 7-day post-mortem reports.
+                Public status page for the ResPulse platform itself: monitors grouped into component blocks with 24-hour uptime and latency, live active incident notices, and expandable past 7-day post-mortem reports.
               </p>
             </div>
 
@@ -886,6 +886,28 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
               <h3 className="text-lg font-bold text-white mb-2">Granular Tag-Based Alert Routing</h3>
               <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
                 Assign tags like <span className="text-emerald-300 font-mono">#payments</span>, <span className="text-cyan-300 font-mono">#db</span>, or <span className="text-purple-300 font-mono">#prod</span> and bind channels using <span className="text-amber-300 font-mono">filter_tags</span>. Alert notifications route straight to the on-call engineers responsible for that subsystem.
+              </p>
+            </div>
+
+            {/* Feature 7: Config Export & Import */}
+            <div className="p-6 rounded-2xl border border-white/5 bg-slate-900/40 backdrop-blur-xl hover:border-emerald-500/30 transition-all group">
+              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4 group-hover:scale-105 transition-all">
+                <Layers className="h-5 w-5" />
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">Config Export &amp; Import</h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                Back up or migrate your monitors and notification channels as a single JSON file, and restore them into another workspace in one step.
+              </p>
+            </div>
+
+            {/* Feature 8: Desktop & Mobile Apps */}
+            <div className="p-6 rounded-2xl border border-white/5 bg-slate-900/40 backdrop-blur-xl hover:border-purple-500/30 transition-all group">
+              <div className="h-10 w-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 mb-4 group-hover:scale-105 transition-all">
+                <Server className="h-5 w-5" />
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">Desktop &amp; Android Apps</h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                Native Tauri apps with a per-monitor SSH console. Credentials stay on your device in an encrypted vault protected by the OS keyring.
               </p>
             </div>
           </div>
@@ -958,7 +980,7 @@ respulse_heartbeat_duration_ms{slug="nightly-backup"} 1240.0`}
                   </div>
                   <div className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
-                    <span>Public Status Page on standard URL</span>
+                    <span>Read-only status API by Ping Key and config export/import</span>
                   </div>
                 </div>
               </div>

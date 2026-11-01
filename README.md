@@ -16,17 +16,17 @@
 ### 1. Multi-Protocol Probing Engine
 * **HTTP / HTTPS Monitoring:**
   * Checks HTTP status codes (default `200` or custom status).
-  * Measures latency across stages (DNS, Connect, TLS, TTFB).
+  * Measures total response time per probe (no per-stage DNS/Connect/TLS/TTFB breakdown yet).
   * Supports custom HTTP methods (`GET`, `POST`, `HEAD`, `PUT`) and custom JSON/text request bodies.
   * Custom headers support (e.g., Bearer tokens, custom user-agents).
-  * Keyword matching: verifies the presence or absence of specific keywords in the response body.
+  * Keyword matching: verifies the presence of a specific keyword in the response body.
 * **HTTP Basic Authentication:**
   * First-class support via dedicated UI fields in the monitor creation modal.
   * Supports credentials embedded in URLs: `https://username:password@domain.com`.
   * Automatically injects standard `Authorization: Basic <base64>` headers.
 * **SSL/TLS Certificate Tracking:**
   * Validates certificate chains using `rustls` and `webpki-roots`.
-  * Monitors certificate expiration dates with advance warnings.
+  * Warns when a certificate is within 7 days of expiring and marks expired ones DOWN.
 * **TCP Port Checks:**
   * Validates network sockets and connectivity for databases (PostgreSQL, MySQL, Redis), mail servers (SMTP, IMAP), and custom microservice ports.
 * **Advanced Heartbeat Monitoring (Healthchecks.io-grade Dead Man's Switch):**
@@ -95,7 +95,7 @@
 ### 4. Public Status Page
 * Built-in public status page accessible via the header navigation or directly.
 * Displays system-wide operational banners (*"All Systems Fully Operational"* or *"Experiencing Service Disruptions"*).
-* Shows 90-day SLA calculations, active incident notices, and individual component history.
+* Shows the platform's own monitors (default team only) with 24-hour uptime, active incident notices, and recent check history. The 90-day figure is not computed yet.
 * **Categorized Component Blocks:** Organizes public status items into distinct category sections with group health badges (*Websites*, *Core APIs*, *Infrastructure*).
 
 ### 5. Alerting & Notification Delivery System
