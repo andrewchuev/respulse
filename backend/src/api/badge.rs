@@ -3,7 +3,7 @@ use axum::{
     http::{header, HeaderMap, HeaderValue, StatusCode},
     response::IntoResponse,
 };
-use chrono::{Duration, Utc};
+use chrono::{DateTime, Duration, Utc};
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -81,22 +81,15 @@ pub async fn get_badge_by_slug(
     Ok(render_monitor_badge(&monitor, query))
 }
 
-fn render_monitor_badge(monitor: &Monitor, query: BadgeQuery) -> (HeaderMap, String) {
-    let label = query.label.unwrap_or_else(|| {
-        if let Some(ref slug) = monitor.slug {
-            slug.clone()
-        } else {
-            monitor.name.clone()
-        }
-    });
-
-    let now = Utc::now();
-    let (status_text, color) = if monitor.is_paused {
-        ("paused", "#6b7280")
+/// The state a monitor is shown in: `paused`, `down`, `pending`, `late` (up, but past the time
+/// it was expected and still inside its grace period) or `up`.
+pub fn monitor_state(monitor: &Monitor, now: DateTime<Utc>) -> &'static str {
+    if monitor.is_paused {
+        "paused"
     } else if monitor.status == "DOWN" {
-        ("down", "#ef4444")
+        "down"
     } else if monitor.status == "PENDING" {
-        ("pending", "#3b82f6")
+        "pending"
     } else {
         // UP: check if currently in grace period
         let is_in_grace = if let Some(next_exp) = monitor.next_expected_at {
@@ -112,10 +105,29 @@ fn render_monitor_badge(monitor: &Monitor, query: BadgeQuery) -> (HeaderMap, Str
         };
 
         if is_in_grace {
-            ("late", "#f59e0b")
+            "late"
         } else {
-            ("up", "#10b981")
+            "up"
         }
+    }
+}
+
+fn render_monitor_badge(monitor: &Monitor, query: BadgeQuery) -> (HeaderMap, String) {
+    let label = query.label.unwrap_or_else(|| {
+        if let Some(ref slug) = monitor.slug {
+            slug.clone()
+        } else {
+            monitor.name.clone()
+        }
+    });
+
+    let status_text = monitor_state(monitor, Utc::now());
+    let color = match status_text {
+        "paused" => "#6b7280",
+        "down" => "#ef4444",
+        "pending" => "#3b82f6",
+        "late" => "#f59e0b",
+        _ => "#10b981",
     };
 
     render_svg_badge(&label, status_text, color)
@@ -173,4 +185,55 @@ fn render_svg_badge(label: &str, status: &str, color: &str) -> (HeaderMap, Strin
     headers.insert(header::EXPIRES, HeaderValue::from_static("0"));
 
     (headers, svg)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn monitor(patch: serde_json::Value) -> Monitor {
+        let mut base = json!({
+            "id": Uuid::nil(), "team_id": Uuid::nil(), "name": "M", "url": "heartbeat://push",
+            "monitor_type": "HEARTBEAT", "interval_seconds": 60, "timeout_seconds": 10,
+            "method": "GET", "headers": {}, "status": "UP", "is_paused": false,
+            "created_at": "2026-01-01T00:00:00Z", "updated_at": "2026-01-01T00:00:00Z",
+            "grace_seconds": 120
+        });
+        for (k, v) in patch.as_object().unwrap() {
+            base[k] = v.clone();
+        }
+        serde_json::from_value(base).expect("a monitor")
+    }
+
+    fn at(secs: i64) -> DateTime<Utc> {
+        DateTime::from_timestamp(1_800_000_000 + secs, 0).unwrap()
+    }
+
+    #[test]
+    fn a_monitor_is_up_late_down_pending_or_paused() {
+        let last = at(0).to_rfc3339();
+        let up = monitor(json!({ "last_checked_at": last }));
+        assert_eq!(monitor_state(&up, at(30)), "up");
+        // Past the interval but inside the grace period.
+        assert_eq!(monitor_state(&up, at(61)), "late");
+        assert_eq!(monitor_state(&up, at(180)), "late");
+        // Past the grace period the runner turns it down; until then it is shown late no more.
+        assert_eq!(monitor_state(&up, at(181)), "up");
+
+        assert_eq!(monitor_state(&monitor(json!({"status": "DOWN"})), at(0)), "down");
+        assert_eq!(monitor_state(&monitor(json!({"status": "PENDING"})), at(0)), "pending");
+        assert_eq!(
+            monitor_state(&monitor(json!({"status": "DOWN", "is_paused": true})), at(0)),
+            "paused"
+        );
+    }
+
+    #[test]
+    fn a_cron_deadline_decides_lateness_when_there_is_one() {
+        let m = monitor(json!({ "next_expected_at": at(100).to_rfc3339() }));
+        assert_eq!(monitor_state(&m, at(99)), "up");
+        assert_eq!(monitor_state(&m, at(101)), "late");
+        assert_eq!(monitor_state(&m, at(221)), "up");
+    }
 }

@@ -8,6 +8,7 @@ pub mod metrics;
 pub mod monitors;
 pub mod notifications;
 pub mod payments;
+pub mod ping_status;
 pub mod stats;
 pub mod team;
 pub mod wayforpay;
@@ -79,6 +80,9 @@ pub fn create_router() -> Router<AppState> {
         .route("/heartbeat/:token", axum::routing::post(heartbeat::ping_heartbeat).get(heartbeat::ping_heartbeat))
         .route("/heartbeat/:token/:action", axum::routing::post(heartbeat::ping_heartbeat_action).get(heartbeat::ping_heartbeat_action))
         // Slug-based pinging & auto-provisioning (?create=1)
+        // Read-only status by Ping Key: the monitors of a team, or one of them
+        .route("/ping-status/:ping_key", get(ping_status::list_monitors))
+        .route("/ping-status/:ping_key/:slug", get(ping_status::get_monitor))
         .route("/ping/:ping_key/:slug", axum::routing::post(heartbeat::ping_by_slug).get(heartbeat::ping_by_slug))
         .route("/ping/:ping_key/:slug/:action", axum::routing::post(heartbeat::ping_by_slug_action).get(heartbeat::ping_by_slug_action))
 }
