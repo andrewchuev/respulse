@@ -1,3 +1,5 @@
+name: respulse
+
 services:
   respulse-db:
     image: postgres:16-alpine
