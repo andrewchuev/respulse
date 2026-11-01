@@ -619,13 +619,6 @@ export function App() {
       {!isTauri() && (
         <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground">
           <p className="font-mono">ResPulse v{__APP_VERSION__} — High-performance Synthetic Monitoring Engine in Rust</p>
-          <p className="font-mono mt-2 space-x-3 text-[11px]">
-            <a href="/terms" className="hover:text-emerald-400 transition-colors">Terms of Service</a>
-            <span>·</span>
-            <a href="/privacy" className="hover:text-emerald-400 transition-colors">Privacy Policy</a>
-            <span>·</span>
-            <a href="/refund" className="hover:text-emerald-400 transition-colors">Refund & Cancellation</a>
-          </p>
         </footer>
       )}
     </div>
