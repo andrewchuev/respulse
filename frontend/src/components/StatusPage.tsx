@@ -117,7 +117,7 @@ export const StatusPage: React.FC<StatusPageProps> = ({ onBack }) => {
           </div>
 
           <div className="text-right hidden sm:block">
-            <div className="text-2xl font-bold font-mono text-emerald-400">99.98%</div>
+            <div className="text-2xl font-bold font-mono text-emerald-400">{(data?.overall_uptime_90d ?? 100).toFixed(2)}%</div>
             <div className="text-[11px] text-muted-foreground">90-day uptime</div>
           </div>
         </div>

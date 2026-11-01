@@ -47,10 +47,30 @@ pub async fn latency_percentiles_24h(pool: &crate::db::DbPool, monitor_id: uuid:
     row.map_or((None, None), |r| (r.p50.map(round1), r.p95.map(round1)))
 }
 
-#[derive(FromRow)]
-struct UptimeCounts {
-    total: i64,
-    up: i64,
+/// Check counts per window; one scan of the last 90 days feeds all of them.
+#[derive(FromRow, Default)]
+struct UptimeWindows {
+    total_24h: i64,
+    up_24h: i64,
+    total_7d: i64,
+    up_7d: i64,
+    total_30d: i64,
+    up_30d: i64,
+    total_90d: i64,
+    up_90d: i64,
+}
+
+/// Uptime in percent; `fallback` stands in while a window has no checks yet.
+fn uptime_pct(up: i64, total: i64, fallback: f64) -> f64 {
+    if total > 0 {
+        up as f64 / total as f64 * 100.0
+    } else {
+        fallback
+    }
+}
+
+fn round2(v: f64) -> f64 {
+    (v * 100.0).round() / 100.0
 }
 
 pub async fn get_stats(
@@ -198,29 +218,35 @@ pub async fn get_status_page(
     }
 
     let mut services = Vec::new();
-    let day_ago = Utc::now() - Duration::days(1);
+    let (mut total_90d, mut up_90d) = (0i64, 0i64);
 
     for m in monitors {
-        let stats_24h: UptimeCounts = sqlx::query_as(
+        let windows: UptimeWindows = sqlx::query_as(
             r#"
             SELECT
-                COUNT(*)::bigint as total,
-                COUNT(*) FILTER (WHERE is_up = true)::bigint as up
+                COUNT(*) FILTER (WHERE checked_at >= NOW() - INTERVAL '1 day')::bigint AS total_24h,
+                COUNT(*) FILTER (WHERE checked_at >= NOW() - INTERVAL '1 day' AND is_up)::bigint AS up_24h,
+                COUNT(*) FILTER (WHERE checked_at >= NOW() - INTERVAL '7 days')::bigint AS total_7d,
+                COUNT(*) FILTER (WHERE checked_at >= NOW() - INTERVAL '7 days' AND is_up)::bigint AS up_7d,
+                COUNT(*) FILTER (WHERE checked_at >= NOW() - INTERVAL '30 days')::bigint AS total_30d,
+                COUNT(*) FILTER (WHERE checked_at >= NOW() - INTERVAL '30 days' AND is_up)::bigint AS up_30d,
+                COUNT(*)::bigint AS total_90d,
+                COUNT(*) FILTER (WHERE is_up)::bigint AS up_90d
             FROM check_results
-            WHERE monitor_id = $1 AND checked_at >= $2
+            WHERE monitor_id = $1 AND checked_at >= NOW() - INTERVAL '90 days'
             "#
         )
         .bind(m.id)
-        .bind(day_ago)
         .fetch_one(&state.pool)
         .await
-        .unwrap_or(UptimeCounts { total: 0, up: 0 });
+        .unwrap_or_default();
 
-        let uptime_24h = if stats_24h.total > 0 {
-            (stats_24h.up as f64 / stats_24h.total as f64) * 100.0
-        } else {
-            100.0
-        };
+        total_90d += windows.total_90d;
+        up_90d += windows.up_90d;
+
+        let uptime_24h = uptime_pct(windows.up_24h, windows.total_24h, 100.0);
+        let uptime_7d = uptime_pct(windows.up_7d, windows.total_7d, uptime_24h);
+        let uptime_30d = uptime_pct(windows.up_30d, windows.total_30d, uptime_7d);
 
         let recent_checks: Vec<crate::models::CheckResult> = sqlx::query_as::<_, crate::models::CheckResult>(
             "SELECT * FROM check_results WHERE monitor_id = $1 ORDER BY checked_at DESC LIMIT 30"
@@ -245,9 +271,9 @@ pub async fn get_status_page(
 
         services.push(MonitorWithStats {
             monitor: m,
-            uptime_24h: (uptime_24h * 100.0).round() / 100.0,
-            uptime_7d: (uptime_24h * 100.0).round() / 100.0,
-            uptime_30d: (uptime_24h * 100.0).round() / 100.0,
+            uptime_24h: round2(uptime_24h),
+            uptime_7d: round2(uptime_7d),
+            uptime_30d: round2(uptime_30d),
             latency_p50_ms,
             latency_p95_ms,
             recent_history,
@@ -259,9 +285,25 @@ pub async fn get_status_page(
         title: "ResPulse Service Status".to_string(),
         description: "Real-time performance and uptime status of systems and APIs".to_string(),
         all_systems_operational: all_up && active_incidents.is_empty(),
-        overall_uptime_90d: 99.98,
+        overall_uptime_90d: round2(uptime_pct(up_90d, total_90d, 100.0)),
         active_incidents,
         resolved_incidents,
         services,
     }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn uptime_is_computed_from_counts() {
+        assert_eq!(uptime_pct(99, 100, 100.0), 99.0);
+        assert_eq!(round2(uptime_pct(2, 3, 100.0)), 66.67);
+    }
+
+    #[test]
+    fn empty_window_uses_the_fallback() {
+        assert_eq!(uptime_pct(0, 0, 87.5), 87.5);
+    }
 }
