@@ -577,6 +577,26 @@ pub async fn update_monitor(
     }
     let timezone = payload.timezone.unwrap_or(existing.timezone);
 
+    let is_public = match payload.is_public {
+        Some(true) if !existing.is_public => {
+            let is_primary: bool = sqlx::query_scalar("SELECT is_primary FROM teams WHERE id = $1")
+                .bind(auth.user.team_id)
+                .fetch_optional(&state.pool)
+                .await
+                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+                .unwrap_or(false);
+            if !is_primary {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    "Only the platform's primary organization can publish monitors on the status page".to_string(),
+                ));
+            }
+            true
+        }
+        Some(value) => value,
+        None => existing.is_public,
+    };
+
     let next_expected_at = if let Some(ref cron_str) = cron_expression {
         if let Ok(cron) = std::str::FromStr::from_str(cron_str) {
             let tz: chrono_tz::Tz = timezone.parse().unwrap_or(chrono_tz::UTC);
@@ -598,7 +618,7 @@ pub async fn update_monitor(
             method = $5, headers = $6, body = $7, expected_status_code = $8,
             keyword = $9, port = $10, auth_username = $11, auth_password = $12,
             tags = $13, group_name = $14, grace_seconds = $15, slug = $16,
-            cron_expression = $17, timezone = $18, next_expected_at = $19, updated_at = NOW()
+            cron_expression = $17, timezone = $18, next_expected_at = $19, is_public = $22, updated_at = NOW()
         WHERE id = $20 AND team_id = $21
         RETURNING *
         "#
@@ -624,6 +644,7 @@ pub async fn update_monitor(
     .bind(next_expected_at)
     .bind(id)
     .bind(auth.user.team_id)
+    .bind(is_public)
     .fetch_one(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;

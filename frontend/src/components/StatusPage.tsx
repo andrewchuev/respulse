@@ -190,6 +190,12 @@ export const StatusPage: React.FC<StatusPageProps> = ({ onBack }) => {
             <span className="text-xs text-muted-foreground font-mono">30 checks history</span>
           </div>
 
+          {!loading && (data?.services.length ?? 0) === 0 && (
+            <div className="rounded-xl border border-border/60 bg-slate-950/40 p-6 text-center text-sm text-muted-foreground">
+              No components are published on this status page yet.
+            </div>
+          )}
+
           {Object.entries(groupedServices).map(([groupName, services]) => {
             const upCount = services.filter((s) => s.status === 'UP').length;
             const isAllUp = upCount === services.length;

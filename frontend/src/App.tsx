@@ -560,6 +560,7 @@ export function App() {
         isOpen={!!editingMonitor}
         minInterval={appConfig.plans[planKey].min_interval_seconds}
         isPro={planKey === 'PRO'}
+        canPublish={!!currentUser?.team_is_primary}
         onClose={() => setEditingMonitor(null)}
         onUpdated={(updated) => {
           loadData();

@@ -95,7 +95,8 @@
 ### 4. Public Status Page
 * Built-in public status page accessible via the header navigation or directly.
 * Displays system-wide operational banners (*"All Systems Fully Operational"* or *"Experiencing Service Disruptions"*).
-* Shows the platform's own monitors (default team only) with 24-hour uptime, active incident notices, and recent check history. The 90-day figure is not computed yet.
+* Lists only monitors that the **primary organization** (`teams.is_primary`, set in the database, one at most) has published with the *Show on the public status page* checkbox; nothing is public by default, and other organizations cannot publish. Shows 24-hour uptime per component, the 90-day uptime computed from check history, active incidents of published monitors, and recent check history.
+* The primary organization cannot be deleted from the operator console and is left out of the operator report's customer figures.
 * **Categorized Component Blocks:** Organizes public status items into distinct category sections with group health badges (*Websites*, *Core APIs*, *Infrastructure*).
 
 ### 5. Alerting & Notification Delivery System

@@ -18,6 +18,7 @@ export interface Monitor {
   status: MonitorStatus;
   is_paused: boolean;
   paused_by_plan?: boolean;
+  is_public?: boolean;
   last_checked_at: string | null;
   last_status_change_at: string | null;
   last_response_time_ms: number | null;
@@ -186,6 +187,7 @@ export interface UpdateMonitorPayload {
   slug?: string;
   cron_expression?: string;
   timezone?: string;
+  is_public?: boolean;
 }
 
 export interface BulkActionPayload {
@@ -246,6 +248,7 @@ export interface UserProfile {
   team_name: string;
   team_ping_key?: string | null;
   team_plan?: 'FREE' | 'PRO';
+  team_is_primary?: boolean;
   email: string;
   name: string;
   role: UserRole;
@@ -425,6 +428,7 @@ export interface AdminTeamItem {
   plan: 'FREE' | 'PRO';
   subscription_status: string;
   ping_key: string;
+  is_primary: boolean;
   created_at: string;
   monitors_count: number;
   users_count: number;

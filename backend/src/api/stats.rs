@@ -151,7 +151,7 @@ pub async fn get_status_page(
     State(state): State<AppState>,
 ) -> Result<Json<PublicStatusPage>, (StatusCode, String)> {
     let monitors: Vec<Monitor> = sqlx::query_as::<_, Monitor>(
-        "SELECT * FROM monitors WHERE team_id = '00000000-0000-0000-0000-000000000001' AND is_paused = FALSE ORDER BY name ASC"
+        "SELECT m.* FROM monitors m JOIN teams t ON t.id = m.team_id WHERE t.is_primary AND m.is_public AND m.is_paused = FALSE ORDER BY m.name ASC"
     )
     .fetch_all(&state.pool)
     .await
@@ -161,7 +161,7 @@ pub async fn get_status_page(
 
     // Fetch active ongoing incidents
     let active_rows: Vec<crate::models::Incident> = sqlx::query_as::<_, crate::models::Incident>(
-        "SELECT * FROM incidents WHERE team_id = '00000000-0000-0000-0000-000000000001' AND status = 'ONGOING' AND is_published = TRUE ORDER BY started_at DESC"
+        "SELECT i.* FROM incidents i JOIN teams t ON t.id = i.team_id JOIN monitors m ON m.id = i.monitor_id WHERE t.is_primary AND m.is_public AND i.status = 'ONGOING' AND i.is_published = TRUE ORDER BY i.started_at DESC"
     )
     .fetch_all(&state.pool)
     .await
@@ -190,7 +190,7 @@ pub async fn get_status_page(
     // Fetch resolved incidents with post-mortems (past 7 days)
     let seven_days_ago = Utc::now() - Duration::days(7);
     let resolved_rows: Vec<crate::models::Incident> = sqlx::query_as::<_, crate::models::Incident>(
-        "SELECT * FROM incidents WHERE team_id = '00000000-0000-0000-0000-000000000001' AND status = 'RESOLVED' AND is_published = TRUE AND started_at >= $1 ORDER BY started_at DESC LIMIT 10"
+        "SELECT i.* FROM incidents i JOIN teams t ON t.id = i.team_id JOIN monitors m ON m.id = i.monitor_id WHERE t.is_primary AND m.is_public AND i.status = 'RESOLVED' AND i.is_published = TRUE AND i.started_at >= $1 ORDER BY i.started_at DESC LIMIT 10"
     )
     .bind(seven_days_ago)
     .fetch_all(&state.pool)

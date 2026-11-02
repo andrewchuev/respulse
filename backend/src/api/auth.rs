@@ -157,6 +157,7 @@ pub async fn register(
         team_name: team.name,
         team_ping_key: Some(team.ping_key),
         team_plan: team.plan,
+        team_is_primary: team.is_primary,
         email: user.email,
         name: user.name,
         role: UserRole::Owner,
@@ -270,6 +271,7 @@ pub async fn login(
         slug: "respulse-team".to_string(),
         ping_key: "pk_live_enterprise0000000000001".to_string(),
         plan: "FREE".to_string(),
+        is_primary: false,
         created_at: chrono::Utc::now(),
     });
 
@@ -289,6 +291,7 @@ pub async fn login(
         team_name: team.name,
         team_ping_key: Some(team.ping_key),
         team_plan: team.plan,
+        team_is_primary: team.is_primary,
         email: user.email,
         name: user.name,
         role: role.clone(),
@@ -325,6 +328,7 @@ pub async fn get_current_user(
         slug: "respulse-enterprise".to_string(),
         ping_key: "pk_live_enterprise0000000000001".to_string(),
         plan: "FREE".to_string(),
+        is_primary: false,
         created_at: chrono::Utc::now(),
     });
 
@@ -334,6 +338,7 @@ pub async fn get_current_user(
         team_name: team.name,
         team_ping_key: Some(team.ping_key),
         team_plan: team.plan,
+        team_is_primary: team.is_primary,
         email: auth.user.email,
         name: auth.user.name,
         role: auth.role,
@@ -392,6 +397,7 @@ async fn auth_response(state: &AppState, user: User) -> Result<AuthResponse, (St
             team_name: team.name,
             team_ping_key: Some(team.ping_key),
             team_plan: team.plan,
+            team_is_primary: team.is_primary,
             email: user.email,
             name: user.name,
             role: role.clone(),

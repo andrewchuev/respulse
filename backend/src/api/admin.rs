@@ -18,7 +18,11 @@ use serde_json::{json, Value};
 use tracing::error;
 use uuid::Uuid;
 
-const DEMO_TEAM_ID: Uuid = Uuid::from_u128(1);
+/// The operator's own team; it matches no id (and so excludes nothing) while none is flagged.
+async fn primary_team_id(pool: &DbPool) -> Result<Uuid, sqlx::Error> {
+    let id: Option<Uuid> = sqlx::query_scalar("SELECT id FROM teams WHERE is_primary").fetch_optional(pool).await?;
+    Ok(id.unwrap_or(Uuid::nil()))
+}
 
 fn require_admin(auth: &AuthUser, state: &AppState) -> Result<(), (StatusCode, Response)> {
     if state.settings.is_admin(&auth.user.email) {
@@ -48,6 +52,7 @@ pub struct AdminTeamItem {
     pub plan: String,
     pub subscription_status: String,
     pub ping_key: String,
+    pub is_primary: bool,
     pub created_at: DateTime<Utc>,
     pub monitors_count: i64,
     pub users_count: i64,
@@ -60,7 +65,7 @@ pub async fn list_teams(
 ) -> Result<Json<Vec<AdminTeamItem>>, (StatusCode, Response)> {
     require_admin(&auth, &state)?;
 
-    let rows: Vec<(Uuid, String, String, String, String, String, DateTime<Utc>, i64, i64, i64)> =
+    let rows: Vec<(Uuid, String, String, String, String, String, bool, DateTime<Utc>, i64, i64, i64)> =
         sqlx::query_as(
             r#"
             SELECT 
@@ -70,6 +75,7 @@ pub async fn list_teams(
                 t.plan, 
                 t.subscription_status,
                 t.ping_key, 
+                t.is_primary,
                 t.created_at,
                 COALESCE(COUNT(DISTINCT m.id), 0)::bigint as monitors_count,
                 COALESCE(COUNT(DISTINCT u.id), 0)::bigint as users_count,
@@ -78,7 +84,7 @@ pub async fn list_teams(
             LEFT JOIN monitors m ON m.team_id = t.id
             LEFT JOIN users u ON u.team_id = t.id
             LEFT JOIN incidents i ON i.team_id = t.id
-            GROUP BY t.id, t.name, t.slug, t.plan, t.subscription_status, t.ping_key, t.created_at
+            GROUP BY t.id, t.name, t.slug, t.plan, t.subscription_status, t.ping_key, t.is_primary, t.created_at
             ORDER BY t.created_at DESC
             "#,
         )
@@ -95,7 +101,7 @@ pub async fn list_teams(
     let items = rows
         .into_iter()
         .map(
-            |(id, name, slug, plan, subscription_status, ping_key, created_at, monitors_count, users_count, active_incidents_count)| {
+            |(id, name, slug, plan, subscription_status, ping_key, is_primary, created_at, monitors_count, users_count, active_incidents_count)| {
                 AdminTeamItem {
                     id,
                     name,
@@ -103,6 +109,7 @@ pub async fn list_teams(
                     plan,
                     subscription_status,
                     ping_key,
+                    is_primary,
                     created_at,
                     monitors_count,
                     users_count,
@@ -157,10 +164,21 @@ pub async fn delete_team(
     Path(team_id): Path<Uuid>,
 ) -> Result<Json<Value>, (StatusCode, Response)> {
     require_admin(&auth, &state)?;
-    if team_id == DEMO_TEAM_ID {
+    let is_primary: Option<bool> = sqlx::query_scalar("SELECT is_primary FROM teams WHERE id = $1")
+        .bind(team_id)
+        .fetch_optional(&state.pool)
+        .await
+        .map_err(|e| {
+            error!("Failed to look up team: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to delete team" })).into_response(),
+            )
+        })?;
+    if is_primary == Some(true) {
         return Err((
             StatusCode::FORBIDDEN,
-            Json(json!({ "error": "Cannot delete primary demo system organization" })).into_response(),
+            Json(json!({ "error": "Cannot delete the primary organization" })).into_response(),
         ));
     }
 
@@ -450,32 +468,36 @@ pub async fn get_report(
     })
 }
 
-async fn count(pool: &DbPool, sql: &str) -> Result<i64, sqlx::Error> {
-    sqlx::query_scalar::<_, i64>(sql).bind(DEMO_TEAM_ID).fetch_one(pool).await
+async fn count(pool: &DbPool, primary: Uuid, sql: &str) -> Result<i64, sqlx::Error> {
+    sqlx::query_scalar::<_, i64>(sql).bind(primary).fetch_one(pool).await
 }
 
 async fn build_report(pool: &DbPool) -> Result<Value, sqlx::Error> {
-    let teams = count(pool, "SELECT COUNT(*)::bigint FROM teams WHERE id <> $1").await?;
-    let users = count(pool, "SELECT COUNT(*)::bigint FROM users WHERE team_id <> $1").await?;
-    let activated = count(pool, "SELECT COUNT(DISTINCT team_id)::bigint FROM monitors WHERE team_id <> $1").await?;
+    let primary = primary_team_id(pool).await?;
+    let teams = count(pool, primary, "SELECT COUNT(*)::bigint FROM teams WHERE id <> $1").await?;
+    let users = count(pool, primary, "SELECT COUNT(*)::bigint FROM users WHERE team_id <> $1").await?;
+    let activated = count(pool, primary, "SELECT COUNT(DISTINCT team_id)::bigint FROM monitors WHERE team_id <> $1").await?;
     let with_channels =
-        count(pool, "SELECT COUNT(DISTINCT team_id)::bigint FROM notification_channels WHERE team_id <> $1").await?;
+        count(pool, primary, "SELECT COUNT(DISTINCT team_id)::bigint FROM notification_channels WHERE team_id <> $1").await?;
     let with_heartbeat = count(
         pool,
+        primary,
         "SELECT COUNT(DISTINCT team_id)::bigint FROM monitors WHERE team_id <> $1 AND monitor_type = 'HEARTBEAT'",
     )
     .await?;
     let active_7d = count(
         pool,
+        primary,
         "SELECT COUNT(DISTINCT team_id)::bigint FROM users WHERE team_id <> $1 AND last_login_at >= NOW() - INTERVAL '7 days'",
     )
     .await?;
     let active_30d = count(
         pool,
+        primary,
         "SELECT COUNT(DISTINCT team_id)::bigint FROM users WHERE team_id <> $1 AND last_login_at >= NOW() - INTERVAL '30 days'",
     )
     .await?;
-    let pro_teams = count(pool, "SELECT COUNT(*)::bigint FROM teams WHERE id <> $1 AND plan = 'PRO'").await?;
+    let pro_teams = count(pool, primary, "SELECT COUNT(*)::bigint FROM teams WHERE id <> $1 AND plan = 'PRO'").await?;
 
     let signups: Vec<(NaiveDate, i64)> = sqlx::query_as(
         r#"
@@ -487,7 +509,7 @@ async fn build_report(pool: &DbPool) -> Result<Value, sqlx::Error> {
         ORDER BY 1
         "#,
     )
-    .bind(DEMO_TEAM_ID)
+    .bind(primary)
     .fetch_all(pool)
     .await?;
 
@@ -504,7 +526,7 @@ async fn build_report(pool: &DbPool) -> Result<Value, sqlx::Error> {
         GROUP BY 1 ORDER BY 1
         "#,
     )
-    .bind(DEMO_TEAM_ID)
+    .bind(primary)
     .fetch_all(pool)
     .await?;
 
@@ -519,7 +541,7 @@ async fn build_report(pool: &DbPool) -> Result<Value, sqlx::Error> {
         GROUP BY t.id, t.plan
         "#,
     )
-    .bind(DEMO_TEAM_ID)
+    .bind(primary)
     .fetch_all(pool)
     .await?;
     let mut near_limit = 0;
@@ -546,7 +568,7 @@ async fn build_report(pool: &DbPool) -> Result<Value, sqlx::Error> {
     let by_type: Vec<(String, i64)> = sqlx::query_as(
         "SELECT monitor_type, COUNT(*)::bigint FROM monitors WHERE team_id <> $1 GROUP BY 1 ORDER BY 2 DESC",
     )
-    .bind(DEMO_TEAM_ID)
+    .bind(primary)
     .fetch_all(pool)
     .await?;
 
@@ -572,7 +594,7 @@ async fn build_report(pool: &DbPool) -> Result<Value, sqlx::Error> {
     let (incidents_total, incidents_open): (i64, i64) = sqlx::query_as(
         "SELECT COUNT(*)::bigint, COUNT(*) FILTER (WHERE status <> 'RESOLVED')::bigint FROM incidents WHERE team_id <> $1",
     )
-    .bind(DEMO_TEAM_ID)
+    .bind(primary)
     .fetch_one(pool)
     .await?;
     let alerts: Vec<(String, i64)> = sqlx::query_as(
@@ -583,7 +605,7 @@ async fn build_report(pool: &DbPool) -> Result<Value, sqlx::Error> {
         GROUP BY 1
         "#,
     )
-    .bind(DEMO_TEAM_ID)
+    .bind(primary)
     .fetch_all(pool)
     .await?;
     let alert_count = |status: &str| alerts.iter().find(|(s, _)| s == status).map_or(0, |(_, n)| *n);
@@ -597,7 +619,7 @@ async fn build_report(pool: &DbPool) -> Result<Value, sqlx::Error> {
         FROM teams t WHERE t.id <> $1 ORDER BY t.created_at DESC LIMIT 15
         "#,
     )
-    .bind(DEMO_TEAM_ID)
+    .bind(primary)
     .fetch_all(pool)
     .await?;
 

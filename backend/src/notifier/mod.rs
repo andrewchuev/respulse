@@ -261,6 +261,7 @@ pub async fn test_channel(client: &Client, channel: &NotificationChannel) -> Res
         timezone: "UTC".to_string(),
         next_expected_at: None,
         paused_by_plan: false,
+        is_public: false,
         created_at: Utc::now(),
         updated_at: Utc::now(),
     };

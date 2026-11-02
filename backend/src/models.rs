@@ -45,6 +45,9 @@ pub struct Monitor {
     /// Paused by the downgrade policy rather than by a user; an upgrade resumes it.
     #[serde(default)]
     pub paused_by_plan: bool,
+    /// Listed on the public status page; only honored for the primary team's monitors.
+    #[serde(default)]
+    pub is_public: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -111,6 +114,7 @@ pub struct UpdateMonitorRequest {
     pub slug: Option<String>,
     pub cron_expression: Option<String>,
     pub timezone: Option<String>,
+    pub is_public: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -434,6 +438,10 @@ pub struct Team {
     pub ping_key: String,
     #[serde(default = "default_plan")]
     pub plan: String,
+    /// The operator's own organization: it owns the public status page and is left out of customer stats.
+    #[serde(default)]
+    #[sqlx(default)]
+    pub is_primary: bool,
     pub created_at: DateTime<Utc>,
 }
 
@@ -460,6 +468,8 @@ pub struct UserProfile {
     pub team_name: String,
     pub team_ping_key: Option<String>,
     pub team_plan: String,
+    #[serde(default)]
+    pub team_is_primary: bool,
     pub email: String,
     pub name: String,
     pub role: UserRole,

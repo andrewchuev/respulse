@@ -19,6 +19,8 @@ interface EditMonitorModalProps {
   monitor: MonitorWithStats | null;
   isOpen: boolean;
   isPro?: boolean;
+  /** Only the primary organization can publish monitors on the public status page. */
+  canPublish?: boolean;
   /** Fastest check interval the plan allows, in seconds. */
   minInterval?: number;
   onClose: () => void;
@@ -29,6 +31,7 @@ export const EditMonitorModal: React.FC<EditMonitorModalProps> = ({
   monitor,
   isOpen,
   isPro = false,
+  canPublish = false,
   minInterval = 60,
   onClose,
   onUpdated,
@@ -45,6 +48,7 @@ export const EditMonitorModal: React.FC<EditMonitorModalProps> = ({
   const [authPassword, setAuthPassword] = useState<string>('');
   const [groupName, setGroupName] = useState<string>('Default');
   const [tagsInput, setTagsInput] = useState<string>('');
+  const [isPublic, setIsPublic] = useState<boolean>(false);
   const [graceSeconds, setGraceSeconds] = useState<number>(300);
   const [slug, setSlug] = useState<string>('');
   const [scheduleType, setScheduleType] = useState<'INTERVAL' | 'CRON'>('INTERVAL');
@@ -69,6 +73,7 @@ export const EditMonitorModal: React.FC<EditMonitorModalProps> = ({
       setAuthPassword(monitor.auth_password || '');
       setGroupName(monitor.group_name || 'Default');
       setTagsInput(monitor.tags && monitor.tags.length > 0 ? monitor.tags.join(', ') : '');
+      setIsPublic(!!monitor.is_public);
       setGraceSeconds(monitor.grace_seconds !== undefined ? monitor.grace_seconds : 300);
       setSlug(monitor.slug || '');
       setScheduleType(monitor.cron_expression ? 'CRON' : 'INTERVAL');
@@ -145,6 +150,7 @@ export const EditMonitorModal: React.FC<EditMonitorModalProps> = ({
         auth_password: authPassword || '',
         tags,
         group_name: groupName.trim() || 'Default',
+        is_public: canPublish ? isPublic : undefined,
         grace_seconds: monitorType === 'HEARTBEAT' ? Number(graceSeconds) : 0,
         slug: monitorType === 'HEARTBEAT' ? (slug.trim() ? slug.trim().toLowerCase().replace(' ', '-') : '') : undefined,
         cron_expression: monitorType === 'HEARTBEAT' ? (scheduleType === 'CRON' ? cronExpression.trim() : '') : undefined,
@@ -490,6 +496,23 @@ export const EditMonitorModal: React.FC<EditMonitorModalProps> = ({
               />
             </div>
           </div>
+
+          {canPublish && (
+            <label className="flex items-start gap-2.5 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isPublic}
+                onChange={(e) => setIsPublic(e.target.checked)}
+                className="mt-0.5 h-4 w-4 accent-emerald-500"
+              />
+              <span className="text-xs text-slate-300">
+                Show on the public status page
+                <span className="block text-[11px] text-muted-foreground mt-0.5">
+                  Name, URL, uptime and incidents of this monitor become visible to everyone at /status.
+                </span>
+              </span>
+            </label>
+          )}
 
           {/* Frequency & Grace Period */}
           <div className={`grid ${monitorType === 'HEARTBEAT' ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-2'} gap-3`}>

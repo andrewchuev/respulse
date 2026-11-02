@@ -110,8 +110,8 @@ export const AdminPanel: React.FC = () => {
   };
 
   const handleDeleteTeam = async (team: AdminTeamItem) => {
-    if (team.id === '00000000-0000-0000-0000-000000000001') {
-      alert('The primary system demo organization cannot be deleted.');
+    if (team.is_primary) {
+      alert('The primary organization cannot be deleted.');
       return;
     }
     if (!confirm(`Are you sure you want to permanently delete organization "${team.name}" and all its monitors?`)) {
@@ -355,7 +355,7 @@ export const AdminPanel: React.FC = () => {
                         <div className="font-sans font-bold text-white text-sm">{t.name}</div>
                         <div className="text-[11px] text-muted-foreground font-mono flex items-center gap-1.5 mt-0.5">
                           <span>slug: {t.slug}</span>
-                          {t.id === '00000000-0000-0000-0000-000000000001' && (
+                          {t.is_primary && (
                             <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
                               System Primary
                             </span>
@@ -398,7 +398,7 @@ export const AdminPanel: React.FC = () => {
                           >
                             Set {t.plan === 'PRO' ? 'FREE' : 'PRO'}
                           </Button>
-                          {t.id !== '00000000-0000-0000-0000-000000000001' && (
+                          {!t.is_primary && (
                             <Button
                               size="sm"
                               variant="ghost"
@@ -546,8 +546,8 @@ export const AdminPanel: React.FC = () => {
                     Zone of Responsibility
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    <strong>Platform Scope:</strong> These 5 monitors are owned by the primary platform team.
-                    Regular tenants cannot modify them. They guarantee continuous synthetic transparency for all customers.
+                    <strong>Platform Scope:</strong> These monitors belong to the primary organization and are published on the public status page.
+                    Only that organization can publish monitors; regular tenants cannot.
                   </p>
                 </div>
 
