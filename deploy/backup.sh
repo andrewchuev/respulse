@@ -4,7 +4,7 @@ set -eu
 
 DIR=${BACKUP_DIR:-/opt/respulse/backups}
 KEEP=${BACKUP_KEEP:-14}
-PING_URL=${BACKUP_PING_URL:-https://respulse.online/api/heartbeat/37e2216caedb454ea5286aa1ee8d1044}
+PING_URL=${BACKUP_PING_URL:-https://respulse.online/api/heartbeat/f14b3d2cb10b4de3b3f1cdc476511813}
 
 umask 077
 mkdir -p "$DIR"
